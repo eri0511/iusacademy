@@ -1,0 +1,2133 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Rol {
+  ADMINISTRADOR
+  DOCENTE
+  ESTUDIANTE
+}
+
+enum EstadoMateria {
+  ACTIVA
+  INACTIVA
+}
+
+enum EstadoCurso {
+  ACTIVO
+  INACTIVO
+  FINALIZADO
+}
+
+enum EstadoInscripcion {
+  ACTIVA
+  RETIRADA
+}
+
+enum EstadoReporteEmitido {
+  GENERANDO
+  VALIDO
+  ANULADO
+  ERROR
+}
+
+enum TipoPublicacionCurso {
+  AVISO_GENERAL
+  LECTURA_OBLIGATORIA
+  EXAMEN
+  PRESENTACION_PROYECTO
+  ENTREGA_PROYECTO
+  MATERIAL_COMPLEMENTARIO
+  JURISPRUDENCIA
+  CLASE_VIRTUAL
+  CAMBIO_HORARIO
+  RECORDATORIO
+  FELICITACION
+  OTRO
+}
+
+enum PrioridadPublicacion {
+  INFORMATIVA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum AlcanceConjuntoGrupo {
+  CURSO
+  HITO
+  ACTIVIDAD
+}
+
+enum MetodoCreacionGrupo {
+  MANUAL
+  ALEATORIO
+  IMPORTADO
+}
+
+enum CriterioDistribucionGrupo {
+  CANTIDAD_GRUPOS
+  INTEGRANTES_POR_GRUPO
+}
+
+enum TipoEvaluacionGrupo {
+  CONTINUA
+  PROCESUAL
+}
+
+enum AccionHistorialGrupo {
+  CONJUNTO_CREADO
+  CONJUNTO_ACTUALIZADO
+  CONJUNTO_BLOQUEADO
+  CONJUNTO_DESBLOQUEADO
+  GRUPO_CREADO
+  GRUPO_ACTUALIZADO
+  GRUPO_ELIMINADO
+  ESTUDIANTE_AGREGADO
+  ESTUDIANTE_MOVIDO
+  ESTUDIANTE_RETIRADO
+  REPRESENTANTE_ASIGNADO
+  REPRESENTANTE_REMOVIDO
+  DISTRIBUCION_GENERADA
+  DISTRIBUCION_REGENERADA
+  CONJUNTO_IMPORTADO
+}
+
+enum EstadoTarea {
+  BORRADOR
+  PROGRAMADA
+  DISPONIBLE
+  CERRADA
+  ANULADA
+}
+
+enum EstadoEntregaTarea {
+  BORRADOR
+  ENTREGADA
+  TARDIA
+  BLOQUEADA
+  ANULADA
+}
+
+enum EstadoEquipoAfinidadTarea {
+  ACTIVO
+  BLOQUEADO
+  INACTIVO
+}
+
+/**
+ * Define la experiencia académica principal de la tarea.
+ * Las capacidades concretas se guardan aparte para permitir que
+ * experiencias como REDACCION_JURIDICA también sean colaborativas.
+ */
+enum TipoTarea {
+  ENTREGA_ARCHIVOS
+  RESPUESTA_ESCRITA
+  DOCUMENTO_COLABORATIVO
+  REDACCION_JURIDICA
+  EXPOSICION
+  CASO_PRACTICO
+  MIXTA
+  PRESENCIAL
+}
+
+/**
+ * Capacidades reutilizables de una tarea. No equivalen al tipo.
+ * Por ejemplo REDACCION_JURIDICA puede habilitar EDICION_COLABORATIVA,
+ * SEGUIMIENTO_AUTORIA, HISTORIAL_VERSIONES y EXPORTACION_PDF.
+ */
+enum CapacidadTarea {
+  ARCHIVOS
+  EDITOR_TEXTO
+  EDICION_COLABORATIVA
+  SEGUIMIENTO_AUTORIA
+  HISTORIAL_VERSIONES
+  EXPORTACION_PDF
+  EXPOSICION
+  CASO_ESTRUCTURADO
+  REDACCION_JURIDICA
+  EVIDENCIA_DOCENTE
+}
+
+enum ModoEdicionTarea {
+  SIN_EDITOR
+  INDIVIDUAL
+  COLABORATIVO
+}
+
+/**
+ * Los componentes se utilizan únicamente cuando TipoTarea = MIXTA.
+ * Permiten combinar varias evidencias dentro de una sola tarea.
+ */
+enum TipoComponenteTarea {
+  ARCHIVOS
+  TEXTO
+  DOCUMENTO_COLABORATIVO
+  REDACCION_JURIDICA
+  EXPOSICION
+  CASO_PRACTICO
+  PRESENCIAL
+}
+
+enum ModalidadTarea {
+  INDIVIDUAL
+  GRUPAL
+}
+
+enum OrigenGrupoTarea {
+  NINGUNO
+  PLATAFORMA
+  AFINIDAD
+}
+
+enum ModalidadNotaTarea {
+  INDIVIDUAL
+  GRUPAL
+  GRUPAL_E_INDIVIDUAL
+}
+
+enum EstadoForo {
+  BORRADOR
+  PROGRAMADO
+  ABIERTO
+  VENCIDO
+  CERRADO
+  CALIFICANDO
+  CALIFICADO
+  NOTAS_PUBLICADAS
+  ANULADO
+}
+
+enum ModalidadParticipacionForo {
+  INDIVIDUAL
+  GRUPAL
+}
+
+enum OrigenGrupoForo {
+  NINGUNO
+  PLATAFORMA
+  AFINIDAD
+}
+
+enum DinamicaGrupalForo {
+  NINGUNA
+  REPRESENTANTE_UNICO
+  PARTICIPACION_DISTRIBUIDA
+  COLABORACION_ABIERTA
+}
+
+enum TipoEvaluacionForo {
+  AUTOMATICA
+  MANUAL
+  RUBRICA
+}
+
+enum ModalidadNotaForo {
+  INDIVIDUAL
+  GRUPAL
+  GRUPAL_E_INDIVIDUAL
+}
+
+enum TipoDescuentoRetraso {
+  NINGUNO
+  PUNTOS_FIJOS
+  PORCENTAJE
+  POR_HORA
+  POR_DIA
+  NOTA_MAXIMA
+}
+
+enum TipoPenalizacionComentarios {
+  NINGUNA
+  PUNTOS_FIJOS
+  PORCENTAJE
+}
+
+enum VisibilidadRespuestasForo {
+  DESDE_EL_INICIO
+  DESPUES_DE_RESPONDER
+  AL_CERRAR
+}
+
+enum EstadoRespuestaForo {
+  BORRADOR
+  PUBLICADA
+  TARDIA
+  BLOQUEADA
+  OCULTA
+  ANULADA
+}
+
+enum EstadoEquipoForo {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+  BLOQUEADO
+  INACTIVO
+}
+
+enum TipoOrigenActividad {
+  FORO
+  TAREA
+  QUIZ
+  SIMULACION
+  OTRO
+}
+
+/**
+ * Componente institucional dentro de cada hito.
+ * CONTINUA:
+ * El promedio de sus actividades se convierte al
+ * puntajeContinua configurado en HitoAcademico
+ * (actualmente 15 puntos).
+ * PROCESUAL:
+ * El promedio de sus actividades se convierte al
+ * puntajeProcesual configurado en HitoAcademico
+ * (actualmente 10 puntos).
+ */
+enum ComponenteEvaluacion {
+  CONTINUA
+  PROCESUAL
+}
+
+enum EstadoActividadCalificable {
+  BORRADOR
+  ACTIVA
+  CERRADA
+  CALIFICANDO
+  CALIFICADA
+  PUBLICADA
+  ANULADA
+}
+
+enum EstadoCalificacion {
+  PENDIENTE
+  BORRADOR
+  CALIFICADA
+  PUBLICADA
+  ANULADA
+}
+
+enum CategoriaArchivoAdjunto {
+  PERFIL
+  RECURSO
+  FORO_TEMA
+  FORO_RESPUESTA
+  FORO_COMENTARIO
+  TAREA
+  TAREA_ENTREGA
+  DOCUMENTO
+  REPORTE
+  OTRO
+}
+
+/**
+ * Define si un recurso académico está disponible durante todo el curso
+ * o únicamente dentro de un hito determinado.
+ */
+/**
+ * Define la naturaleza del recurso académico.
+ * ARCHIVO utiliza ArchivoAdjunto y permite historial de versiones.
+ * ENLACE almacena una URL externa y no genera versiones.
+ */
+enum TipoContenidoRecurso {
+  ARCHIVO
+  ENLACE
+}
+
+enum CategoriaRecursoCurso {
+  NORMATIVA
+  JURISPRUDENCIA
+  DOCTRINA
+  GUIA_ACADEMICA
+  CASO_PRACTICO
+  MODELO_JURIDICO
+  MATERIAL_AUDIOVISUAL
+  MATERIAL_COMPLEMENTARIO
+  OTRO
+}
+
+enum AlcanceRecursoCurso {
+  CURSO
+  HITO
+}
+
+enum EstadoRecursoCurso {
+  ACTIVO
+  ARCHIVADO
+}
+
+enum EstadoVersionRecurso {
+  VIGENTE
+  REEMPLAZADA
+}
+
+enum AccionHistorialForo {
+  FORO_CREADO
+  FORO_ACTUALIZADO
+  FORO_ABIERTO
+  FORO_CERRADO
+  FORO_REABIERTO
+  FORO_ANULADO
+  RESPUESTA_CREADA
+  RESPUESTA_EDITADA
+  BORRADOR_GUARDADO
+  BORRADOR_PUBLICADO
+  RESPUESTA_BLOQUEADA
+  RESPUESTA_OCULTADA
+  RESPUESTA_ANULADA
+  COMENTARIO_CREADO
+  COMENTARIO_EDITADO
+  COMENTARIO_OCULTADO
+  COMENTARIO_ANULADO
+  EQUIPO_CREADO
+  EQUIPO_APROBADO
+  EQUIPO_RECHAZADO
+  EQUIPO_BLOQUEADO
+  INTEGRANTE_AGREGADO
+  INTEGRANTE_RETIRADO
+  REPRESENTANTE_ASIGNADO
+  CALIFICACION_GUARDADA
+  NOTAS_PUBLICADAS
+  PLAZO_EXTENDIDO
+}
+
+enum AccionHistorialCalificacion {
+  ACTIVIDAD_CREADA
+  ACTIVIDAD_ACTUALIZADA
+  CALIFICACION_CREADA
+  CALIFICACION_ACTUALIZADA
+  AJUSTE_APLICADO
+  DESCUENTO_APLICADO
+  RETROALIMENTACION_ACTUALIZADA
+  CALIFICACION_PUBLICADA
+  CALIFICACIONES_PUBLICADAS
+  CALIFICACION_ANULADA
+}
+
+model Usuario {
+  id Int @id @default(autoincrement())
+
+  nombres         String
+  apellidoPaterno String
+  apellidoMaterno String?
+
+  correo       String  @unique
+  passwordHash String?
+
+  fotoPerfilUrl String?
+
+  rol            Rol
+  estaActivo     Boolean @default(true)
+  cuentaActivada Boolean @default(false)
+
+  tokenActivacionHash   String?
+  tokenActivacionExpira DateTime?
+  accesoEnviadoEn       DateTime?
+
+  passwordCambiadaEn DateTime?
+  ultimoAccesoEn     DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  cursosComoDocente Curso[] @relation("CursosDocente")
+
+  inscripcionesComoEstudiante InscripcionCurso[] @relation("InscripcionesEstudiante")
+
+  publicacionesComoAutor PublicacionCurso[] @relation("PublicacionesAutor")
+
+  comentariosComoAutor ComentarioPublicacion[] @relation("ComentariosAutor")
+
+  lecturasPublicaciones LecturaPublicacion[] @relation("LecturasUsuario")
+
+  lecturasTemasForo LecturaTemaForo[] @relation("LecturasTemasForoUsuario")
+
+  temasForoComoAutor TemaForoCurso[] @relation("TemasForoAutor")
+
+  tareasComoAutor TareaCurso[] @relation("TareasAutor")
+
+  recursosCursoComoAutor RecursoCurso[] @relation("RecursosCursoAutor")
+
+  entregasTareaComoAutor    EntregaTarea[] @relation("EntregasTareaAutor")
+  entregasTareaIndividuales EntregaTarea[] @relation("EntregasTareaEstudiante")
+
+  equiposAfinidadTareaComoCreador EquipoAfinidadTarea[]   @relation("EquiposAfinidadTareaCreador")
+  integrantesEquiposTarea         IntegranteEquipoTarea[] @relation("IntegrantesEquipoTareaEstudiante")
+
+  respuestasForoComoAutor RespuestaForoCurso[] @relation("RespuestasForoAutor")
+
+  comentariosRespuestasForoComoAutor ComentarioRespuestaForo[] @relation("ComentariosRespuestasForoAutor")
+
+  equiposForoComoCreador EquipoAfinidadForo[] @relation("EquiposForoCreador")
+
+  integrantesEquiposForo IntegranteEquipoForo[] @relation("IntegrantesEquipoForoEstudiante")
+
+  archivosSubidos ArchivoAdjunto[] @relation("ArchivosSubidosPor")
+
+  actividadesCalificablesCreadas ActividadCalificable[] @relation("ActividadesCalificablesCreador")
+
+  calificacionesComoEstudiante CalificacionEstudiante[] @relation("CalificacionesEstudiante")
+
+  calificacionesRegistradas CalificacionEstudiante[] @relation("CalificacionesCalificador")
+
+  rubricasCreadas RubricaEvaluacion[] @relation("RubricasCreador")
+
+  historialesForoComoActor HistorialForoCurso[] @relation("HistorialForoActor")
+
+  historialesCalificacionComoActor HistorialCalificacion[] @relation("HistorialCalificacionActor")
+
+  integrantesGrupos IntegranteGrupoCurso[] @relation("IntegrantesGrupoEstudiante")
+
+  historialesGrupoComoActor HistorialGrupoCurso[] @relation("HistorialGrupoActor")
+
+  historialesGrupoComoEstudiante HistorialGrupoCurso[] @relation("HistorialGrupoEstudiante")
+
+  reportesGenerados ReporteEmitido[] @relation("ReportesGenerados")
+
+  reportesAnulados ReporteEmitido[] @relation("ReportesAnulados")
+
+  @@index([rol])
+  @@index([estaActivo])
+  @@index([cuentaActivada])
+  @@index([ultimoAccesoEn])
+}
+
+model Materia {
+  id Int @id @default(autoincrement())
+
+  nombre      String
+  codigo      String  @unique
+  semestre    Int
+  descripcion String?
+
+  estado EstadoMateria @default(ACTIVA)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  cursos Curso[]
+
+  @@index([estado])
+  @@index([semestre])
+}
+
+model PlanificacionAcademica {
+  id Int @id @default(autoincrement())
+
+  gestion String @unique
+
+  descripcion String?
+
+  estaActiva Boolean @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  hitos HitoAcademico[]
+
+  cursos Curso[]
+
+  @@index([gestion])
+  @@index([estaActiva])
+}
+
+model HitoAcademico {
+  id Int @id @default(autoincrement())
+
+  planificacionId Int
+
+  numero Int
+  codigo String
+  nombre String
+
+  descripcion String?
+
+  fechaInicio DateTime
+  fechaFin    DateTime
+
+  puntajeTotal     Int @default(0)
+  puntajeContinua  Int @default(0)
+  puntajeProcesual Int @default(0)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  planificacion PlanificacionAcademica @relation(fields: [planificacionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  publicaciones PublicacionCurso[]
+
+  temasForo TemaForoCurso[]
+
+  tareas TareaCurso[]
+
+  recursos RecursoCurso[]
+
+  entregasTarea        EntregaTarea[]
+  equiposAfinidadTarea EquipoAfinidadTarea[]
+
+  conjuntosGrupos ConjuntoGrupoCurso[]
+
+  actividadesCalificables ActividadCalificable[]
+
+  @@unique([planificacionId, numero])
+  @@unique([planificacionId, codigo])
+  @@index([planificacionId])
+  @@index([numero])
+  @@index([codigo])
+  @@index([fechaInicio])
+  @@index([fechaFin])
+  @@index([planificacionId, numero])
+}
+
+model Curso {
+  id Int @id @default(autoincrement())
+
+  materiaId Int
+  docenteId Int
+
+  planificacionId Int?
+
+  gestion    String
+  paralelo   String
+  semestre   Int
+  cupoMaximo Int?
+
+  codigoInscripcion       String?   @unique
+  codigoInscripcionActivo Boolean   @default(false)
+  codigoGeneradoEn        DateTime?
+  codigoExpiraEn          DateTime?
+
+  estado       EstadoCurso @default(ACTIVO)
+  finalizadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  materia Materia @relation(fields: [materiaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  docente Usuario @relation("CursosDocente", fields: [docenteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  planificacion PlanificacionAcademica? @relation(fields: [planificacionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  inscripciones InscripcionCurso[]
+
+  publicaciones PublicacionCurso[]
+
+  temasForo TemaForoCurso[]
+
+  tareas TareaCurso[]
+
+  recursos RecursoCurso[]
+
+  conjuntosGrupos ConjuntoGrupoCurso[]
+
+  actividadesCalificables ActividadCalificable[]
+
+  equiposAfinidadForo EquipoAfinidadForo[]
+
+  archivosAdjuntos     ArchivoAdjunto[]
+  equipoAfinidadTareas EquipoAfinidadTarea[]
+
+  @@unique([materiaId, gestion, paralelo])
+  @@index([materiaId])
+  @@index([docenteId])
+  @@index([planificacionId])
+  @@index([gestion])
+  @@index([semestre])
+  @@index([estado])
+  @@index([finalizadoEn])
+}
+
+model InscripcionCurso {
+  id Int @id @default(autoincrement())
+
+  cursoId      Int
+  estudianteId Int
+
+  estado EstadoInscripcion @default(ACTIVA)
+
+  inscritoEn DateTime  @default(now())
+  retiradoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  curso Curso @relation(fields: [cursoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  estudiante Usuario @relation("InscripcionesEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([cursoId, estudianteId])
+  @@index([cursoId])
+  @@index([estudianteId])
+  @@index([estado])
+}
+
+model PublicacionCurso {
+  id Int @id @default(autoincrement())
+
+  cursoId Int
+  autorId Int
+  hitoId  Int?
+
+  tipo      TipoPublicacionCurso @default(AVISO_GENERAL)
+  prioridad PrioridadPublicacion @default(INFORMATIVA)
+
+  titulo    String
+  contenido String
+
+  referencia String?
+  lugar      String?
+  enlace     String?
+
+  fechaEventoInicio DateTime?
+  fechaEventoFin    DateTime?
+
+  estaFijada Boolean @default(false)
+  estaActiva Boolean @default(true)
+
+  comentariosHabilitados Boolean @default(false)
+
+  visibleParaEstudiantes Boolean @default(true)
+
+  notificarAlPublicar  Boolean @default(true)
+  recordarUnDiaAntes   Boolean @default(false)
+  recordarUnaHoraAntes Boolean @default(false)
+  agregarAlCalendario  Boolean @default(false)
+
+  publicadoEn DateTime  @default(now())
+  editadoEn   DateTime?
+  eliminadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  curso Curso @relation(fields: [cursoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  autor Usuario @relation("PublicacionesAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  hito HitoAcademico? @relation(fields: [hitoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  comentarios ComentarioPublicacion[]
+
+  lecturas LecturaPublicacion[]
+
+  @@index([cursoId])
+  @@index([autorId])
+  @@index([hitoId])
+  @@index([tipo])
+  @@index([prioridad])
+  @@index([estaFijada])
+  @@index([estaActiva])
+  @@index([visibleParaEstudiantes])
+  @@index([fechaEventoInicio])
+  @@index([fechaEventoFin])
+  @@index([publicadoEn])
+  @@index([cursoId, estaActiva, estaFijada])
+  @@index([cursoId, hitoId, estaActiva])
+  @@index([cursoId, hitoId, visibleParaEstudiantes, estaActiva])
+  @@index([cursoId, hitoId, fechaEventoInicio])
+  @@index([cursoId, hitoId, prioridad, estaActiva])
+  @@index([cursoId, hitoId, tipo, estaActiva])
+}
+
+model ComentarioPublicacion {
+  id Int @id @default(autoincrement())
+
+  publicacionId Int
+  autorId       Int
+
+  contenido String
+
+  estaActivo Boolean @default(true)
+
+  publicadoEn DateTime  @default(now())
+  editadoEn   DateTime?
+  eliminadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  publicacion PublicacionCurso @relation(fields: [publicacionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  autor Usuario @relation("ComentariosAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([publicacionId])
+  @@index([autorId])
+  @@index([estaActivo])
+  @@index([publicadoEn])
+  @@index([publicacionId, estaActivo, publicadoEn])
+}
+
+model LecturaPublicacion {
+  id Int @id @default(autoincrement())
+
+  publicacionId Int
+  usuarioId     Int
+
+  leidoEn DateTime @default(now())
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  publicacion PublicacionCurso @relation(fields: [publicacionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  usuario Usuario @relation("LecturasUsuario", fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([publicacionId, usuarioId])
+  @@index([publicacionId])
+  @@index([usuarioId])
+  @@index([leidoEn])
+}
+
+model TemaForoCurso {
+  id Int @id @default(autoincrement())
+
+  cursoId Int
+  autorId Int
+  hitoId  Int?
+
+  conjuntoGrupoId Int?
+
+  titulo    String
+  contenido String
+
+  instrucciones String?
+  objetivo      String?
+
+  esCalificable Boolean @default(false)
+
+  modalidadParticipacion ModalidadParticipacionForo @default(INDIVIDUAL)
+  origenGrupo            OrigenGrupoForo            @default(NINGUNO)
+  dinamicaGrupal         DinamicaGrupalForo         @default(NINGUNA)
+
+  cantidadMinimaIntegrantes Int?
+  cantidadMaximaIntegrantes Int?
+
+  requiereAprobacionEquipos Boolean @default(false)
+  requiereRepresentante     Boolean @default(false)
+  bloquearEquipoAlResponder Boolean @default(true)
+
+  permitirComentarios         Boolean @default(true)
+  permitirEditarRespuestas    Boolean @default(true)
+  permitirEliminarRespuestas  Boolean @default(false)
+  permitirEditarComentarios   Boolean @default(true)
+  permitirEliminarComentarios Boolean @default(false)
+
+  minimoComentariosPorEstudiante Int  @default(0)
+  maximoComentariosPorEstudiante Int?
+
+  /**
+   * Penalización individual por incumplir los comentarios mínimos.
+   * No se aplica al representante del equipo.
+   * REPRESENTANTE_UNICO:
+   * no utiliza esta penalización.
+   * PARTICIPACION_DISTRIBUIDA:
+   * evalúa los comentarios del integrante en la respuesta de su propio equipo.
+   * COLABORACION_ABIERTA:
+   * evalúa los comentarios del integrante en respuestas de otros equipos.
+   */
+  penalizarIncumplimientoComentarios Boolean @default(false)
+
+  tipoPenalizacionComentarios TipoPenalizacionComentarios @default(NINGUNA)
+
+  valorPenalizacionComentarios Decimal? @db.Decimal(6, 2)
+
+  palabrasMinimasRespuesta  Int?
+  palabrasMaximasRespuesta  Int?
+  palabrasMinimasComentario Int?
+  palabrasMaximasComentario Int?
+
+  tipoEvaluacion TipoEvaluacionForo @default(MANUAL)
+  modalidadNota  ModalidadNotaForo  @default(INDIVIDUAL)
+
+  puntajeMaximo Decimal @default(100) @db.Decimal(6, 2)
+
+  porcentajeNotaGrupal     Decimal? @db.Decimal(5, 2)
+  porcentajeNotaIndividual Decimal? @db.Decimal(5, 2)
+
+  calificacionAutomaticaAlCumplir Boolean @default(false)
+
+  fechaApertura DateTime?
+  fechaLimite   DateTime?
+  fechaCierre   DateTime?
+
+  /**
+   * Define si el estudiante puede ver el foro antes de fechaApertura.
+   * true  = lo ve desde su publicación, pero no puede participar.
+   * false = permanece oculto hasta la fecha de apertura.
+   */
+  visibleAntesDeApertura Boolean @default(true)
+
+  /**
+   * Compatibilidad temporal con la versión anterior del Foro.
+   * Más adelante puede eliminarse cuando todo el backend use fechaLimite.
+   */
+  fechaVencimiento DateTime?
+
+  permitirRetrasos Boolean @default(false)
+
+  fechaMaximaRetraso DateTime?
+
+  tipoDescuentoRetraso  TipoDescuentoRetraso @default(NINGUNO)
+  valorDescuentoRetraso Decimal?             @db.Decimal(6, 2)
+
+  visibilidadRespuestas VisibilidadRespuestasForo @default(DESDE_EL_INICIO)
+
+  permitirAdjuntosTema       Boolean @default(true)
+  permitirAdjuntosRespuesta  Boolean @default(false)
+  permitirAdjuntosComentario Boolean @default(false)
+  exigirAdjuntoRespuesta     Boolean @default(false)
+  permitirDescargaAdjuntos   Boolean @default(true)
+
+  maximoArchivosTema       Int @default(5)
+  maximoArchivosRespuesta  Int @default(3)
+  maximoArchivosComentario Int @default(1)
+
+  tamanioMaximoArchivoMb Int @default(10)
+
+  extensionesPermitidas String[] @default(["pdf", "doc", "docx", "jpg", "jpeg", "png", "webp"])
+
+  estado EstadoForo @default(BORRADOR)
+
+  estaFijado  Boolean @default(false)
+  estaCerrado Boolean @default(false)
+  estaActivo  Boolean @default(true)
+
+  notasPublicadasEn DateTime?
+
+  publicadoEn DateTime  @default(now())
+  editadoEn   DateTime?
+  eliminadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  curso Curso @relation(fields: [cursoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  autor Usuario @relation("TemasForoAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  hito HitoAcademico? @relation(fields: [hitoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  conjuntoGrupo ConjuntoGrupoCurso? @relation(fields: [conjuntoGrupoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  respuestas RespuestaForoCurso[]
+
+  equiposAfinidad EquipoAfinidadForo[]
+
+  archivos ArchivoAdjunto[]
+
+  actividadCalificable ActividadCalificable?
+
+  historial HistorialForoCurso[]
+
+  lecturas LecturaTemaForo[]
+
+  @@index([cursoId])
+  @@index([autorId])
+  @@index([hitoId])
+  @@index([conjuntoGrupoId])
+  @@index([estado])
+  @@index([modalidadParticipacion])
+  @@index([origenGrupo])
+  @@index([tipoEvaluacion])
+  @@index([estaFijado])
+  @@index([estaCerrado])
+  @@index([estaActivo])
+  @@index([fechaApertura])
+  @@index([visibleAntesDeApertura])
+  @@index([fechaLimite])
+  @@index([fechaCierre])
+  @@index([publicadoEn])
+  @@index([cursoId, estado, estaActivo])
+  @@index([cursoId, hitoId, estado, estaActivo])
+  @@index([cursoId, estaActivo, estaFijado])
+}
+
+model LecturaTemaForo {
+  id Int @id @default(autoincrement())
+
+  temaId    Int
+  usuarioId Int
+
+  primeraLecturaEn DateTime @default(now())
+  ultimaLecturaEn  DateTime @default(now())
+  cantidadVisitas  Int      @default(1)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  tema TemaForoCurso @relation(fields: [temaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  usuario Usuario @relation("LecturasTemasForoUsuario", fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([temaId, usuarioId])
+  @@index([temaId])
+  @@index([usuarioId])
+  @@index([ultimaLecturaEn])
+  @@index([temaId, ultimaLecturaEn])
+}
+
+model RespuestaForoCurso {
+  id Int @id @default(autoincrement())
+
+  temaId  Int
+  autorId Int
+
+  grupoCursoId     Int?
+  equipoAfinidadId Int?
+
+  titulo    String
+  contenido String
+
+  estado EstadoRespuestaForo @default(BORRADOR)
+
+  esRespuestaGrupal Boolean @default(false)
+
+  entregadaTarde Boolean @default(false)
+  minutosRetraso Int     @default(0)
+
+  descuentoCalculado Decimal @default(0) @db.Decimal(6, 2)
+
+  estaActiva Boolean @default(true)
+
+  bloqueadaEn DateTime?
+
+  publicadoEn DateTime?
+  editadoEn   DateTime?
+  eliminadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  tema TemaForoCurso @relation(fields: [temaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  autor Usuario @relation("RespuestasForoAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  grupoCurso GrupoCurso? @relation(fields: [grupoCursoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  equipoAfinidad EquipoAfinidadForo? @relation(fields: [equipoAfinidadId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  comentarios ComentarioRespuestaForo[]
+
+  archivos ArchivoAdjunto[]
+
+  calificaciones CalificacionEstudiante[]
+
+  historial HistorialForoCurso[]
+
+  @@index([temaId])
+  @@index([autorId])
+  @@index([grupoCursoId])
+  @@index([equipoAfinidadId])
+  @@index([estado])
+  @@index([estaActiva])
+  @@index([entregadaTarde])
+  @@index([publicadoEn])
+  @@index([temaId, estado, estaActiva])
+  @@index([temaId, grupoCursoId])
+  @@index([temaId, equipoAfinidadId])
+}
+
+model ComentarioRespuestaForo {
+  id Int @id @default(autoincrement())
+
+  respuestaId Int
+  autorId     Int
+
+  comentarioPadreId Int?
+
+  contenido String
+
+  estaActivo    Boolean @default(true)
+  estaOculto    Boolean @default(false)
+  estaBloqueado Boolean @default(false)
+
+  publicadoEn DateTime  @default(now())
+  editadoEn   DateTime?
+  eliminadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  respuesta RespuestaForoCurso @relation(fields: [respuestaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  autor Usuario @relation("ComentariosRespuestasForoAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  comentarioPadre ComentarioRespuestaForo? @relation("ComentariosForoAnidados", fields: [comentarioPadreId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  respuestas ComentarioRespuestaForo[] @relation("ComentariosForoAnidados")
+
+  archivos ArchivoAdjunto[]
+
+  historial HistorialForoCurso[]
+
+  @@index([respuestaId])
+  @@index([autorId])
+  @@index([comentarioPadreId])
+  @@index([estaActivo])
+  @@index([estaOculto])
+  @@index([publicadoEn])
+  @@index([respuestaId, estaActivo, publicadoEn])
+}
+
+model EquipoAfinidadForo {
+  id Int @id @default(autoincrement())
+
+  temaId    Int
+  cursoId   Int
+  creadorId Int
+
+  nombre      String
+  descripcion String?
+
+  estado EstadoEquipoForo @default(PENDIENTE)
+
+  estaActivo Boolean @default(true)
+
+  aprobadoEn  DateTime?
+  bloqueadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  tema TemaForoCurso @relation(fields: [temaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  curso Curso @relation(fields: [cursoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  creador Usuario @relation("EquiposForoCreador", fields: [creadorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  integrantes IntegranteEquipoForo[]
+
+  respuestas RespuestaForoCurso[]
+
+  calificaciones CalificacionEstudiante[]
+
+  historial HistorialForoCurso[]
+
+  @@unique([temaId, nombre])
+  @@index([temaId])
+  @@index([cursoId])
+  @@index([creadorId])
+  @@index([estado])
+  @@index([estaActivo])
+  @@index([temaId, estado, estaActivo])
+}
+
+model IntegranteEquipoForo {
+  id Int @id @default(autoincrement())
+
+  equipoId     Int
+  estudianteId Int
+
+  esRepresentante Boolean @default(false)
+  estaActivo      Boolean @default(true)
+
+  agregadoEn DateTime  @default(now())
+  retiradoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  equipo EquipoAfinidadForo @relation(fields: [equipoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  estudiante Usuario @relation("IntegrantesEquipoForoEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([equipoId, estudianteId])
+  @@index([equipoId])
+  @@index([estudianteId])
+  @@index([esRepresentante])
+  @@index([estaActivo])
+}
+
+model ConjuntoGrupoCurso {
+  id Int @id @default(autoincrement())
+
+  cursoId Int
+  hitoId  Int?
+
+  nombre      String
+  descripcion String?
+
+  alcance AlcanceConjuntoGrupo
+
+  tipoEvaluacion TipoEvaluacionGrupo
+
+  metodoCreacion MetodoCreacionGrupo
+
+  criterioDistribucion CriterioDistribucionGrupo?
+
+  cantidadGruposObjetivo Int?
+
+  integrantesPorGrupoObjetivo Int?
+
+  requiereRepresentante Boolean @default(false)
+
+  estaBloqueado Boolean @default(false)
+
+  estaActivo Boolean @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  curso Curso @relation(fields: [cursoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  hito HitoAcademico? @relation(fields: [hitoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  grupos GrupoCurso[]
+
+  integrantes IntegranteGrupoCurso[]
+
+  historial HistorialGrupoCurso[]
+
+  temasForo TemaForoCurso[]
+
+  tareas TareaCurso[]
+
+  @@index([cursoId])
+  @@index([hitoId])
+  @@index([alcance])
+  @@index([tipoEvaluacion])
+  @@index([metodoCreacion])
+  @@index([estaBloqueado])
+  @@index([estaActivo])
+  @@index([cursoId, alcance, estaActivo])
+  @@index([cursoId, tipoEvaluacion, estaActivo])
+  @@index([cursoId, hitoId, estaActivo])
+}
+
+model GrupoCurso {
+  id Int @id @default(autoincrement())
+
+  conjuntoId Int
+
+  nombre String
+
+  descripcion String?
+
+  color String?
+
+  orden Int @default(0)
+
+  estaActivo Boolean @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  conjunto ConjuntoGrupoCurso @relation(fields: [conjuntoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  integrantes IntegranteGrupoCurso[]
+
+  historial HistorialGrupoCurso[]
+
+  respuestasForo RespuestaForoCurso[]
+
+  calificacionesForo CalificacionEstudiante[]
+
+  entregasTarea EntregaTarea[]
+
+  @@unique([conjuntoId, nombre])
+  @@index([conjuntoId])
+  @@index([orden])
+  @@index([estaActivo])
+  @@index([conjuntoId, estaActivo, orden])
+}
+
+model IntegranteGrupoCurso {
+  id Int @id @default(autoincrement())
+
+  conjuntoId Int
+  grupoId    Int
+
+  estudianteId Int
+
+  esRepresentante Boolean @default(false)
+
+  estaActivo Boolean @default(true)
+
+  agregadoEn DateTime @default(now())
+
+  retiradoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  conjunto ConjuntoGrupoCurso @relation(fields: [conjuntoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  grupo GrupoCurso @relation(fields: [grupoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  estudiante Usuario @relation("IntegrantesGrupoEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([conjuntoId, estudianteId])
+  @@unique([grupoId, estudianteId])
+  @@index([conjuntoId])
+  @@index([grupoId])
+  @@index([estudianteId])
+  @@index([esRepresentante])
+  @@index([estaActivo])
+  @@index([grupoId, estaActivo])
+}
+
+model HistorialGrupoCurso {
+  id Int @id @default(autoincrement())
+
+  conjuntoId Int
+
+  grupoId Int?
+
+  actorId Int
+
+  estudianteId Int?
+
+  accion AccionHistorialGrupo
+
+  detalle Json?
+
+  registradoEn DateTime @default(now())
+
+  conjunto ConjuntoGrupoCurso @relation(fields: [conjuntoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  grupo GrupoCurso? @relation(fields: [grupoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  actor Usuario @relation("HistorialGrupoActor", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  estudiante Usuario? @relation("HistorialGrupoEstudiante", fields: [estudianteId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([conjuntoId])
+  @@index([grupoId])
+  @@index([actorId])
+  @@index([estudianteId])
+  @@index([accion])
+  @@index([registradoEn])
+  @@index([conjuntoId, registradoEn])
+}
+
+model ActividadCalificable {
+  id Int @id @default(autoincrement())
+
+  cursoId   Int
+  hitoId    Int?
+  creadorId Int
+
+  foroId  Int? @unique
+  tareaId Int? @unique
+
+  origen TipoOrigenActividad
+
+  /**
+   * Toda actividad pertenece a Continua o Procesual.
+   * Para Foro será obligatorio elegir el hito y el componente.
+   */
+  componente ComponenteEvaluacion
+
+  titulo      String
+  descripcion String?
+
+  /**
+   * Las actividades se califican sobre 100.
+   * Se mantiene como campo para permitir validación y trazabilidad,
+   * aunque la primera versión utilizará siempre 100.
+   */
+  puntajeMaximo Decimal @default(100) @db.Decimal(6, 2)
+
+  /**
+   * Por defecto todas las actividades válidas entran con el mismo
+   * peso en el promedio del componente.
+   * Si una actividad se anula o es solamente práctica, puede
+   * excluirse sin eliminar sus calificaciones.
+   */
+  participaEnPromedio Boolean @default(true)
+
+  /**
+   * Permite ordenar las actividades en el libro de calificaciones.
+   * No representa una ponderación.
+   */
+  orden Int @default(0)
+
+  estado EstadoActividadCalificable @default(BORRADOR)
+
+  visibleParaEstudiantes Boolean @default(false)
+
+  publicadaEn DateTime?
+  cerradaEn   DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  curso Curso @relation(fields: [cursoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  hito HitoAcademico? @relation(fields: [hitoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  creador Usuario @relation("ActividadesCalificablesCreador", fields: [creadorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  foro TemaForoCurso? @relation(fields: [foroId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  tarea TareaCurso? @relation(fields: [tareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  rubrica RubricaEvaluacion?
+
+  calificaciones CalificacionEstudiante[]
+
+  historial HistorialCalificacion[]
+
+  @@index([cursoId])
+  @@index([hitoId])
+  @@index([creadorId])
+  @@index([origen])
+  @@index([tareaId])
+  @@index([componente])
+  @@index([estado])
+  @@index([participaEnPromedio])
+  @@index([visibleParaEstudiantes])
+  @@index([orden])
+  @@index([cursoId, estado])
+  @@index([cursoId, hitoId, componente])
+  @@index([cursoId, hitoId, componente, participaEnPromedio])
+}
+
+model RubricaEvaluacion {
+  id Int @id @default(autoincrement())
+
+  actividadId Int @unique
+  creadorId   Int
+
+  nombre      String
+  descripcion String?
+
+  puntajeTotal Decimal @default(100) @db.Decimal(6, 2)
+
+  estaActiva Boolean @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  actividad ActividadCalificable @relation(fields: [actividadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  creador Usuario @relation("RubricasCreador", fields: [creadorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  criterios CriterioRubrica[]
+
+  @@index([actividadId])
+  @@index([creadorId])
+  @@index([estaActiva])
+}
+
+model CriterioRubrica {
+  id Int @id @default(autoincrement())
+
+  rubricaId Int
+
+  nombre      String
+  descripcion String?
+
+  puntajeMaximo Decimal @db.Decimal(6, 2)
+
+  orden Int @default(0)
+
+  estaActivo Boolean @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  rubrica RubricaEvaluacion @relation(fields: [rubricaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  evaluaciones EvaluacionCriterioRubrica[]
+
+  @@unique([rubricaId, nombre])
+  @@index([rubricaId])
+  @@index([orden])
+  @@index([estaActivo])
+}
+
+model CalificacionEstudiante {
+  id Int @id @default(autoincrement())
+
+  actividadId  Int
+  estudianteId Int
+
+  calificadorId Int?
+
+  respuestaForoId  Int?
+  grupoCursoId     Int?
+  equipoAfinidadId Int?
+  entregaTareaId   Int?
+
+  /**
+   * Todas estas notas permanecen internamente sobre 100.
+   * notaBase:
+   * Nota académica antes de descuentos o ajustes.
+   * descuentoRetraso:
+   * Descuento calculado por entrega tardía sobre la escala de 100.
+   * descuentoComentarios:
+   * Penalización individual por incumplir comentarios mínimos.
+   * No se aplica al representante.
+   * ajusteIndividual:
+   * Ajuste positivo o negativo sobre la escala de 100.
+   * notaFinal:
+   * Resultado definitivo de esta actividad sobre 100.
+   * La conversión institucional a /15 o /10 NO se guarda aquí:
+   * se calcula desde el promedio de todas las actividades válidas
+   * del mismo hito y componente.
+   */
+  notaBase         Decimal @default(0) @db.Decimal(6, 2)
+  descuentoRetraso Decimal @default(0) @db.Decimal(6, 2)
+
+  /**
+   * Descuento individual por incumplir la participación mediante comentarios.
+   * El representante del equipo siempre debe conservar 0 en este campo.
+   */
+  descuentoComentarios Decimal @default(0) @db.Decimal(6, 2)
+
+  ajusteIndividual Decimal @default(0) @db.Decimal(6, 2)
+  notaFinal        Decimal @default(0) @db.Decimal(6, 2)
+
+  retroalimentacion String?
+
+  estado EstadoCalificacion @default(PENDIENTE)
+
+  calificadaEn DateTime?
+  publicadaEn  DateTime?
+  anuladaEn    DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  actividad ActividadCalificable @relation(fields: [actividadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  estudiante Usuario @relation("CalificacionesEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  calificador Usuario? @relation("CalificacionesCalificador", fields: [calificadorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  respuestaForo RespuestaForoCurso? @relation(fields: [respuestaForoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  grupoCurso GrupoCurso? @relation(fields: [grupoCursoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  equipoAfinidad EquipoAfinidadForo? @relation(fields: [equipoAfinidadId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  entregaTarea EntregaTarea? @relation(fields: [entregaTareaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  evaluacionesCriterios EvaluacionCriterioRubrica[]
+
+  historial HistorialCalificacion[]
+
+  @@unique([actividadId, estudianteId])
+  @@index([actividadId])
+  @@index([estudianteId])
+  @@index([calificadorId])
+  @@index([respuestaForoId])
+  @@index([grupoCursoId])
+  @@index([equipoAfinidadId])
+  @@index([estado])
+  @@index([actividadId, estado])
+}
+
+model EvaluacionCriterioRubrica {
+  id Int @id @default(autoincrement())
+
+  calificacionId Int
+  criterioId     Int
+
+  puntajeObtenido Decimal @default(0) @db.Decimal(6, 2)
+
+  observacion String?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  calificacion CalificacionEstudiante @relation(fields: [calificacionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  criterio CriterioRubrica @relation(fields: [criterioId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([calificacionId, criterioId])
+  @@index([calificacionId])
+  @@index([criterioId])
+}
+
+model TareaCurso {
+  id Int @id @default(autoincrement())
+
+  cursoId Int
+  autorId Int
+  hitoId  Int
+
+  conjuntoGrupoId Int?
+
+  titulo        String
+  descripcion   String?
+  instrucciones String?
+
+  /**
+   * Experiencia principal y capacidades derivadas/configurables.
+   */
+  tipo        TipoTarea        @default(ENTREGA_ARCHIVOS)
+  capacidades CapacidadTarea[] @default([ARCHIVOS])
+  modoEdicion ModoEdicionTarea @default(SIN_EDITOR)
+
+  /**
+   * Configuración específica de la experiencia que no debe convertir
+   * TareaCurso en un modelo gigante. Ejemplos futuros: mínimo/máximo
+   * de palabras, estructura jurídica, duración de exposición, etc.
+   */
+  configuracionTipo Json?
+
+  esCalificable Boolean @default(true)
+
+  componente ComponenteEvaluacion?
+
+  puntajeMaximo Decimal @default(100) @db.Decimal(6, 2)
+
+  modalidad   ModalidadTarea   @default(INDIVIDUAL)
+  origenGrupo OrigenGrupoTarea @default(NINGUNO)
+
+  modalidadNota ModalidadNotaTarea @default(INDIVIDUAL)
+
+  porcentajeNotaGrupal     Decimal? @db.Decimal(5, 2)
+  porcentajeNotaIndividual Decimal? @db.Decimal(5, 2)
+
+  requiereRepresentante Boolean @default(false)
+
+  fechaApertura DateTime
+  fechaLimite   DateTime
+  fechaCierre   DateTime
+
+  visibleAntesDeApertura Boolean @default(true)
+
+  permitirRetrasos   Boolean   @default(false)
+  fechaMaximaRetraso DateTime?
+
+  tipoDescuentoRetraso  TipoDescuentoRetraso @default(NINGUNO)
+  valorDescuentoRetraso Decimal?             @db.Decimal(6, 2)
+
+  /**
+   * Configuración general del editor interno cuando la capacidad EDITOR_TEXTO está activa.
+   */
+  exigirContenidoEditor Boolean @default(false)
+
+  /**
+   * Configuración de adjuntos cuando la capacidad ARCHIVOS está activa.
+   */
+  exigirArchivo Boolean @default(false)
+
+  maximoArchivos         Int @default(3)
+  tamanioMaximoArchivoMb Int @default(10)
+
+  extensionesPermitidas String[] @default(["pdf", "doc", "docx", "jpg", "jpeg", "png", "webp"])
+
+  permitirEditarEntrega Boolean @default(true)
+
+  estado EstadoTarea @default(BORRADOR)
+
+  estaCerrada Boolean @default(false)
+  estaActiva  Boolean @default(true)
+
+  publicadoEn DateTime?
+  cerradoEn   DateTime?
+  eliminadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  curso Curso @relation(fields: [cursoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  autor Usuario @relation("TareasAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  hito HitoAcademico @relation(fields: [hitoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  conjuntoGrupo ConjuntoGrupoCurso? @relation(fields: [conjuntoGrupoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  actividadCalificable ActividadCalificable?
+
+  componentes ComponenteTarea[]
+
+  archivos ArchivoAdjunto[]
+
+  entregas        EntregaTarea[]
+  equiposAfinidad EquipoAfinidadTarea[]
+
+  @@index([cursoId])
+  @@index([autorId])
+  @@index([hitoId])
+  @@index([conjuntoGrupoId])
+  @@index([estado])
+  @@index([tipo])
+  @@index([modoEdicion])
+  @@index([modalidad])
+  @@index([origenGrupo])
+  @@index([esCalificable])
+  @@index([fechaApertura])
+  @@index([fechaLimite])
+  @@index([fechaCierre])
+  @@index([estaActiva])
+  @@index([cursoId, hitoId, estado, estaActiva])
+}
+
+model ComponenteTarea {
+  id Int @id @default(autoincrement())
+
+  tareaId Int
+
+  orden Int
+
+  tipo TipoComponenteTarea
+
+  titulo      String
+  descripcion String?
+
+  obligatorio Boolean @default(true)
+
+  /**
+   * Configuración propia del componente, sin ponderación en esta etapa.
+   */
+  configuracion Json?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  tarea TareaCurso @relation(fields: [tareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([tareaId, orden])
+  @@index([tareaId])
+  @@index([tipo])
+  @@index([obligatorio])
+}
+
+model EntregaTarea {
+  id Int @id @default(autoincrement())
+
+  tareaId        Int
+  autorEntregaId Int
+
+  /**
+   * INDIVIDUAL:
+   * estudianteId identifica al propietario de la entrega.
+   * GRUPAL:
+   * estudianteId permanece null y la entrega se identifica mediante
+   * grupoCursoId o equipoAfinidadTareaId.
+   */
+  estudianteId Int?
+
+  grupoCursoId          Int?
+  equipoAfinidadTareaId Int?
+
+  contenido String?
+
+  estado EstadoEntregaTarea @default(BORRADOR)
+
+  esGrupal Boolean @default(false)
+
+  entregadaTarde Boolean @default(false)
+  minutosRetraso Int     @default(0)
+
+  descuentoCalculado Decimal @default(0) @db.Decimal(6, 2)
+
+  enviadaEn   DateTime?
+  editadaEn   DateTime?
+  bloqueadaEn DateTime?
+  anuladaEn   DateTime?
+
+  estaActiva Boolean @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  tarea TareaCurso @relation(fields: [tareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  autorEntrega Usuario @relation("EntregasTareaAutor", fields: [autorEntregaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  estudiante Usuario? @relation("EntregasTareaEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  grupoCurso GrupoCurso? @relation(fields: [grupoCursoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  equipoAfinidadTarea EquipoAfinidadTarea? @relation(fields: [equipoAfinidadTareaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  archivos ArchivoAdjunto[]
+
+  calificaciones  CalificacionEstudiante[]
+  hitoAcademico   HitoAcademico?           @relation(fields: [hitoAcademicoId], references: [id])
+  hitoAcademicoId Int?
+
+  @@unique([tareaId, estudianteId])
+  @@unique([tareaId, grupoCursoId])
+  @@unique([tareaId, equipoAfinidadTareaId])
+  @@index([tareaId])
+  @@index([autorEntregaId])
+  @@index([estudianteId])
+  @@index([grupoCursoId])
+  @@index([equipoAfinidadTareaId])
+  @@index([estado])
+  @@index([entregadaTarde])
+  @@index([estaActiva])
+  @@index([enviadaEn])
+  @@index([tareaId, estado, estaActiva])
+}
+
+model EquipoAfinidadTarea {
+  id Int @id @default(autoincrement())
+
+  tareaId   Int
+  cursoId   Int
+  creadorId Int
+
+  nombre String
+
+  estado EstadoEquipoAfinidadTarea @default(ACTIVO)
+
+  estaActivo Boolean @default(true)
+
+  bloqueadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  tarea TareaCurso @relation(fields: [tareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  curso Curso @relation(fields: [cursoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  creador Usuario @relation("EquiposAfinidadTareaCreador", fields: [creadorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  integrantes IntegranteEquipoTarea[]
+
+  entregas        EntregaTarea[]
+  hitoAcademico   HitoAcademico? @relation(fields: [hitoAcademicoId], references: [id])
+  hitoAcademicoId Int?
+
+  @@unique([tareaId, nombre])
+  @@index([tareaId])
+  @@index([cursoId])
+  @@index([creadorId])
+  @@index([estado])
+  @@index([estaActivo])
+  @@index([tareaId, estado, estaActivo])
+}
+
+model IntegranteEquipoTarea {
+  id Int @id @default(autoincrement())
+
+  equipoId     Int
+  estudianteId Int
+
+  esRepresentante Boolean @default(false)
+
+  estaActivo Boolean @default(true)
+
+  agregadoEn DateTime  @default(now())
+  retiradoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  equipo EquipoAfinidadTarea @relation(fields: [equipoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  estudiante Usuario @relation("IntegrantesEquipoTareaEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([equipoId, estudianteId])
+  @@index([equipoId])
+  @@index([estudianteId])
+  @@index([esRepresentante])
+  @@index([estaActivo])
+  @@index([equipoId, estaActivo])
+}
+
+/**
+ * Recurso académico contenedor.
+ * Un recurso agrupa varios archivos y/o enlaces bajo un mismo tema.
+ */
+model RecursoCurso {
+  id Int @id @default(autoincrement())
+
+  cursoId Int
+  autorId Int
+  hitoId  Int?
+
+  titulo      String
+  descripcion String?
+
+  categoria CategoriaRecursoCurso @default(MATERIAL_COMPLEMENTARIO)
+  alcance   AlcanceRecursoCurso   @default(HITO)
+
+  visibleParaEstudiantes Boolean @default(true)
+
+  estado     EstadoRecursoCurso @default(ACTIVO)
+  estaActivo Boolean            @default(true)
+
+  publicadoEn DateTime?
+  archivadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  curso Curso          @relation(fields: [cursoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  autor Usuario        @relation("RecursosCursoAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  hito  HitoAcademico? @relation(fields: [hitoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  contenidos RecursoContenido[]
+
+  @@index([cursoId])
+  @@index([autorId])
+  @@index([hitoId])
+  @@index([categoria])
+  @@index([alcance])
+  @@index([estado])
+  @@index([estaActivo])
+  @@index([visibleParaEstudiantes])
+  @@index([cursoId, alcance, estado, estaActivo])
+  @@index([cursoId, hitoId, estado, estaActivo])
+  @@index([cursoId, categoria, estado, estaActivo])
+}
+
+/**
+ * Elemento individual dentro de un recurso.
+ * Puede ser un archivo versionado o un enlace externo.
+ */
+model RecursoContenido {
+  id Int @id @default(autoincrement())
+
+  recursoId Int
+
+  tipo TipoContenidoRecurso
+
+  titulo      String
+  descripcion String?
+  urlExterna  String?
+
+  orden Int @default(0)
+
+  /**
+   * Solo aplica a contenidos ARCHIVO cuyo archivo vigente sea PDF.
+   */
+  disponibleParaQuiz Boolean @default(false)
+
+  estaActivo  Boolean   @default(true)
+  eliminadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  recurso RecursoCurso @relation(fields: [recursoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  versiones RecursoContenidoVersion[]
+
+  @@index([recursoId])
+  @@index([tipo])
+  @@index([orden])
+  @@index([disponibleParaQuiz])
+  @@index([estaActivo])
+  @@index([recursoId, estaActivo, orden])
+  @@index([recursoId, disponibleParaQuiz, estaActivo])
+}
+
+/**
+ * Historial de versiones de un contenido tipo ARCHIVO.
+ * Reemplazar un archivo crea una nueva versión sin eliminar la anterior.
+ */
+model RecursoContenidoVersion {
+  id Int @id @default(autoincrement())
+
+  contenidoId Int
+  archivoId   Int @unique
+
+  numeroVersion Int
+  estado        EstadoVersionRecurso @default(VIGENTE)
+
+  motivoActualizacion String?
+  fechaDocumento      DateTime?
+
+  esVigente     Boolean   @default(true)
+  reemplazadaEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  contenido RecursoContenido @relation(fields: [contenidoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  archivo   ArchivoAdjunto   @relation(fields: [archivoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([contenidoId, numeroVersion])
+  @@index([contenidoId])
+  @@index([archivoId])
+  @@index([estado])
+  @@index([esVigente])
+  @@index([creadoEn])
+  @@index([contenidoId, estado, esVigente])
+}
+
+model ArchivoAdjunto {
+  id Int @id @default(autoincrement())
+
+  cursoId     Int?
+  subidoPorId Int
+
+  temaForoId       Int?
+  respuestaForoId  Int?
+  comentarioForoId Int?
+  tareaId          Int?
+  entregaTareaId   Int?
+
+  categoria CategoriaArchivoAdjunto
+
+  nombreOriginal   String
+  nombreAlmacenado String
+  ruta             String
+  urlPublica       String?
+
+  mimeType  String
+  extension String
+
+  tamanioBytes Int
+
+  hashSha256 String?
+
+  esTemporal      Boolean   @default(false)
+  fechaExpiracion DateTime?
+
+  esAnalizadoIA Boolean @default(false)
+  textoExtraido String?
+  miniaturaUrl  String?
+
+  cantidadDescargas Int @default(0)
+  numeroVersion     Int @default(1)
+
+  descripcion String?
+
+  permiteDescarga Boolean @default(true)
+  estaActivo      Boolean @default(true)
+
+  eliminadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  curso Curso? @relation(fields: [cursoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  subidoPor Usuario @relation("ArchivosSubidosPor", fields: [subidoPorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  temaForo TemaForoCurso? @relation(fields: [temaForoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  respuestaForo RespuestaForoCurso? @relation(fields: [respuestaForoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  comentarioForo ComentarioRespuestaForo? @relation(fields: [comentarioForoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  tarea TareaCurso? @relation(fields: [tareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  entregaTarea EntregaTarea? @relation(fields: [entregaTareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  versionContenidoRecurso RecursoContenidoVersion?
+
+  @@index([cursoId])
+  @@index([subidoPorId])
+  @@index([temaForoId])
+  @@index([respuestaForoId])
+  @@index([comentarioForoId])
+  @@index([tareaId])
+  @@index([entregaTareaId])
+  @@index([categoria])
+  @@index([hashSha256])
+  @@index([esTemporal, fechaExpiracion])
+  @@index([esAnalizadoIA])
+  @@index([estaActivo])
+  @@index([creadoEn])
+}
+
+model HistorialForoCurso {
+  id Int @id @default(autoincrement())
+
+  temaId Int
+
+  respuestaId  Int?
+  comentarioId Int?
+  equipoId     Int?
+
+  actorId Int
+
+  accion AccionHistorialForo
+
+  detalle Json?
+
+  registradoEn DateTime @default(now())
+
+  tema TemaForoCurso @relation(fields: [temaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  respuesta RespuestaForoCurso? @relation(fields: [respuestaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  comentario ComentarioRespuestaForo? @relation(fields: [comentarioId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  equipo EquipoAfinidadForo? @relation(fields: [equipoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  actor Usuario @relation("HistorialForoActor", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([temaId])
+  @@index([respuestaId])
+  @@index([comentarioId])
+  @@index([equipoId])
+  @@index([actorId])
+  @@index([accion])
+  @@index([registradoEn])
+  @@index([temaId, registradoEn])
+}
+
+model HistorialCalificacion {
+  id Int @id @default(autoincrement())
+
+  actividadId    Int
+  calificacionId Int?
+
+  actorId Int
+
+  accion AccionHistorialCalificacion
+
+  detalle Json?
+
+  registradoEn DateTime @default(now())
+
+  actividad ActividadCalificable @relation(fields: [actividadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  calificacion CalificacionEstudiante? @relation(fields: [calificacionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  actor Usuario @relation("HistorialCalificacionActor", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([actividadId])
+  @@index([calificacionId])
+  @@index([actorId])
+  @@index([accion])
+  @@index([registradoEn])
+  @@index([actividadId, registradoEn])
+}
+
+model ReporteEmitido {
+  id String @id @default(uuid())
+
+  codigo            String  @unique
+  tipo              String
+  titulo            String
+  formato           String
+  nombreArchivo     String?
+  mimeType          String?
+  cantidadRegistros Int     @default(0)
+  filtros           Json?
+  hashSha256        String?
+
+  estado EstadoReporteEmitido @default(GENERANDO)
+
+  generadoPorId   Int
+  generadoEn      DateTime  @default(now())
+  finalizadoEn    DateTime?
+  expiraEn        DateTime?
+  anuladoEn       DateTime?
+  anuladoPorId    Int?
+  motivoAnulacion String?
+  errorGeneracion String?
+
+  generadoPor Usuario  @relation("ReportesGenerados", fields: [generadoPorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  anuladoPor  Usuario? @relation("ReportesAnulados", fields: [anuladoPorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([codigo])
+  @@index([estado])
+  @@index([generadoPorId])
+  @@index([generadoEn])
+  @@index([tipo, formato])
+}
