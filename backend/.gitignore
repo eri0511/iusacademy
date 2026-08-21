@@ -55,13 +55,7 @@ pids
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
-/generated/prisma
+/src/generated/prisma
 
-
-# Fotos de perfil
-uploads/perfiles/*
-!uploads/perfiles/.gitkeep
-
-# Archivos temporales
-uploads/perfiles/*.tmp
-uploads/perfiles/*.temp
+# Archivos subidos por usuarios (se crean en tiempo de ejecución)
+/uploads
