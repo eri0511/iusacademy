@@ -358,6 +358,23 @@ enum AlcanceRecursoCurso {
   HITO
 }
 
+/**
+ * Define el propósito funcional del recurso dentro de IusAcademy.
+ * AULA:
+ * Material académico utilizado únicamente dentro del aula.
+ * AULA_Y_QUIZZES:
+ * Material académico que puede mostrarse en el aula y cuyos PDF
+ * seleccionados pueden reutilizarse como fuentes para Quizzes.
+ * SOLO_QUIZZES:
+ * Recurso privado del docente utilizado únicamente como fuente
+ * para Quizzes. No debe mostrarse a estudiantes.
+ */
+enum UsoRecursoCurso {
+  AULA
+  AULA_Y_QUIZZES
+  SOLO_QUIZZES
+}
+
 enum EstadoRecursoCurso {
   ACTIVO
   ARCHIVADO
@@ -1851,6 +1868,19 @@ model RecursoCurso {
   categoria CategoriaRecursoCurso @default(MATERIAL_COMPLEMENTARIO)
   alcance   AlcanceRecursoCurso   @default(HITO)
 
+  /**
+   * Define si el recurso se utilizará únicamente en el aula,
+   * en el aula y también como fuente para Quizzes,
+   * o exclusivamente como fuente privada para Quizzes.
+   */
+  uso UsoRecursoCurso @default(AULA)
+
+  /**
+   * Controla si el recurso se muestra actualmente al estudiante.
+   * Para uso = SOLO_QUIZZES, el backend debe mantener este valor en false.
+   * Para AULA y AULA_Y_QUIZZES puede activarse o desactivarse sin
+   * cambiar la finalidad principal del recurso.
+   */
   visibleParaEstudiantes Boolean @default(true)
 
   estado     EstadoRecursoCurso @default(ACTIVO)
@@ -1873,12 +1903,14 @@ model RecursoCurso {
   @@index([hitoId])
   @@index([categoria])
   @@index([alcance])
+  @@index([uso])
   @@index([estado])
   @@index([estaActivo])
   @@index([visibleParaEstudiantes])
   @@index([cursoId, alcance, estado, estaActivo])
   @@index([cursoId, hitoId, estado, estaActivo])
   @@index([cursoId, categoria, estado, estaActivo])
+  @@index([cursoId, uso, estado, estaActivo])
 }
 
 /**

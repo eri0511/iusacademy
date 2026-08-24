@@ -2,6 +2,7 @@ export type AlcanceRecursoCurso = 'CURSO' | 'HITO';
 export type TipoContenidoRecurso = 'ARCHIVO' | 'ENLACE';
 export type EstadoRecursoCurso = 'ACTIVO' | 'ARCHIVADO';
 export type EstadoVersionRecurso = 'VIGENTE' | 'REEMPLAZADA';
+export type UsoRecursoCurso = 'AULA' | 'AULA_Y_QUIZZES' | 'SOLO_QUIZZES';
 
 export type CategoriaRecursoCurso =
   | 'NORMATIVA'
@@ -82,6 +83,7 @@ export type RecursoCurso = {
   descripcion: string | null;
   categoria: CategoriaRecursoCurso;
   alcance: AlcanceRecursoCurso;
+  uso: UsoRecursoCurso;
   visibleParaEstudiantes: boolean;
   estado: EstadoRecursoCurso;
   estaActivo: boolean;
@@ -99,6 +101,7 @@ export type CrearRecursoDatos = {
   descripcion: string;
   categoria: CategoriaRecursoCurso;
   alcance: AlcanceRecursoCurso;
+  uso: UsoRecursoCurso;
   hitoId: number | null;
   visibleParaEstudiantes: boolean;
 };
@@ -123,6 +126,34 @@ export type ReemplazarContenidoDatos = {
   motivoActualizacion: string;
   fechaDocumento: string;
 };
+
+export const USOS_RECURSO: Array<{
+  id: UsoRecursoCurso;
+  etiqueta: string;
+  descripcion: string;
+}> = [
+  {
+    id: 'AULA',
+    etiqueta: 'Solo aula',
+    descripcion: 'Visible como material académico. Sus archivos no se utilizarán para generar Quizzes.',
+  },
+  {
+    id: 'AULA_Y_QUIZZES',
+    etiqueta: 'Aula + Quizzes',
+    descripcion: 'El recurso puede mostrarse a estudiantes y sus PDF seleccionados podrán reutilizarse en Quizzes.',
+  },
+  {
+    id: 'SOLO_QUIZZES',
+    etiqueta: 'Solo Quizzes',
+    descripcion: 'Recurso privado del docente. No aparece a estudiantes y sus PDF pueden utilizarse como fuente para Quizzes.',
+  },
+];
+
+export function recursoPermiteQuizzes(
+  uso: UsoRecursoCurso,
+) {
+  return uso === 'AULA_Y_QUIZZES' || uso === 'SOLO_QUIZZES';
+}
 
 export const CATEGORIAS_RECURSO: Array<{
   id: CategoriaRecursoCurso;

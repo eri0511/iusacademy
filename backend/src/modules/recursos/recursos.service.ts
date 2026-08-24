@@ -12,6 +12,7 @@ import {
   EstadoVersionRecurso,
   Rol,
   TipoContenidoRecurso,
+  UsoRecursoCurso,
 } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ArchivosService } from '../archivos/archivos.service';
@@ -264,7 +265,12 @@ export class RecursosService {
         estaActivo: true,
         estado: EstadoRecursoCurso.ACTIVO,
         ...(usuario.rol === Rol.ESTUDIANTE
-          ? { visibleParaEstudiantes: true }
+          ? {
+              visibleParaEstudiantes: true,
+              uso: {
+                not: UsoRecursoCurso.SOLO_QUIZZES,
+              },
+            }
           : {}),
       },
       orderBy: [
@@ -291,7 +297,12 @@ export class RecursosService {
         estaActivo: true,
         estado: EstadoRecursoCurso.ACTIVO,
         ...(usuario.rol === Rol.ESTUDIANTE
-          ? { visibleParaEstudiantes: true }
+          ? {
+              visibleParaEstudiantes: true,
+              uso: {
+                not: UsoRecursoCurso.SOLO_QUIZZES,
+              },
+            }
           : {}),
       },
       include: this.includeDetalle,
@@ -327,7 +338,11 @@ export class RecursosService {
         descripcion: datos.descripcion?.trim() || null,
         categoria: datos.categoria,
         alcance: datos.alcance,
-        visibleParaEstudiantes: datos.visibleParaEstudiantes,
+        uso: datos.uso,
+        visibleParaEstudiantes:
+          datos.uso === UsoRecursoCurso.SOLO_QUIZZES
+            ? false
+            : datos.visibleParaEstudiantes,
         publicadoEn: new Date(),
       },
       include: this.includeDetalle,
@@ -361,26 +376,67 @@ export class RecursosService {
         : null,
     );
 
-    const recurso = await this.prisma.recursoCurso.update({
-      where: { id: recursoId },
-      data: {
-        ...(datos.titulo !== undefined
-          ? { titulo: datos.titulo.trim() }
-          : {}),
-        ...(datos.descripcion !== undefined
-          ? { descripcion: datos.descripcion.trim() || null }
-          : {}),
-        ...(datos.categoria !== undefined
-          ? { categoria: datos.categoria }
-          : {}),
-        alcance,
-        hitoId,
-        ...(datos.visibleParaEstudiantes !== undefined
-          ? { visibleParaEstudiantes: datos.visibleParaEstudiantes }
-          : {}),
+    const uso =
+      datos.uso ??
+      recursoActual.uso;
+
+    const visibleParaEstudiantes =
+      uso === UsoRecursoCurso.SOLO_QUIZZES
+        ? false
+        : datos.visibleParaEstudiantes ??
+          recursoActual.visibleParaEstudiantes;
+
+    const recurso = await this.prisma.$transaction(
+      async (tx) => {
+        if (
+          uso === UsoRecursoCurso.AULA &&
+          recursoActual.uso !== UsoRecursoCurso.AULA
+        ) {
+          await tx.recursoContenido.updateMany({
+            where: {
+              recursoId,
+              disponibleParaQuiz: true,
+            },
+            data: {
+              disponibleParaQuiz: false,
+            },
+          });
+        }
+
+        return tx.recursoCurso.update({
+          where: {
+            id: recursoId,
+          },
+          data: {
+            ...(datos.titulo !== undefined
+              ? {
+                  titulo:
+                    datos.titulo.trim(),
+                }
+              : {}),
+            ...(datos.descripcion !== undefined
+              ? {
+                  descripcion:
+                    datos.descripcion.trim() ||
+                    null,
+                }
+              : {}),
+            ...(datos.categoria !== undefined
+              ? {
+                  categoria:
+                    datos.categoria,
+                }
+              : {}),
+            alcance,
+            hitoId,
+            uso,
+            visibleParaEstudiantes,
+          },
+          include:
+            this.includeDetalle,
+        });
       },
-      include: this.includeDetalle,
-    });
+    );
 
     return {
       mensaje: 'Recurso actualizado correctamente',
@@ -394,7 +450,22 @@ export class RecursosService {
     recursoId: number,
     visibleParaEstudiantes: boolean,
   ) {
-    await this.buscarRecursoDocente(usuario, cursoId, recursoId);
+    const recursoActual =
+      await this.buscarRecursoDocente(
+        usuario,
+        cursoId,
+        recursoId,
+      );
+
+    if (
+      recursoActual.uso ===
+        UsoRecursoCurso.SOLO_QUIZZES &&
+      visibleParaEstudiantes
+    ) {
+      throw new BadRequestException(
+        'Un recurso de uso exclusivo para Quizzes no puede mostrarse a los estudiantes',
+      );
+    }
 
     const recurso = await this.prisma.recursoCurso.update({
       where: { id: recursoId },
@@ -462,7 +533,12 @@ export class RecursosService {
     datos: CrearContenidoArchivoDto,
     archivo: ArchivoSubido | undefined,
   ) {
-    await this.buscarRecursoDocente(usuario, cursoId, recursoId);
+    const recurso =
+      await this.buscarRecursoDocente(
+        usuario,
+        cursoId,
+        recursoId,
+      );
 
     if (!archivo) {
       throw new BadRequestException('Debes seleccionar un archivo');
@@ -473,6 +549,15 @@ export class RecursosService {
       .pop()
       ?.trim()
       .toLowerCase();
+
+    if (
+      datos.disponibleParaQuiz &&
+      recurso.uso === UsoRecursoCurso.AULA
+    ) {
+      throw new BadRequestException(
+        'Este recurso está configurado únicamente para el aula y no puede ofrecer fuentes para Quizzes',
+      );
+    }
 
     if (datos.disponibleParaQuiz && extension !== 'pdf') {
       throw new BadRequestException(
@@ -526,6 +611,13 @@ export class RecursosService {
     contenidoId: number,
     datos: ActualizarContenidoDto,
   ) {
+    const recurso =
+      await this.buscarRecursoDocente(
+        usuario,
+        cursoId,
+        recursoId,
+      );
+
     const contenidoActual = await this.buscarContenidoDocente(
       usuario,
       cursoId,
@@ -542,6 +634,15 @@ export class RecursosService {
       }
       disponibleParaQuiz = false;
     } else if (datos.disponibleParaQuiz !== undefined) {
+      if (
+        datos.disponibleParaQuiz &&
+        recurso.uso === UsoRecursoCurso.AULA
+      ) {
+        throw new BadRequestException(
+          'Este recurso está configurado únicamente para el aula y no puede ofrecer fuentes para Quizzes',
+        );
+      }
+
       if (datos.disponibleParaQuiz) {
         const vigente = contenidoActual.versiones.find((version) => version.esVigente);
         if (!vigente || vigente.archivo.extension.toLowerCase() !== 'pdf') {
@@ -691,6 +792,12 @@ export class RecursosService {
         cursoId,
         estaActivo: true,
         estado: EstadoRecursoCurso.ACTIVO,
+        uso: {
+          in: [
+            UsoRecursoCurso.AULA_Y_QUIZZES,
+            UsoRecursoCurso.SOLO_QUIZZES,
+          ],
+        },
         contenidos: {
           some: {
             estaActivo: true,

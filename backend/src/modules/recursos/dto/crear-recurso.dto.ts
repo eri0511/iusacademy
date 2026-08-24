@@ -12,6 +12,7 @@ import {
 import {
   AlcanceRecursoCurso,
   CategoriaRecursoCurso,
+  UsoRecursoCurso,
 } from '../../../generated/prisma/client';
 
 export class CrearRecursoDto {
@@ -29,6 +30,9 @@ export class CrearRecursoDto {
 
   @IsEnum(AlcanceRecursoCurso)
   alcance!: AlcanceRecursoCurso;
+
+  @IsEnum(UsoRecursoCurso)
+  uso!: UsoRecursoCurso;
 
   @IsOptional()
   @Type(() => Number)
