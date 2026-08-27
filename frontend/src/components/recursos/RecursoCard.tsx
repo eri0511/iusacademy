@@ -3,6 +3,8 @@ import type {
 } from 'react';
 
 import {
+  AlertTriangle,
+  CheckCircle2,
   Download,
   ExternalLink,
   Eye,
@@ -11,6 +13,8 @@ import {
   Files,
   GraduationCap,
   Link2,
+  LoaderCircle,
+  RefreshCw,
   Sparkles,
 } from 'lucide-react';
 
@@ -67,6 +71,12 @@ type Props = {
 
   onArchivar?:
     () => void;
+
+  onReintentarDataset?:
+    (
+      versionId:
+        number,
+    ) => void;
 };
 
 function formatearBytes(
@@ -176,6 +186,7 @@ export default function RecursoCard({
   onEditar,
   onVisibilidad,
   onArchivar,
+  onReintentarDataset,
 }: Props) {
   const categoria =
     obtenerCategoriaRecurso(
@@ -216,13 +227,71 @@ export default function RecursoCard({
         'ENLACE',
     );
 
-  const datasets =
-    archivos.filter(
+  const versionesDataset =
+    archivos
+      .filter(
+        (
+          item,
+        ) =>
+          item.disponibleParaQuiz,
+      )
+      .map(
+        (
+          item,
+        ) =>
+          obtenerVersionVigente(
+            item,
+          ),
+      )
+      .filter(
+        (
+          version,
+        ): version is NonNullable<typeof version> =>
+          Boolean(
+            version,
+          ),
+      );
+
+  const datasetsListos =
+    versionesDataset.filter(
       (
-        item,
+        version,
       ) =>
-        item.disponibleParaQuiz,
+        version.estadoDataset ===
+        'LISTO',
     ).length;
+
+  const datasetsProcesando =
+    versionesDataset.filter(
+      (
+        version,
+      ) =>
+        version.estadoDataset ===
+          'PENDIENTE' ||
+        version.estadoDataset ===
+          'PROCESANDO',
+    );
+
+  const datasetsError =
+    versionesDataset.filter(
+      (
+        version,
+      ) =>
+        version.estadoDataset ===
+        'ERROR',
+    );
+
+  const datasetEnProceso =
+    datasetsProcesando[
+      0
+    ] ??
+    null;
+
+  const datasetConError =
+    datasetsError[
+      0
+    ] ??
+    null;
 
   const unico =
     contenidos.length ===
@@ -490,7 +559,7 @@ export default function RecursoCard({
               </span>
             )}
 
-            {datasets >
+            {datasetsListos >
               0 && (
               <span className="quiz">
                 <Sparkles
@@ -500,15 +569,145 @@ export default function RecursoCard({
                 />
 
                 {
-                  datasets
+                  datasetsListos
                 }{' '}
-                {datasets ===
+                {datasetsListos ===
                 1
-                  ? 'fuente'
-                  : 'fuentes'}{' '}
-                para Quiz
+                  ? 'dataset listo'
+                  : 'datasets listos'}
               </span>
             )}
+          </div>
+        )}
+
+        {esDocente &&
+          datasetEnProceso && (
+          <div className="recurso-card__dataset recurso-card__dataset--procesando">
+            <div className="recurso-card__dataset-cabecera">
+              <span>
+                <LoaderCircle
+                  className="recurso-card__dataset-spinner"
+                  size={
+                    15
+                  }
+                />
+
+                <strong>
+                  {datasetEnProceso.estadoDataset ===
+                  'PENDIENTE'
+                    ? 'Dataset pendiente'
+                    : 'Preparando dataset'}
+                </strong>
+              </span>
+
+              <b>
+                {Math.max(
+                  0,
+                  Math.min(
+                    100,
+                    datasetEnProceso.progresoDataset ??
+                      0,
+                  ),
+                )}%
+              </b>
+            </div>
+
+            <div className="recurso-card__dataset-barra">
+              <i
+                style={{
+                  width: `${Math.max(
+                    2,
+                    Math.min(
+                      100,
+                      datasetEnProceso.progresoDataset ??
+                        0,
+                    ),
+                  )}%`,
+                }}
+              />
+            </div>
+
+            <small>
+              {datasetEnProceso.archivo.nombreOriginal} · v{datasetEnProceso.numeroVersion}. Puedes continuar trabajando mientras se procesa.
+            </small>
+          </div>
+        )}
+
+        {esDocente &&
+          datasetConError && (
+          <div className="recurso-card__dataset recurso-card__dataset--error">
+            <div className="recurso-card__dataset-cabecera">
+              <span>
+                <AlertTriangle
+                  size={
+                    15
+                  }
+                />
+
+                <strong>
+                  Error al preparar dataset
+                </strong>
+              </span>
+            </div>
+
+            <small>
+              {datasetConError.errorDataset ??
+                'No fue posible procesar el PDF.'}
+            </small>
+
+            {onReintentarDataset && (
+              <button
+                type="button"
+                className="recurso-card__dataset-reintentar"
+                disabled={
+                  procesando
+                }
+                onClick={() =>
+                  onReintentarDataset(
+                    datasetConError.id,
+                  )
+                }
+              >
+                <RefreshCw
+                  size={
+                    13
+                  }
+                />
+
+                Reintentar
+              </button>
+            )}
+          </div>
+        )}
+
+        {esDocente &&
+          versionesDataset.length >
+            0 &&
+          datasetsProcesando.length ===
+            0 &&
+          datasetsError.length ===
+            0 &&
+          datasetsListos ===
+            versionesDataset.length && (
+          <div className="recurso-card__dataset recurso-card__dataset--listo">
+            <CheckCircle2
+              size={
+                15
+              }
+            />
+
+            <span>
+              <strong>
+                {datasetsListos ===
+                1
+                  ? 'Dataset listo para Quizzes'
+                  : `${datasetsListos} datasets listos para Quizzes`}
+              </strong>
+
+              <small>
+                La versión vigente ya puede utilizarse como fuente para crear Quizzes.
+              </small>
+            </span>
           </div>
         )}
 
@@ -963,6 +1162,113 @@ const styles = `
       var(--app-accent-soft);
   }
 
+  .recurso-card__dataset {
+    margin-top: 10px;
+    display: grid;
+    gap: 7px;
+    padding: 10px 11px;
+    border: 1px solid var(--app-border);
+    border-radius: 12px;
+    background: var(--app-surface-alt);
+  }
+
+  .recurso-card__dataset-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .recurso-card__dataset-cabecera > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .recurso-card__dataset strong {
+    font-size: 9.5px;
+    font-weight: 850;
+  }
+
+  .recurso-card__dataset small {
+    color: var(--app-text-muted);
+    font-size: 8.5px;
+    line-height: 1.45;
+  }
+
+  .recurso-card__dataset b {
+    color: var(--app-accent-dark);
+    font-size: 9px;
+  }
+
+  .recurso-card__dataset--procesando {
+    border-color: color-mix(in srgb, var(--app-accent) 24%, var(--app-border));
+    color: var(--app-accent-dark);
+    background: color-mix(in srgb, var(--app-accent-soft) 65%, var(--app-surface));
+  }
+
+  .recurso-card__dataset-spinner {
+    animation: recursoDatasetSpin 1s linear infinite;
+  }
+
+  .recurso-card__dataset-barra {
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--app-accent) 12%, var(--app-border-soft));
+  }
+
+  .recurso-card__dataset-barra i {
+    height: 100%;
+    display: block;
+    border-radius: inherit;
+    background: var(--app-accent);
+    transition: width .25s ease;
+  }
+
+  .recurso-card__dataset--error {
+    border-color: color-mix(in srgb, var(--app-danger) 24%, var(--app-border));
+    color: var(--app-danger);
+    background: var(--app-danger-bg);
+  }
+
+  .recurso-card__dataset--listo {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    color: var(--app-success);
+    border-color: color-mix(in srgb, var(--app-success) 22%, var(--app-border));
+    background: var(--app-success-bg);
+  }
+
+  .recurso-card__dataset--listo > span {
+    display: grid;
+    gap: 2px;
+  }
+
+  .recurso-card__dataset-reintentar {
+    width: max-content;
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px 9px;
+    border: 1px solid color-mix(in srgb, var(--app-danger) 35%, var(--app-border));
+    border-radius: 9px;
+    color: var(--app-danger);
+    background: var(--app-surface);
+    font: inherit;
+    font-size: 8.5px;
+    font-weight: 850;
+    cursor: pointer;
+  }
+
+  @keyframes recursoDatasetSpin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   .recurso-card__acciones {
     margin-top: 12px;
   }
@@ -1051,6 +1357,10 @@ const styles = `
 
     .recurso-card:hover {
       transform: none;
+    }
+
+    .recurso-card__dataset-spinner {
+      animation: none;
     }
   }
 `;

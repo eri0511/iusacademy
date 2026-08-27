@@ -61,6 +61,20 @@ export class RecursosController {
     return this.recursosService.listarDisponiblesParaQuiz(req.user, cursoId);
   }
 
+  @Post('cursos/:cursoId/datasets/:versionId/reintentar')
+  @Roles(Rol.DOCENTE)
+  reintentarDataset(
+    @Req() req: RequestAutenticada,
+    @Param('cursoId', ParseIntPipe) cursoId: number,
+    @Param('versionId', ParseIntPipe) versionId: number,
+  ) {
+    return this.recursosService.reintentarDataset(
+      req.user,
+      cursoId,
+      versionId,
+    );
+  }
+
   @Get('cursos/:cursoId/:recursoId')
   @Roles(Rol.DOCENTE, Rol.ESTUDIANTE)
   obtener(

@@ -1,82 +1,116 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom';
 
-import { AuthProvider } from "../auth/AuthContext";
+import {
+  AuthProvider,
+} from '../auth/AuthContext';
 
-import ProtectedRoute from "../auth/ProtectedRoute";
+import ProtectedRoute from '../auth/ProtectedRoute';
 
-import { ConfiguracionProvider } from "../config/ConfiguracionContext";
+import {
+  ConfiguracionProvider,
+} from '../config/ConfiguracionContext';
 
-import AdminLayout from "../layouts/AdminLayout";
-import AulaCursoLayout from "../layouts/AulaCursoLayout";
-import DocenteLayout from "../layouts/DocenteLayout";
-import EstudianteLayout from "../layouts/EstudianteLayout";
-import PublicLayout from "../layouts/PublicLayout";
+import AdminLayout from '../layouts/AdminLayout';
+import AulaCursoLayout from '../layouts/AulaCursoLayout';
+import DocenteLayout from '../layouts/DocenteLayout';
+import EstudianteLayout from '../layouts/EstudianteLayout';
+import PublicLayout from '../layouts/PublicLayout';
 
-import AdminInicio from "../pages/admin/Inicio";
-import Cursos from "../pages/admin/Cursos";
-import HitosAcademicos from "../pages/admin/HitosAcademicos";
-import HistorialReportes from "../pages/admin/HistorialReportes";
-import Materias from "../pages/admin/Materias";
-import Usuarios from "../pages/admin/Usuarios";
+import AdminInicio from '../pages/admin/Inicio';
+import Cursos from '../pages/admin/Cursos';
+import HitosAcademicos from '../pages/admin/HitosAcademicos';
+import HistorialReportes from '../pages/admin/HistorialReportes';
+import Materias from '../pages/admin/Materias';
+import Usuarios from '../pages/admin/Usuarios';
 
-import ActivarCuenta from "../pages/autenticacion/ActivarCuenta";
-import Login from "../pages/autenticacion/Login";
+import ActivarCuenta from '../pages/autenticacion/ActivarCuenta';
+import Login from '../pages/autenticacion/Login';
 
-import Configuracion from "../pages/configuracion/Configuracion";
+import Configuracion from '../pages/configuracion/Configuracion';
 
-import AulaCurso from "../pages/docente/curso/AulaCurso";
-import DetalleTemaForo from "../pages/docente/curso/DetalleTemaForo";
-import CalificarForo from "../pages/docente/curso/CalificarForo";
-import EstudiantesCurso from "../pages/docente/curso/EstudiantesCurso";
-import ForoCurso from "../pages/docente/curso/ForoCurso";
-import DetalleGruposCurso from "../pages/docente/curso/DetalleGruposCurso";
-import GruposCurso from "../pages/docente/curso/GruposCurso";
-import TablonCurso from "../pages/docente/curso/TablonCurso";
-import TareasCurso from "../pages/docente/curso/TareasCurso";
-import DetalleTarea from "../pages/docente/curso/DetalleTarea";
-import RevisarEntregaTarea from "../pages/docente/curso/RevisarEntregaTarea";
-import RecursosCurso from "../pages/docente/curso/RecursosCurso";
+import AulaCurso from '../pages/docente/curso/AulaCurso';
+import CalificarForo from '../pages/docente/curso/CalificarForo';
+import DetalleGruposCurso from '../pages/docente/curso/DetalleGruposCurso';
+import DetalleQuizDocente from '../pages/docente/curso/DetalleQuizDocente';
+import DetalleTarea from '../pages/docente/curso/DetalleTarea';
+import DetalleTemaForo from '../pages/docente/curso/DetalleTemaForo';
+import EstudiantesCurso from '../pages/docente/curso/EstudiantesCurso';
+import ForoCurso from '../pages/docente/curso/ForoCurso';
+import GruposCurso from '../pages/docente/curso/GruposCurso';
+import QuizzesCurso from '../pages/docente/curso/QuizzesCurso';
+import RecursosCurso from '../pages/docente/curso/RecursosCurso';
+import RevisarEntregaTarea from '../pages/docente/curso/RevisarEntregaTarea';
+import TablonCurso from '../pages/docente/curso/TablonCurso';
+import TareasCurso from '../pages/docente/curso/TareasCurso';
 
-import DocenteInicio from "../pages/docente/Inicio";
-import MisCursos from "../pages/docente/MisCursos";
+import DocenteInicio from '../pages/docente/Inicio';
+import MisCursos from '../pages/docente/MisCursos';
 
-import EstudianteInicio from "../pages/estudiante/Inicio";
-import MisCursosEstudiante from "../pages/estudiante/cursos/MisCursos";
-import TablonCursoEstudiante from "../pages/estudiante/cursos/TablonCursoEstudiante";
-import ForoCursoEstudiante from "../pages/estudiante/cursos/ForoCursoEstudiante";
-import DetalleForoEstudiante from "../pages/estudiante/cursos/DetalleForoEstudiante";
-import TareasCursoEstudiante from "../pages/estudiante/cursos/TareasCursoEstudiante";
-import DetalleTareaEstudiante from "../pages/estudiante/cursos/DetalleTareaEstudiante";
-import RecursosCursoEstudiante from "../pages/estudiante/cursos/RecursosCursoEstudiante";
+import EstudianteInicio from '../pages/estudiante/Inicio';
 
-import Perfil from "../pages/perfil/Perfil";
+import DetalleForoEstudiante from '../pages/estudiante/cursos/DetalleForoEstudiante';
+import DetalleQuizEstudiante from '../pages/estudiante/cursos/DetalleQuizEstudiante';
+import DetalleTareaEstudiante from '../pages/estudiante/cursos/DetalleTareaEstudiante';
+import ForoCursoEstudiante from '../pages/estudiante/cursos/ForoCursoEstudiante';
+import MisCursosEstudiante from '../pages/estudiante/cursos/MisCursos';
+import QuizzesCursoEstudiante from '../pages/estudiante/cursos/QuizzesCursoEstudiante';
+import RecursosCursoEstudiante from '../pages/estudiante/cursos/RecursosCursoEstudiante';
+import TablonCursoEstudiante from '../pages/estudiante/cursos/TablonCursoEstudiante';
+import TareasCursoEstudiante from '../pages/estudiante/cursos/TareasCursoEstudiante';
 
-import Contacto from "../pages/public/Contacto";
-import Home from "../pages/public/Home";
-import Servicios from "../pages/public/Servicios";
-import VerificarReporte from "../pages/public/VerificarReporte";
+import Perfil from '../pages/perfil/Perfil';
+
+import Contacto from '../pages/public/Contacto';
+import Home from '../pages/public/Home';
+import Servicios from '../pages/public/Servicios';
+import VerificarReporte from '../pages/public/VerificarReporte';
 
 type PaginaProximamenteProps = {
-  titulo: string;
-  descripcion: string;
+  titulo:
+    string;
+
+  descripcion:
+    string;
 };
 
-function PaginaProximamente({ titulo, descripcion }: PaginaProximamenteProps) {
+function PaginaProximamente({
+  titulo,
+  descripcion,
+}: PaginaProximamenteProps) {
   return (
     <section
       style={{
-        padding: "24px",
-        border: "1px solid var(--app-border)",
-        borderRadius: "20px",
-        color: "var(--app-text)",
-        background: "var(--app-surface)",
-        boxShadow: "var(--app-shadow-sm)",
+        padding:
+          '24px',
+
+        border:
+          '1px solid var(--app-border)',
+
+        borderRadius:
+          '20px',
+
+        color:
+          'var(--app-text)',
+
+        background:
+          'var(--app-surface)',
+
+        boxShadow:
+          'var(--app-shadow-sm)',
       }}
     >
       <h2
         style={{
-          margin: 0,
-          fontSize: "20px",
+          margin:
+            0,
+
+          fontSize:
+            '20px',
         }}
       >
         {titulo}
@@ -84,8 +118,11 @@ function PaginaProximamente({ titulo, descripcion }: PaginaProximamenteProps) {
 
       <p
         style={{
-          marginBottom: 0,
-          color: "var(--app-text-soft)",
+          marginBottom:
+            0,
+
+          color:
+            'var(--app-text-soft)',
         }}
       >
         {descripcion}
@@ -100,50 +137,171 @@ function AppRouter() {
       <AuthProvider>
         <ConfiguracionProvider>
           <Routes>
-            <Route element={<PublicLayout />}>
-              <Route index element={<Home />} />
-
-              <Route path="servicios" element={<Servicios />} />
-
-              <Route path="contacto" element={<Contacto />} />
-
-              <Route path="login" element={<Login />} />
-            </Route>
-
-            <Route path="/activar-cuenta" element={<ActivarCuenta />} />
+            {/* =====================================================
+                RUTAS PÚBLICAS
+            ====================================================== */}
 
             <Route
-              path="/verificar-reporte/:codigo"
-              element={<VerificarReporte />}
+              element={
+                <PublicLayout />
+              }
+            >
+              <Route
+                index
+                element={
+                  <Home />
+                }
+              />
+
+              <Route
+                path="servicios"
+                element={
+                  <Servicios />
+                }
+              />
+
+              <Route
+                path="contacto"
+                element={
+                  <Contacto />
+                }
+              />
+
+              <Route
+                path="login"
+                element={
+                  <Login />
+                }
+              />
+            </Route>
+
+            <Route
+              path="/activar-cuenta"
+              element={
+                <ActivarCuenta />
+              }
             />
 
             <Route
-              element={<ProtectedRoute rolesPermitidos={["ADMINISTRADOR"]} />}
+              path="/verificar-reporte/:codigo"
+              element={
+                <VerificarReporte />
+              }
+            />
+
+            {/* =====================================================
+                ADMINISTRADOR
+            ====================================================== */}
+
+            <Route
+              element={
+                <ProtectedRoute
+                  rolesPermitidos={[
+                    'ADMINISTRADOR',
+                  ]}
+                />
+              }
             >
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<AdminInicio />} />
+              <Route
+                path="/admin"
+                element={
+                  <AdminLayout />
+                }
+              >
+                <Route
+                  index
+                  element={
+                    <AdminInicio />
+                  }
+                />
 
-                <Route path="usuarios" element={<Usuarios />} />
+                <Route
+                  path="usuarios"
+                  element={
+                    <Usuarios />
+                  }
+                />
 
-                <Route path="materias" element={<Materias />} />
+                <Route
+                  path="materias"
+                  element={
+                    <Materias />
+                  }
+                />
 
-                <Route path="cursos" element={<Cursos />} />
+                <Route
+                  path="cursos"
+                  element={
+                    <Cursos />
+                  }
+                />
 
-                <Route path="hitos" element={<HitosAcademicos />} />
+                <Route
+                  path="hitos"
+                  element={
+                    <HitosAcademicos />
+                  }
+                />
 
-                <Route path="reportes" element={<HistorialReportes />} />
+                <Route
+                  path="reportes"
+                  element={
+                    <HistorialReportes />
+                  }
+                />
 
-                <Route path="perfil" element={<Perfil />} />
+                <Route
+                  path="perfil"
+                  element={
+                    <Perfil />
+                  }
+                />
 
-                <Route path="configuracion" element={<Configuracion />} />
+                <Route
+                  path="configuracion"
+                  element={
+                    <Configuracion />
+                  }
+                />
               </Route>
             </Route>
 
-            <Route element={<ProtectedRoute rolesPermitidos={["DOCENTE"]} />}>
-              <Route path="/docente" element={<DocenteLayout />}>
-                <Route index element={<DocenteInicio />} />
+            {/* =====================================================
+                DOCENTE
+            ====================================================== */}
 
-                <Route path="cursos" element={<MisCursos />} />
+            <Route
+              element={
+                <ProtectedRoute
+                  rolesPermitidos={[
+                    'DOCENTE',
+                  ]}
+                />
+              }
+            >
+              <Route
+                path="/docente"
+                element={
+                  <DocenteLayout />
+                }
+              >
+                <Route
+                  index
+                  element={
+                    <DocenteInicio />
+                  }
+                />
+
+                <Route
+                  path="cursos"
+                  element={
+                    <MisCursos />
+                  }
+                />
+
+                {/* =================================================
+                    AULA DEL DOCENTE
+                ================================================== */}
 
                 <Route
                   path="cursos/:cursoId"
@@ -154,42 +312,94 @@ function AppRouter() {
                     />
                   }
                 >
-                  <Route index element={<AulaCurso />} />
+                  <Route
+                    index
+                    element={
+                      <AulaCurso />
+                    }
+                  />
 
-                  <Route path="tablon" element={<TablonCurso />} />
+                  {/* TABLÓN */}
 
-                  <Route path="foro" element={<ForoCurso />} />
+                  <Route
+                    path="tablon"
+                    element={
+                      <TablonCurso />
+                    }
+                  />
 
-                  <Route path="foro/:temaId" element={<DetalleTemaForo />} />
+                  {/* FORO */}
+
+                  <Route
+                    path="foro"
+                    element={
+                      <ForoCurso />
+                    }
+                  />
+
+                  <Route
+                    path="foro/:temaId"
+                    element={
+                      <DetalleTemaForo />
+                    }
+                  />
 
                   <Route
                     path="foro/:temaId/calificar"
-                    element={<CalificarForo />}
+                    element={
+                      <CalificarForo />
+                    }
                   />
 
-                  <Route path="estudiantes" element={<EstudiantesCurso />} />
+                  {/* ESTUDIANTES */}
 
-                  <Route path="tareas" element={<TareasCurso />} />
+                  <Route
+                    path="estudiantes"
+                    element={
+                      <EstudiantesCurso />
+                    }
+                  />
+
+                  {/* TAREAS */}
+
+                  <Route
+                    path="tareas"
+                    element={
+                      <TareasCurso />
+                    }
+                  />
 
                   <Route
                     path="tareas/:tareaId"
-                    element={<DetalleTarea />}
+                    element={
+                      <DetalleTarea />
+                    }
                   />
 
                   <Route
                     path="tareas/:tareaId/entregas/:entregaId"
-                    element={<RevisarEntregaTarea />}
+                    element={
+                      <RevisarEntregaTarea />
+                    }
                   />
+
+                  {/* QUIZZES */}
 
                   <Route
                     path="quizzes"
                     element={
-                      <PaginaProximamente
-                        titulo="Quizzes"
-                        descripcion="Aquí se crearán evaluaciones breves para el hito seleccionado."
-                      />
+                      <QuizzesCurso />
                     }
                   />
+
+                  <Route
+                    path="quizzes/:quizId"
+                    element={
+                      <DetalleQuizDocente />
+                    }
+                  />
+
+                  {/* CALIFICACIONES */}
 
                   <Route
                     path="calificaciones"
@@ -201,14 +411,32 @@ function AppRouter() {
                     }
                   />
 
-                  <Route path="grupos" element={<GruposCurso />} />
+                  {/* GRUPOS */}
+
+                  <Route
+                    path="grupos"
+                    element={
+                      <GruposCurso />
+                    }
+                  />
 
                   <Route
                     path="grupos/:conjuntoId"
-                    element={<DetalleGruposCurso />}
+                    element={
+                      <DetalleGruposCurso />
+                    }
                   />
 
-                  <Route path="recursos" element={<RecursosCurso />} />
+                  {/* RECURSOS */}
+
+                  <Route
+                    path="recursos"
+                    element={
+                      <RecursosCurso />
+                    }
+                  />
+
+                  {/* ESTADÍSTICAS */}
 
                   <Route
                     path="estadisticas"
@@ -220,6 +448,10 @@ function AppRouter() {
                     }
                   />
                 </Route>
+
+                {/* =================================================
+                    MÓDULOS DOCENTE FUERA DEL AULA
+                ================================================== */}
 
                 <Route
                   path="biblioteca"
@@ -241,19 +473,58 @@ function AppRouter() {
                   }
                 />
 
-                <Route path="perfil" element={<Perfil />} />
+                <Route
+                  path="perfil"
+                  element={
+                    <Perfil />
+                  }
+                />
 
-                <Route path="configuracion" element={<Configuracion />} />
+                <Route
+                  path="configuracion"
+                  element={
+                    <Configuracion />
+                  }
+                />
               </Route>
             </Route>
 
-            <Route
-              element={<ProtectedRoute rolesPermitidos={["ESTUDIANTE"]} />}
-            >
-              <Route path="/estudiante" element={<EstudianteLayout />}>
-                <Route index element={<EstudianteInicio />} />
+            {/* =====================================================
+                ESTUDIANTE
+            ====================================================== */}
 
-                <Route path="cursos" element={<MisCursosEstudiante />} />
+            <Route
+              element={
+                <ProtectedRoute
+                  rolesPermitidos={[
+                    'ESTUDIANTE',
+                  ]}
+                />
+              }
+            >
+              <Route
+                path="/estudiante"
+                element={
+                  <EstudianteLayout />
+                }
+              >
+                <Route
+                  index
+                  element={
+                    <EstudianteInicio />
+                  }
+                />
+
+                <Route
+                  path="cursos"
+                  element={
+                    <MisCursosEstudiante />
+                  }
+                />
+
+                {/* =================================================
+                    AULA DEL ESTUDIANTE
+                ================================================== */}
 
                 <Route
                   path="cursos/:cursoId"
@@ -274,40 +545,64 @@ function AppRouter() {
                     }
                   />
 
+                  {/* TABLÓN */}
+
                   <Route
                     path="tablon"
-                    element={<TablonCursoEstudiante />}
+                    element={
+                      <TablonCursoEstudiante />
+                    }
                   />
+
+                  {/* FORO */}
 
                   <Route
                     path="foro"
-                    element={<ForoCursoEstudiante />}
+                    element={
+                      <ForoCursoEstudiante />
+                    }
                   />
 
                   <Route
                     path="foro/:foroId"
-                    element={<DetalleForoEstudiante />}
+                    element={
+                      <DetalleForoEstudiante />
+                    }
                   />
+
+                  {/* TAREAS */}
 
                   <Route
                     path="tareas"
-                    element={<TareasCursoEstudiante />}
+                    element={
+                      <TareasCursoEstudiante />
+                    }
                   />
 
                   <Route
                     path="tareas/:tareaId"
-                    element={<DetalleTareaEstudiante />}
+                    element={
+                      <DetalleTareaEstudiante />
+                    }
                   />
+
+                  {/* QUIZZES */}
 
                   <Route
                     path="quizzes"
                     element={
-                      <PaginaProximamente
-                        titulo="Quizzes"
-                        descripcion="Aquí el estudiante resolverá los quizzes del hito seleccionado."
-                      />
+                      <QuizzesCursoEstudiante />
                     }
                   />
+
+                  <Route
+                    path="quizzes/:quizId"
+                    element={
+                      <DetalleQuizEstudiante />
+                    }
+                  />
+
+                  {/* CALIFICACIONES */}
 
                   <Route
                     path="calificaciones"
@@ -319,11 +614,19 @@ function AppRouter() {
                     }
                   />
 
+                  {/* RECURSOS */}
+
                   <Route
                     path="recursos"
-                    element={<RecursosCursoEstudiante />}
+                    element={
+                      <RecursosCursoEstudiante />
+                    }
                   />
                 </Route>
+
+                {/* =================================================
+                    MÓDULOS ESTUDIANTE FUERA DEL AULA
+                ================================================== */}
 
                 <Route
                   path="biblioteca"
@@ -345,13 +648,35 @@ function AppRouter() {
                   }
                 />
 
-                <Route path="perfil" element={<Perfil />} />
+                <Route
+                  path="perfil"
+                  element={
+                    <Perfil />
+                  }
+                />
 
-                <Route path="configuracion" element={<Configuracion />} />
+                <Route
+                  path="configuracion"
+                  element={
+                    <Configuracion />
+                  }
+                />
               </Route>
             </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* =====================================================
+                RUTA NO ENCONTRADA
+            ====================================================== */}
+
+            <Route
+              path="*"
+              element={
+                <Navigate
+                  to="/"
+                  replace
+                />
+              }
+            />
           </Routes>
         </ConfiguracionProvider>
       </AuthProvider>

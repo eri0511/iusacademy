@@ -64,7 +64,6 @@ export default function ContenidoRecursoModal({
   onAgregarMaterial,
   onReemplazar,
   onHistorial,
-  onAlternarQuiz,
   onEliminar,
 }: Props) {
   if (!recurso) {
@@ -263,33 +262,6 @@ export default function ContenidoRecursoModal({
                                 />
                                 Versiones
                               </button>
-
-                              {recurso.uso !==
-                                'AULA' &&
-                                vigente.archivo.extension.toLowerCase() ===
-                                  'pdf' && (
-                                  <button
-                                    type="button"
-                                    className={`texto ${
-                                      contenido.disponibleParaQuiz
-                                        ? 'quiz-activo'
-                                        : ''
-                                    }`}
-                                    onClick={() =>
-                                      onAlternarQuiz?.(
-                                        contenido,
-                                      )
-                                    }
-                                  >
-                                    <Sparkles
-                                      size={13}
-                                    />
-
-                                    {contenido.disponibleParaQuiz
-                                      ? 'Quitar de Quiz'
-                                      : 'Usar en Quiz'}
-                                  </button>
-                                )}
 
                               <button
                                 type="button"
@@ -538,22 +510,6 @@ const styles = `
     line-height: 1.4;
   }
 
-  .quiz-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-
-    padding: 3px 6px;
-
-    border-radius: 999px;
-
-    color: var(--app-accent-dark);
-    background: var(--app-accent-soft);
-
-    font-size: 7px;
-    font-weight: 900;
-  }
-
   .material-card__acciones {
     display: flex;
     flex-wrap: wrap;
@@ -592,11 +548,6 @@ const styles = `
 
     color: var(--app-accent-dark);
     background: transparent;
-  }
-
-  .material-card__acciones
-    button.quiz-activo {
-    color: var(--app-success);
   }
 
   .material-card__acciones

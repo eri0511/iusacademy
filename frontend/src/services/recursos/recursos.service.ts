@@ -291,3 +291,28 @@ export async function descargarArchivo(
 export function abrirEnlaceExterno(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
+
+export async function reintentarDatasetRecurso(
+  cursoId: number,
+  versionId: number,
+  token: string,
+) {
+  const respuesta = await fetch(
+    `${API_URL}/recursos/cursos/${cursoId}/datasets/${versionId}/reintentar`,
+    {
+      method: 'POST',
+      headers: auth(token),
+    },
+  );
+
+  if (!respuesta.ok) {
+    throw new Error(
+      await mensajeError(
+        respuesta,
+        'No fue posible reintentar el procesamiento del dataset.',
+      ),
+    );
+  }
+
+  return respuesta.json();
+}

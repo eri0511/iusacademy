@@ -62,11 +62,7 @@ export type AulaCursoOutletContext = {
   recargarAula:
     () => Promise<void>;
 
-  /*
-   * Alias temporal para mantener compatibilidad
-   * con vistas antiguas que todavía utilizan
-   * recargarCurso.
-   */
+
   recargarCurso:
     () => Promise<void>;
 };
@@ -171,21 +167,14 @@ function obtenerRutaSeccion(
 type SeccionDetalleDependienteHito =
   | 'foro'
   | 'grupos'
-  | 'tareas';
+  | 'tareas'
+  | 'quizzes';
 
 function obtenerDetalleDependienteHito(
   pathname:
     string,
 ): SeccionDetalleDependienteHito | null {
-  /*
-   * FORO
-   *
-   * Ejemplos:
-   *
-   * /docente/cursos/3/foro/15
-   * /docente/cursos/3/foro/15/calificar
-   * /estudiante/cursos/3/foro/15
-   */
+
   if (
     /\/foro\/\d+(?:\/|$)/.test(
       pathname,
@@ -194,13 +183,7 @@ function obtenerDetalleDependienteHito(
     return 'foro';
   }
 
-  /*
-   * GRUPOS
-   *
-   * Ejemplo:
-   *
-   * /docente/cursos/3/grupos/8
-   */
+
   if (
     /\/grupos\/\d+(?:\/|$)/.test(
       pathname,
@@ -209,27 +192,21 @@ function obtenerDetalleDependienteHito(
     return 'grupos';
   }
 
-  /*
-   * TAREAS
-   *
-   * Se deja preparado desde ahora para:
-   *
-   * /docente/cursos/3/tareas/20
-   * /docente/cursos/3/tareas/20/calificar
-   * /estudiante/cursos/3/tareas/20
-   * /estudiante/cursos/3/tareas/20/entrega
-   * /estudiante/cursos/3/tareas/20/documento
-   *
-   * Aunque algunas de estas rutas todavía no existan,
-   * el comportamiento correcto del aula queda definido
-   * desde esta etapa.
-   */
+
   if (
     /\/tareas\/\d+(?:\/|$)/.test(
       pathname,
     )
   ) {
     return 'tareas';
+  }
+
+  if (
+    /\/quizzes\/\d+(?:\/|$)/.test(
+      pathname,
+    )
+  ) {
+    return 'quizzes';
   }
 
   return null;
@@ -282,11 +259,7 @@ export default function AulaCursoLayout({
       null,
     );
 
-  /*
-   * ============================================================
-   * HITO INICIAL
-   * ============================================================
-   */
+
   useEffect(
     () => {
       if (
@@ -307,14 +280,7 @@ export default function AulaCursoLayout({
     ],
   );
 
-  /*
-   * ============================================================
-   * SEGURIDAD POR ROL
-   * ============================================================
-   *
-   * Aunque las rutas ya están protegidas mediante ProtectedRoute,
-   * mantenemos también esta comprobación en el aula.
-   */
+
   useEffect(
     () => {
       if (
@@ -341,11 +307,7 @@ export default function AulaCursoLayout({
     ],
   );
 
-  /*
-   * ============================================================
-   * HITO SELECCIONADO
-   * ============================================================
-   */
+
   const hitoSeleccionado =
     useMemo(
       () =>
@@ -365,11 +327,7 @@ export default function AulaCursoLayout({
       ],
     );
 
-  /*
-   * ============================================================
-   * SECCIÓN ACTIVA
-   * ============================================================
-   */
+
   const seccionActiva =
     useMemo(
       () =>
@@ -381,28 +339,7 @@ export default function AulaCursoLayout({
       ],
     );
 
-  /*
-   * ============================================================
-   * CAMBIO DE HITO
-   * ============================================================
-   *
-   * Regla:
-   *
-   * Si el usuario está dentro del detalle de una entidad que
-   * depende de un hito y cambia H1-H5, vuelve primero al listado
-   * de esa sección.
-   *
-   * Esto evita situaciones como:
-   *
-   * Selector: H2
-   * Pantalla: tarea perteneciente a H1
-   *
-   * Se aplica actualmente a:
-   *
-   * - Foro
-   * - Grupos
-   * - Tareas
-   */
+
   const seleccionarHito =
     (
       hito:
@@ -441,11 +378,6 @@ export default function AulaCursoLayout({
       );
     };
 
-  /*
-   * ============================================================
-   * NAVEGACIÓN ENTRE SECCIONES
-   * ============================================================
-   */
   const cambiarSeccion =
     (
       seccion:
@@ -463,11 +395,7 @@ export default function AulaCursoLayout({
       );
     };
 
-  /*
-   * ============================================================
-   * CARGANDO
-   * ============================================================
-   */
+
   if (
     cargando &&
     !aula
@@ -502,11 +430,7 @@ export default function AulaCursoLayout({
     );
   }
 
-  /*
-   * ============================================================
-   * ERROR
-   * ============================================================
-   */
+
   if (
     error ||
     !aula
@@ -564,11 +488,7 @@ export default function AulaCursoLayout({
     );
   }
 
-  /*
-   * ============================================================
-   * CONTEXTO GLOBAL DEL AULA
-   * ============================================================
-   */
+
   const valorAulaContext:
     AulaContextValue = {
       aula,
@@ -596,11 +516,7 @@ export default function AulaCursoLayout({
           null,
     };
 
-  /*
-   * ============================================================
-   * CONTEXTO DE ROUTER OUTLET
-   * ============================================================
-   */
+
   const contexto:
     AulaCursoOutletContext = {
       aula,
@@ -622,13 +538,7 @@ export default function AulaCursoLayout({
         recargar,
     };
 
-  /*
-   * Estas secciones pueden utilizarse aunque el curso todavía
-   * no tenga planificación académica.
-   *
-   * Tareas NO entra aquí porque una tarea debe pertenecer
-   * al contexto académico/hito correspondiente.
-   */
+
   const seccionDisponibleSinPlanificacion =
     seccionActiva ===
       'estudiantes' ||

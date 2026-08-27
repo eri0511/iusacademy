@@ -40,6 +40,10 @@ import type {
   UsuarioAutenticado,
 } from './interfaces/usuario-autenticado.interface';
 
+import {
+  ProcesadorPdfService,
+} from './procesamiento/procesador-pdf.service';
+
 type ArchivoSubido = {
   originalname:
     string;
@@ -62,6 +66,9 @@ export class ArchivosService {
 
     private readonly almacenamiento:
       AlmacenamientoArchivos,
+
+    private readonly procesadorPdf:
+      ProcesadorPdfService,
   ) {}
 
   private obtenerExtension(
@@ -1454,6 +1461,8 @@ export class ArchivosService {
           numeroVersion,
           permiteDescarga:
             true,
+          textoExtraido:
+            null,
         },
       });
     } catch (
@@ -1748,6 +1757,181 @@ export class ArchivosService {
     }
 
     return archivo;
+  }
+
+
+  async procesarPdfParaDataset(
+    archivoId:
+      number,
+
+    onProgreso?:
+      (
+        progreso:
+          number,
+      ) => void |
+      Promise<void>,
+  ): Promise<string | null> {
+    return this.asegurarTextoExtraidoPdf(
+      archivoId,
+      onProgreso,
+    );
+  }
+
+  async asegurarTextoExtraidoPdf(
+    archivoId:
+      number,
+
+    onProgreso?:
+      (
+        progreso:
+          number,
+      ) => void |
+      Promise<void>,
+  ): Promise<string | null> {
+    const archivo =
+      await this.prisma.archivoAdjunto.findUnique({
+        where: {
+          id:
+            archivoId,
+        },
+
+        select: {
+          id:
+            true,
+
+          nombreOriginal:
+            true,
+
+          ruta:
+            true,
+
+          extension:
+            true,
+
+          mimeType:
+            true,
+
+          tamanioBytes:
+            true,
+
+          textoExtraido:
+            true,
+        },
+      });
+
+    if (
+      !archivo
+    ) {
+      throw new NotFoundException(
+        'El archivo no existe',
+      );
+    }
+
+    const extension =
+      archivo.extension
+        .replace(
+          /^\./,
+          '',
+        )
+        .trim()
+        .toLowerCase();
+
+    if (
+      extension !==
+      'pdf'
+    ) {
+      return null;
+    }
+
+    const textoExistente =
+      archivo.textoExtraido?.trim() ??
+      '';
+
+    if (
+      textoExistente.length >=
+      10
+    ) {
+      await onProgreso?.(
+        94,
+      );
+
+      return textoExistente;
+    }
+
+    try {
+      await onProgreso?.(
+        5,
+      );
+
+      const buffer =
+        await this.almacenamiento.leer(
+          archivo.ruta,
+        );
+
+      if (
+        !buffer ||
+        buffer.length ===
+          0
+      ) {
+        throw new BadRequestException(
+          'El archivo PDF guardado está vacío.',
+        );
+      }
+
+      const textoExtraido =
+        await this.procesadorPdf.extraerTexto(
+          buffer,
+          onProgreso,
+        );
+
+      if (
+        !textoExtraido?.trim()
+      ) {
+        return null;
+      }
+
+      await onProgreso?.(
+        95,
+      );
+
+      await this.prisma.archivoAdjunto.update({
+        where: {
+          id:
+            archivo.id,
+        },
+
+        data: {
+          textoExtraido:
+            textoExtraido.trim(),
+        },
+      });
+
+      await onProgreso?.(
+        98,
+      );
+
+      return textoExtraido.trim();
+    } catch (
+      error
+    ) {
+      if (
+        error instanceof
+        BadRequestException
+      ) {
+        throw error;
+      }
+
+      const mensaje =
+        error instanceof Error
+          ? error.message
+          : String(
+              error,
+            );
+
+      throw new BadRequestException(
+        `No fue posible leer o procesar el PDF "${archivo.nombreOriginal}": ${mensaje}`,
+      );
+    }
   }
 
   async descargar(

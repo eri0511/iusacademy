@@ -22,6 +22,14 @@ import {
   ArchivosService,
 } from './archivos.service';
 
+import {
+  ProcesadorPdfService,
+} from './procesamiento/procesador-pdf.service';
+
+import {
+  OcrPdfService,
+} from './procesamiento/ocr-pdf.service';
+
 @Module({
   imports: [
     AuthModule,
@@ -33,6 +41,8 @@ import {
 
   providers: [
     ArchivosService,
+    ProcesadorPdfService,
+    OcrPdfService,
     AlmacenamientoLocalService,
     {
       provide:

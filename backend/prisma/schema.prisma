@@ -272,6 +272,70 @@ enum EstadoEquipoForo {
   INACTIVO
 }
 
+enum DificultadQuiz {
+  FACIL
+  MEDIO
+  DIFICIL
+  MIXTA
+}
+
+enum ModalidadQuiz {
+  EN_VIVO
+  PROGRAMADO
+}
+
+enum EstadoQuiz {
+  BORRADOR
+  ESPERANDO
+  CUENTA_REGRESIVA
+  EN_CURSO
+  PAUSADO
+  FINALIZADO
+  CANCELADO
+}
+
+enum RitmoQuiz {
+  AUTOMATICO
+  CONTROL_DOCENTE
+}
+
+enum ModoTiempoQuiz {
+  FIJO
+  AUTOMATICO_DIFICULTAD
+}
+
+enum TipoPreguntaQuiz {
+  OPCION_MULTIPLE
+  VERDADERO_FALSO
+  SELECCION_MULTIPLE
+}
+
+enum OrigenPreguntaQuiz {
+  GENERADA
+  MANUAL
+}
+
+enum EstadoParticipanteQuiz {
+  ESPERANDO
+  LISTO
+  EN_CURSO
+  FINALIZADO
+  DESCONECTADO
+  AUSENTE
+}
+
+enum EstadoIntentoQuiz {
+  ESPERANDO
+  EN_CURSO
+  FINALIZADO
+  ANULADO
+}
+
+enum CriterioRankingQuiz {
+  PUNTAJE_Y_TIEMPO
+  SOLO_TIEMPO
+}
+
 enum TipoOrigenActividad {
   FORO
   TAREA
@@ -378,6 +442,14 @@ enum UsoRecursoCurso {
 enum EstadoRecursoCurso {
   ACTIVO
   ARCHIVADO
+}
+
+enum EstadoProcesamientoDataset {
+  NO_APLICA
+  PENDIENTE
+  PROCESANDO
+  LISTO
+  ERROR
 }
 
 enum EstadoVersionRecurso {
@@ -510,6 +582,12 @@ model Usuario {
 
   reportesAnulados ReporteEmitido[] @relation("ReportesAnulados")
 
+  quizzesComoCreador QuizCurso[] @relation("QuizzesCreador")
+
+  participacionesQuiz ParticipanteQuiz[] @relation("ParticipantesQuizEstudiante")
+
+  intentosQuiz IntentoQuiz[] @relation("IntentosQuizEstudiante")
+
   @@index([rol])
   @@index([estaActivo])
   @@index([cuentaActivada])
@@ -593,6 +671,8 @@ model HitoAcademico {
 
   actividadesCalificables ActividadCalificable[]
 
+  quizzes QuizCurso[]
+
   @@unique([planificacionId, numero])
   @@unique([planificacionId, codigo])
   @@index([planificacionId])
@@ -646,6 +726,8 @@ model Curso {
   conjuntosGrupos ConjuntoGrupoCurso[]
 
   actividadesCalificables ActividadCalificable[]
+
+  quizzes QuizCurso[]
 
   equiposAfinidadForo EquipoAfinidadForo[]
 
@@ -1334,6 +1416,7 @@ model ActividadCalificable {
 
   foroId  Int? @unique
   tareaId Int? @unique
+  quizId  Int? @unique
 
   origen TipoOrigenActividad
 
@@ -1387,6 +1470,8 @@ model ActividadCalificable {
 
   tarea TareaCurso? @relation(fields: [tareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
+  quiz QuizCurso? @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
   rubrica RubricaEvaluacion?
 
   calificaciones CalificacionEstudiante[]
@@ -1398,6 +1483,7 @@ model ActividadCalificable {
   @@index([creadorId])
   @@index([origen])
   @@index([tareaId])
+  @@index([quizId])
   @@index([componente])
   @@index([estado])
   @@index([participaEnPromedio])
@@ -1474,6 +1560,7 @@ model CalificacionEstudiante {
   grupoCursoId     Int?
   equipoAfinidadId Int?
   entregaTareaId   Int?
+  intentoQuizId    Int? @unique
 
   /**
    * Todas estas notas permanecen internamente sobre 100.
@@ -1529,6 +1616,8 @@ model CalificacionEstudiante {
 
   entregaTarea EntregaTarea? @relation(fields: [entregaTareaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
+  intentoQuiz IntentoQuiz? @relation(fields: [intentoQuizId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
   evaluacionesCriterios EvaluacionCriterioRubrica[]
 
   historial HistorialCalificacion[]
@@ -1540,6 +1629,7 @@ model CalificacionEstudiante {
   @@index([respuestaForoId])
   @@index([grupoCursoId])
   @@index([equipoAfinidadId])
+  @@index([intentoQuizId])
   @@index([estado])
   @@index([actividadId, estado])
 }
@@ -1851,6 +1941,355 @@ model IntegranteEquipoTarea {
   @@index([equipoId, estaActivo])
 }
 
+model QuizCurso {
+  id Int @id @default(autoincrement())
+
+  cursoId   Int
+  hitoId    Int
+  creadorId Int
+
+  titulo      String
+  descripcion String?
+
+  dificultad DificultadQuiz @default(MEDIO)
+
+  esCalificable Boolean               @default(false)
+  componente    ComponenteEvaluacion?
+
+  modalidad ModalidadQuiz @default(EN_VIVO)
+  estado    EstadoQuiz    @default(BORRADOR)
+
+  ritmo      RitmoQuiz      @default(CONTROL_DOCENTE)
+  modoTiempo ModoTiempoQuiz @default(FIJO)
+
+  tiempoPreguntaSegundos Int @default(20)
+
+  tiempoFacilSegundos   Int @default(20)
+  tiempoMedioSegundos   Int @default(30)
+  tiempoDificilSegundos Int @default(45)
+
+  cantidadPreguntas Int @default(10)
+
+  puntajeMaximo Decimal @default(100) @db.Decimal(6, 2)
+
+  usarRanking          Boolean             @default(false)
+  criterioRanking      CriterioRankingQuiz @default(PUNTAJE_Y_TIEMPO)
+  descuentoPorPuesto   Decimal             @default(0) @db.Decimal(6, 2)
+  puntajeMinimoRanking Decimal             @default(0) @db.Decimal(6, 2)
+
+  // Puntuación competitiva opcional por orden de respuesta correcta.
+  // Ej.: pregunta de 10 pts, descuento 1 => 10, 9, 8, 7...
+  usarPuntuacionVelocidad       Boolean @default(false)
+  descuentoVelocidadPorPosicion Decimal @default(1) @db.Decimal(6, 2)
+  puntajeMinimoVelocidad        Decimal @default(0) @db.Decimal(6, 2)
+
+  permiteInicioConAusentes Boolean @default(true)
+
+  cuentaRegresivaSegundos Int @default(3)
+
+  aperturaProgramada DateTime?
+  cierreProgramado   DateTime?
+
+  salaPublicadaEn DateTime?
+  inicioEn        DateTime?
+  finalizadoEn    DateTime?
+  canceladoEn     DateTime?
+
+  preguntaActualOrden Int?
+  preguntaIniciadaEn  DateTime?
+  preguntaCierraEn    DateTime?
+
+  tiempoRestantePreguntaSegundos Int?
+
+  resultadosPublicados   Boolean   @default(false)
+  resultadosPublicadosEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  curso Curso @relation(fields: [cursoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  hito HitoAcademico @relation(fields: [hitoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  creador Usuario @relation("QuizzesCreador", fields: [creadorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  actividadCalificable ActividadCalificable?
+
+  fuentes FuenteQuiz[]
+
+  preguntas PreguntaQuiz[]
+
+  participantes ParticipanteQuiz[]
+
+  intentos IntentoQuiz[]
+
+  @@index([cursoId])
+  @@index([hitoId])
+  @@index([creadorId])
+  @@index([estado])
+  @@index([modalidad])
+  @@index([dificultad])
+  @@index([esCalificable])
+  @@index([componente])
+  @@index([cursoId, hitoId])
+  @@index([cursoId, estado])
+  @@index([cursoId, modalidad, estado])
+}
+
+model FuenteQuiz {
+  id Int @id @default(autoincrement())
+
+  quizId    Int
+  versionId Int
+
+  orden Int @default(0)
+
+  tituloSnapshot        String?
+  nombreArchivoSnapshot String?
+  numeroVersionSnapshot Int?
+
+  creadoEn DateTime @default(now())
+
+  quiz QuizCurso @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  version RecursoContenidoVersion @relation(fields: [versionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  fragmentos FragmentoFuenteQuiz[]
+
+  @@unique([quizId, versionId])
+  @@index([quizId])
+  @@index([versionId])
+  @@index([orden])
+}
+
+model FragmentoFuenteQuiz {
+  id Int @id @default(autoincrement())
+
+  fuenteId Int
+
+  tituloReferencia String?
+  tipoReferencia   String?
+
+  paginaInicio Int?
+  paginaFin    Int?
+
+  texto String
+
+  orden Int @default(0)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  fuente FuenteQuiz @relation(fields: [fuenteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  preguntas PreguntaQuiz[]
+
+  @@index([fuenteId])
+  @@index([orden])
+  @@index([fuenteId, orden])
+}
+
+model PreguntaQuiz {
+  id Int @id @default(autoincrement())
+
+  quizId      Int
+  fragmentoId Int?
+
+  enunciado String
+
+  tipo       TipoPreguntaQuiz   @default(OPCION_MULTIPLE)
+  dificultad DificultadQuiz     @default(MEDIO)
+  origen     OrigenPreguntaQuiz @default(GENERADA)
+
+  explicacion String?
+
+  tiempoSegundos Int?
+
+  puntaje Decimal @default(0) @db.Decimal(6, 2)
+
+  orden Int @default(0)
+
+  estaActiva Boolean @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  quiz QuizCurso @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  fragmento FragmentoFuenteQuiz? @relation(fields: [fragmentoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  opciones OpcionPreguntaQuiz[]
+
+  respuestas RespuestaIntentoQuiz[]
+
+  @@index([quizId])
+  @@index([fragmentoId])
+  @@index([tipo])
+  @@index([dificultad])
+  @@index([orden])
+  @@index([estaActiva])
+  @@index([quizId, orden, estaActiva])
+}
+
+model OpcionPreguntaQuiz {
+  id Int @id @default(autoincrement())
+
+  preguntaId Int
+
+  texto String
+
+  esCorrecta Boolean @default(false)
+
+  orden Int @default(0)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  pregunta PreguntaQuiz @relation(fields: [preguntaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  respuestasSeleccionadas RespuestaOpcionQuiz[]
+
+  @@index([preguntaId])
+  @@index([esCorrecta])
+  @@index([orden])
+  @@index([preguntaId, orden])
+}
+
+model ParticipanteQuiz {
+  id Int @id @default(autoincrement())
+
+  quizId       Int
+  estudianteId Int
+
+  estado EstadoParticipanteQuiz @default(ESPERANDO)
+
+  avatarCodigo String?
+
+  conectadoEn    DateTime  @default(now())
+  listoEn        DateTime?
+  inicioEn       DateTime?
+  finalizadoEn   DateTime?
+  desconectadoEn DateTime?
+
+  ultimaConexionEn DateTime @default(now())
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  quiz QuizCurso @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  estudiante Usuario @relation("ParticipantesQuizEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  intento IntentoQuiz?
+
+  @@unique([quizId, estudianteId])
+  @@index([quizId])
+  @@index([estudianteId])
+  @@index([estado])
+  @@index([ultimaConexionEn])
+  @@index([quizId, estado])
+}
+
+model IntentoQuiz {
+  id Int @id @default(autoincrement())
+
+  quizId         Int
+  estudianteId   Int
+  participanteId Int @unique
+
+  estado EstadoIntentoQuiz @default(ESPERANDO)
+
+  iniciadoEn   DateTime?
+  finalizadoEn DateTime?
+  anuladoEn    DateTime?
+
+  tiempoTotalMs Int?
+
+  posicionFinal Int?
+
+  respuestasCorrectas   Int @default(0)
+  respuestasIncorrectas Int @default(0)
+  respuestasOmitidas    Int @default(0)
+
+  puntajeBruto Decimal @default(0) @db.Decimal(8, 2)
+
+  notaBase          Decimal @default(0) @db.Decimal(6, 2)
+  descuentoPosicion Decimal @default(0) @db.Decimal(6, 2)
+  notaFinal         Decimal @default(0) @db.Decimal(6, 2)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  quiz QuizCurso @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  estudiante Usuario @relation("IntentosQuizEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  participante ParticipanteQuiz @relation(fields: [participanteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  respuestas RespuestaIntentoQuiz[]
+
+  calificacion CalificacionEstudiante?
+
+  @@unique([quizId, estudianteId])
+  @@index([quizId])
+  @@index([estudianteId])
+  @@index([estado])
+  @@index([posicionFinal])
+  @@index([quizId, estado])
+}
+
+model RespuestaIntentoQuiz {
+  id Int @id @default(autoincrement())
+
+  intentoId  Int
+  preguntaId Int
+
+  respondidaEn DateTime @default(now())
+
+  tiempoRespuestaMs Int?
+
+  esCorrecta Boolean?
+
+  puntajeObtenido Decimal @default(0) @db.Decimal(8, 2)
+
+  // Solo se completa cuando la respuesta es correcta y el Quiz
+  // usa puntuación por velocidad.
+  posicionRespuestaCorrecta Int?
+  descuentoVelocidad        Decimal @default(0) @db.Decimal(8, 2)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  intento IntentoQuiz @relation(fields: [intentoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  pregunta PreguntaQuiz @relation(fields: [preguntaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  opcionesSeleccionadas RespuestaOpcionQuiz[]
+
+  @@unique([intentoId, preguntaId])
+  @@index([intentoId])
+  @@index([preguntaId])
+  @@index([preguntaId, esCorrecta, respondidaEn])
+  @@index([respondidaEn])
+}
+
+model RespuestaOpcionQuiz {
+  id Int @id @default(autoincrement())
+
+  respuestaId Int
+  opcionId    Int
+
+  creadaEn DateTime @default(now())
+
+  respuesta RespuestaIntentoQuiz @relation(fields: [respuestaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  opcion OpcionPreguntaQuiz @relation(fields: [opcionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([respuestaId, opcionId])
+  @@index([respuestaId])
+  @@index([opcionId])
+}
+
 /**
  * Recurso académico contenedor.
  * Un recurso agrupa varios archivos y/o enlaces bajo un mismo tema.
@@ -1973,11 +2412,19 @@ model RecursoContenidoVersion {
   esVigente     Boolean   @default(true)
   reemplazadaEn DateTime?
 
+  estadoDataset      EstadoProcesamientoDataset @default(NO_APLICA)
+  progresoDataset    Int                        @default(0)
+  errorDataset       String?
+  procesadoDatasetEn DateTime?
+  intentosDataset    Int                        @default(0)
+
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
   contenido RecursoContenido @relation(fields: [contenidoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   archivo   ArchivoAdjunto   @relation(fields: [archivoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  fuentesQuiz FuenteQuiz[]
 
   @@unique([contenidoId, numeroVersion])
   @@index([contenidoId])
@@ -1986,6 +2433,8 @@ model RecursoContenidoVersion {
   @@index([esVigente])
   @@index([creadoEn])
   @@index([contenidoId, estado, esVigente])
+  @@index([estadoDataset])
+  @@index([estadoDataset, esVigente])
 }
 
 model ArchivoAdjunto {

@@ -2,6 +2,13 @@ export type AlcanceRecursoCurso = 'CURSO' | 'HITO';
 export type TipoContenidoRecurso = 'ARCHIVO' | 'ENLACE';
 export type EstadoRecursoCurso = 'ACTIVO' | 'ARCHIVADO';
 export type EstadoVersionRecurso = 'VIGENTE' | 'REEMPLAZADA';
+
+export type EstadoProcesamientoDataset =
+  | 'NO_APLICA'
+  | 'PENDIENTE'
+  | 'PROCESANDO'
+  | 'LISTO'
+  | 'ERROR';
 export type UsoRecursoCurso = 'AULA' | 'AULA_Y_QUIZZES' | 'SOLO_QUIZZES';
 
 export type CategoriaRecursoCurso =
@@ -53,6 +60,11 @@ export type VersionContenidoRecurso = {
   fechaDocumento: string | null;
   esVigente: boolean;
   reemplazadaEn: string | null;
+  estadoDataset: EstadoProcesamientoDataset;
+  progresoDataset: number;
+  errorDataset: string | null;
+  procesadoDatasetEn: string | null;
+  intentosDataset: number;
   creadoEn: string;
   actualizadoEn: string;
   archivo: ArchivoRecurso;
@@ -140,12 +152,12 @@ export const USOS_RECURSO: Array<{
   {
     id: 'AULA_Y_QUIZZES',
     etiqueta: 'Aula + Quizzes',
-    descripcion: 'El recurso puede mostrarse a estudiantes y sus PDF seleccionados podrán reutilizarse en Quizzes.',
+    descripcion: 'El recurso puede mostrarse a estudiantes y sus PDF se preparan automáticamente como datasets para Quizzes.',
   },
   {
     id: 'SOLO_QUIZZES',
     etiqueta: 'Solo Quizzes',
-    descripcion: 'Recurso privado del docente. No aparece a estudiantes y sus PDF pueden utilizarse como fuente para Quizzes.',
+    descripcion: 'Recurso privado del docente. No aparece a estudiantes y sus PDF se preparan automáticamente como datasets para Quizzes.',
   },
 ];
 

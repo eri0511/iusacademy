@@ -3,10 +3,9 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
-  FilePlus2,
   Files,
+  FilePlus2,
   FolderOpen,
-  Link2,
   Layers3,
   Plus,
   RefreshCw,
@@ -57,7 +56,6 @@ import {
 import {
   abrirArchivo,
   abrirEnlaceExterno,
-  actualizarContenidoRecurso,
   actualizarRecurso,
   agregarArchivoRecurso,
   agregarEnlaceRecurso,
@@ -68,6 +66,7 @@ import {
   eliminarContenidoRecurso,
   listarRecursos,
   reemplazarContenidoRecurso,
+  reintentarDatasetRecurso,
 } from '../../../services/recursos/recursos.service';
 
 import type {
@@ -101,10 +100,6 @@ type EstadoToast = {
     string;
 };
 
-type ModalAgregar =
-  | 'ARCHIVO'
-  | 'ENLACE'
-  | null;
 
 const inicial:
   FormularioRecursoValor = {
@@ -282,64 +277,24 @@ export default function RecursosCurso() {
     );
 
   const [
-    selectorMaterialAbierto,
-    setSelectorMaterialAbierto,
-  ] =
-    useState(
-      false,
-    );
-
-  const [
-    modalAgregar,
-    setModalAgregar,
+    recursoMaterialesId,
+    setRecursoMaterialesId,
   ] =
     useState<
-      ModalAgregar
-    >(
-      null,
-    );
-
-  const [
-    archivoNuevo,
-    setArchivoNuevo,
-  ] =
-    useState<
-      File |
+      number |
       null
     >(
       null,
     );
 
   const [
-    archivoTitulo,
-    setArchivoTitulo,
+    formularioMateriales,
+    setFormularioMateriales,
   ] =
-    useState(
-      '',
-    );
-
-  const [
-    archivoQuiz,
-    setArchivoQuiz,
-  ] =
-    useState(
-      false,
-    );
-
-  const [
-    enlaceTitulo,
-    setEnlaceTitulo,
-  ] =
-    useState(
-      '',
-    );
-
-  const [
-    enlaceUrl,
-    setEnlaceUrl,
-  ] =
-    useState(
-      '',
+    useState<
+      FormularioRecursoValor
+    >(
+      inicial,
     );
 
   const [
@@ -506,6 +461,148 @@ export default function RecursosCurso() {
         recursoAbiertoId,
       ],
     );
+
+  const recursoMateriales =
+    useMemo(
+      () =>
+        recursos.find(
+          (
+            item,
+          ) =>
+            item.id ===
+            recursoMaterialesId,
+        ) ??
+        null,
+      [
+        recursos,
+        recursoMaterialesId,
+      ],
+    );
+
+  const hayDatasetsProcesando =
+    useMemo(
+      () =>
+        recursos.some(
+          (
+            recurso,
+          ) =>
+            recurso.contenidos.some(
+              (
+                contenido,
+              ) => {
+                const vigente =
+                  obtenerVersionVigente(
+                    contenido,
+                  );
+
+                return Boolean(
+                  contenido.disponibleParaQuiz &&
+                    vigente &&
+                    (
+                      vigente.estadoDataset ===
+                        'PENDIENTE' ||
+                      vigente.estadoDataset ===
+                        'PROCESANDO'
+                    ),
+                );
+              },
+            ),
+        ),
+      [
+        recursos,
+      ],
+    );
+
+  useEffect(
+    () => {
+      if (
+        !hayDatasetsProcesando ||
+        !accessToken ||
+        !curso?.id
+      ) {
+        return;
+      }
+
+      const intervalo =
+        window.setInterval(
+          () => {
+            void listarRecursos(
+              curso.id,
+              accessToken,
+            )
+              .then(
+                setRecursos,
+              )
+              .catch(
+                () => {
+                  // El refresco visual es auxiliar; el error principal
+                  // se maneja desde las acciones explícitas del usuario.
+                },
+              );
+          },
+          2500,
+        );
+
+      return () => {
+        window.clearInterval(
+          intervalo,
+        );
+      };
+    },
+    [
+      hayDatasetsProcesando,
+      accessToken,
+      curso?.id,
+    ],
+  );
+
+  const reintentarDataset =
+    async (
+      versionId:
+        number,
+    ) => {
+      if (
+        !accessToken ||
+        !curso?.id
+      ) {
+        return;
+      }
+
+      try {
+        setProcesando(
+          true,
+        );
+
+        await reintentarDatasetRecurso(
+          curso.id,
+          versionId,
+          accessToken,
+        );
+
+        await cargar();
+
+        mostrarToast(
+          'exito',
+          'Dataset enviado a procesamiento',
+          'Puedes continuar trabajando mientras se vuelve a preparar.',
+        );
+      } catch (
+        error
+      ) {
+        mostrarToast(
+          'error',
+          'No fue posible reintentar el dataset',
+          error instanceof
+            Error
+            ? error.message
+            : undefined,
+        );
+      } finally {
+        setProcesando(
+          false,
+        );
+      }
+    };
 
   const hitos =
     aula.planificacion.hitos.map(
@@ -1000,13 +1097,130 @@ export default function RecursosCurso() {
       }
     };
 
-  const agregarContenido =
+  const abrirAgregarMateriales =
+    (
+      recurso:
+        RecursoCurso,
+    ) => {
+      setRecursoAbiertoId(
+        null,
+      );
+
+      setRecursoMaterialesId(
+        recurso.id,
+      );
+
+      setFormularioMateriales({
+        titulo:
+          recurso.titulo,
+
+        descripcion:
+          recurso.descripcion ??
+          '',
+
+        categoria:
+          recurso.categoria,
+
+        alcance:
+          recurso.alcance,
+
+        uso:
+          recurso.uso,
+
+        hitoId:
+          recurso.hitoId,
+
+        visibleParaEstudiantes:
+          recurso.visibleParaEstudiantes,
+
+        archivos:
+          [],
+
+        enlaces:
+          [],
+      });
+    };
+
+  const cerrarAgregarMateriales =
+    () => {
+      if (
+        procesando
+      ) {
+        return;
+      }
+
+      setRecursoMaterialesId(
+        null,
+      );
+
+      setFormularioMateriales(
+        inicial,
+      );
+    };
+
+  const guardarMateriales =
     async () => {
       if (
         !accessToken ||
         !curso?.id ||
-        !recursoAbierto
+        !recursoMateriales
       ) {
+        return;
+      }
+
+      if (
+        formularioMateriales.archivos.length ===
+          0 &&
+        formularioMateriales.enlaces.length ===
+          0
+      ) {
+        mostrarToast(
+          'advertencia',
+          'Agrega al menos un material',
+          'Selecciona uno o varios archivos o agrega un enlace.',
+        );
+
+        return;
+      }
+
+      const enlaceIncompleto =
+        formularioMateriales.enlaces.find(
+          (
+            enlace,
+          ) =>
+            !enlace.titulo.trim() ||
+            !enlace.urlExterna.trim(),
+        );
+
+      if (
+        enlaceIncompleto
+      ) {
+        mostrarToast(
+          'advertencia',
+          'Completa los enlaces',
+          'Cada enlace debe tener un título y una URL.',
+        );
+
+        return;
+      }
+
+      const archivoSinTitulo =
+        formularioMateriales.archivos.find(
+          (
+            item,
+          ) =>
+            !item.titulo.trim(),
+        );
+
+      if (
+        archivoSinTitulo
+      ) {
+        mostrarToast(
+          'advertencia',
+          'Revisa los archivos',
+          'Cada archivo debe tener un título visible.',
+        );
+
         return;
       }
 
@@ -1015,118 +1229,143 @@ export default function RecursosCurso() {
           true,
         );
 
-        if (
-          modalAgregar ===
-          'ARCHIVO'
+        const errores:
+          string[] =
+          [];
+
+        for (
+          const item
+          of formularioMateriales.archivos
         ) {
-          if (
-            !archivoNuevo
-          ) {
-            mostrarToast(
-              'advertencia',
-              'Selecciona un archivo',
+          try {
+            const esPdf =
+              item.archivo.type ===
+                'application/pdf' ||
+              item.archivo.name
+                .toLocaleLowerCase(
+                  'es',
+                )
+                .endsWith(
+                  '.pdf',
+                );
+
+            await agregarArchivoRecurso(
+              curso.id,
+              recursoMateriales.id,
+              accessToken,
+              {
+                ...item,
+
+                titulo:
+                  item.titulo.trim(),
+
+                descripcion:
+                  item.descripcion.trim(),
+
+                disponibleParaQuiz:
+                  recursoMateriales.uso !==
+                    'AULA' &&
+                  esPdf,
+              },
             );
-
-            return;
-          }
-
-          const permiteQuizzes =
-            recursoAbierto.uso !==
-            'AULA';
-
-          await agregarArchivoRecurso(
-            curso.id,
-            recursoAbierto.id,
-            accessToken,
-            {
-              archivo:
-                archivoNuevo,
-
-              titulo:
-                archivoTitulo.trim() ||
-                archivoNuevo.name.replace(
-                  /\.[^/.]+$/,
-                  '',
-                ),
-
-              descripcion:
-                '',
-
-              disponibleParaQuiz:
-                permiteQuizzes &&
-                archivoQuiz,
-            },
-          );
-        } else if (
-          modalAgregar ===
-          'ENLACE'
-        ) {
-          if (
-            !enlaceTitulo.trim() ||
-            !enlaceUrl.trim()
+          } catch (
+            error
           ) {
-            mostrarToast(
-              'advertencia',
-              'Completa el enlace',
-              'Escribe título y URL.',
+            errores.push(
+              error instanceof
+                Error
+                ? error.message
+                : `No fue posible subir ${item.archivo.name}.`,
             );
-
-            return;
           }
-
-          await agregarEnlaceRecurso(
-            curso.id,
-            recursoAbierto.id,
-            accessToken,
-            {
-              titulo:
-                enlaceTitulo.trim(),
-
-              descripcion:
-                '',
-
-              urlExterna:
-                enlaceUrl.trim(),
-            },
-          );
         }
 
-        setModalAgregar(
+        for (
+          const item
+          of formularioMateriales.enlaces
+        ) {
+          try {
+            await agregarEnlaceRecurso(
+              curso.id,
+              recursoMateriales.id,
+              accessToken,
+              {
+                titulo:
+                  item.titulo.trim(),
+
+                descripcion:
+                  item.descripcion.trim(),
+
+                urlExterna:
+                  item.urlExterna.trim(),
+              },
+            );
+          } catch (
+            error
+          ) {
+            errores.push(
+              error instanceof
+                Error
+                ? error.message
+                : `No fue posible agregar ${item.titulo}.`,
+            );
+          }
+        }
+
+        setRecursoMaterialesId(
           null,
         );
 
-        setArchivoNuevo(
-          null,
-        );
-
-        setArchivoTitulo(
-          '',
-        );
-
-        setArchivoQuiz(
-          false,
-        );
-
-        setEnlaceTitulo(
-          '',
-        );
-
-        setEnlaceUrl(
-          '',
+        setFormularioMateriales(
+          inicial,
         );
 
         await cargar();
 
+        if (
+          errores.length >
+          0
+        ) {
+          mostrarToast(
+            'advertencia',
+            'Materiales agregados parcialmente',
+            `${errores.length} material(es) no pudieron guardarse.`,
+          );
+
+          return;
+        }
+
+        const tienePdf =
+          formularioMateriales.archivos.some(
+            (
+              item,
+            ) =>
+              item.archivo.type ===
+                'application/pdf' ||
+              item.archivo.name
+                .toLocaleLowerCase(
+                  'es',
+                )
+                .endsWith(
+                  '.pdf',
+                ),
+          );
+
         mostrarToast(
           'exito',
-          'Contenido agregado',
+          'Materiales agregados',
+          recursoMateriales.uso !==
+              'AULA' &&
+            tienePdf
+            ? 'Los materiales se guardaron. Los PDF se prepararán como datasets en segundo plano.'
+            : 'Los materiales se guardaron correctamente.',
         );
       } catch (
         error
       ) {
         mostrarToast(
           'error',
-          'No fue posible agregar el contenido',
+          'No fue posible agregar los materiales',
           error instanceof
             Error
             ? error.message
@@ -1189,74 +1428,6 @@ export default function RecursosCurso() {
             Error
             ? error.message
             : undefined,
-        );
-      }
-    };
-
-  const alternarQuiz =
-    async (
-      contenido:
-        RecursoContenido,
-    ) => {
-      if (
-        !accessToken ||
-        !curso?.id ||
-        !recursoAbierto
-      ) {
-        return;
-      }
-
-      if (
-        recursoAbierto.uso ===
-        'AULA'
-      ) {
-        mostrarToast(
-          'advertencia',
-          'Recurso no habilitado para Quizzes',
-          'Cambia el uso del recurso a “Aula + Quizzes” o “Solo Quizzes”.',
-        );
-
-        return;
-      }
-
-      try {
-        setProcesando(
-          true,
-        );
-
-        await actualizarContenidoRecurso(
-          curso.id,
-          recursoAbierto.id,
-          contenido.id,
-          accessToken,
-          {
-            disponibleParaQuiz:
-              !contenido.disponibleParaQuiz,
-          },
-        );
-
-        await cargar();
-
-        mostrarToast(
-          'exito',
-          contenido.disponibleParaQuiz
-            ? 'PDF retirado de Quizzes'
-            : 'PDF disponible para Quizzes',
-        );
-      } catch (
-        error
-      ) {
-        mostrarToast(
-          'error',
-          'No fue posible cambiar la configuración',
-          error instanceof
-            Error
-            ? error.message
-            : undefined,
-        );
-      } finally {
-        setProcesando(
-          false,
         );
       }
     };
@@ -1800,11 +1971,30 @@ export default function RecursosCurso() {
                 procesando={
                   procesando
                 }
-                onAbrirMateriales={() =>
+                onAbrirMateriales={() => {
+                  const contenidosActivos =
+                    recurso.contenidos.filter(
+                      (
+                        contenido,
+                      ) =>
+                        contenido.estaActivo,
+                    );
+
+                  if (
+                    contenidosActivos.length ===
+                    0
+                  ) {
+                    abrirAgregarMateriales(
+                      recurso,
+                    );
+
+                    return;
+                  }
+
                   setRecursoAbiertoId(
                     recurso.id,
-                  )
-                }
+                  );
+                }}
                 onAbrirArchivo={(
                   contenido,
                 ) =>
@@ -1844,6 +2034,13 @@ export default function RecursosCurso() {
                 onArchivar={() =>
                   setRecursoArchivar(
                     recurso,
+                  )
+                }
+                onReintentarDataset={(
+                  versionId,
+                ) =>
+                  void reintentarDataset(
+                    versionId,
                   )
                 }
               />
@@ -2163,23 +2360,20 @@ export default function RecursosCurso() {
             );
           }
         }}
-        onAgregarMaterial={() =>
-          setSelectorMaterialAbierto(
-            true,
-          )
-        }
+        onAgregarMaterial={() => {
+          if (
+            recursoAbierto
+          ) {
+            abrirAgregarMateriales(
+              recursoAbierto,
+            );
+          }
+        }}
         onReemplazar={
           setContenidoReemplazar
         }
         onHistorial={
           setContenidoHistorial
-        }
-        onAlternarQuiz={(
-          contenido,
-        ) =>
-          void alternarQuiz(
-            contenido,
-          )
         }
         onEliminar={
           setContenidoEliminar
@@ -2188,141 +2382,24 @@ export default function RecursosCurso() {
 
       <AulaModal
         abierto={
-          selectorMaterialAbierto
+          Boolean(
+            recursoMateriales,
+          )
         }
-        titulo="Agregar material"
+        titulo="Agregar materiales"
         etiqueta={
-          recursoAbierto?.titulo
+          recursoMateriales?.titulo
         }
-        descripcion="Selecciona qué tipo de material quieres agregar al recurso."
+        descripcion="Agrega archivos y enlaces desde el mismo formulario. Puedes seleccionar varios archivos de una sola vez."
         icono={
           Layers3
         }
-        ancho="compacto"
+        ancho="amplio"
         bloqueado={
           procesando
         }
-        onCerrar={() =>
-          setSelectorMaterialAbierto(
-            false,
-          )
-        }
-      >
-        <div className="selector-material">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectorMaterialAbierto(
-                false,
-              );
-
-              setModalAgregar(
-                'ARCHIVO',
-              );
-
-              setArchivoNuevo(
-                null,
-              );
-
-              setArchivoTitulo(
-                '',
-              );
-
-              setArchivoQuiz(
-                recursoAbierto?.uso ===
-                'SOLO_QUIZZES',
-              );
-            }}
-          >
-            <span>
-              <FilePlus2
-                size={
-                  22
-                }
-              />
-            </span>
-
-            <div>
-              <strong>
-                Archivo
-              </strong>
-
-              <small>
-                PDF, Word, PowerPoint, imagen u otro documento permitido.
-              </small>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setSelectorMaterialAbierto(
-                false,
-              );
-
-              setModalAgregar(
-                'ENLACE',
-              );
-
-              setEnlaceTitulo(
-                '',
-              );
-
-              setEnlaceUrl(
-                '',
-              );
-            }}
-          >
-            <span>
-              <Link2
-                size={
-                  22
-                }
-              />
-            </span>
-
-            <div>
-              <strong>
-                Enlace
-              </strong>
-
-              <small>
-                Video, página oficial, Drive, jurisprudencia u otro recurso web.
-              </small>
-            </div>
-          </button>
-        </div>
-      </AulaModal>
-
-      <AulaModal
-        abierto={
-          modalAgregar !==
-          null
-        }
-        titulo={
-          modalAgregar ===
-          'ARCHIVO'
-            ? 'Agregar archivo'
-            : 'Agregar enlace'
-        }
-        etiqueta={
-          recursoAbierto?.titulo
-        }
-        descripcion="El nuevo material quedará dentro de este mismo recurso."
-        icono={
-          modalAgregar ===
-          'ARCHIVO'
-            ? FilePlus2
-            : Link2
-        }
-        ancho="compacto"
-        bloqueado={
-          procesando
-        }
-        onCerrar={() =>
-          setModalAgregar(
-            null,
-          )
+        onCerrar={
+          cerrarAgregarMateriales
         }
         footer={
           <div className="modal-actions">
@@ -2332,10 +2409,8 @@ export default function RecursosCurso() {
               disabled={
                 procesando
               }
-              onClick={() =>
-                setModalAgregar(
-                  null,
-                )
+              onClick={
+                cerrarAgregarMateriales
               }
             >
               Cancelar
@@ -2347,140 +2422,32 @@ export default function RecursosCurso() {
                 procesando
               }
               onClick={() =>
-                void agregarContenido()
+                void guardarMateriales()
               }
             >
-              Agregar
+              Agregar materiales
             </button>
           </div>
         }
       >
-        {modalAgregar ===
-        'ARCHIVO' ? (
-          <div className="mini-form">
-            <label>
-              <span>
-                Archivo
-              </span>
-
-              <input
-                type="file"
-                onChange={(
-                  evento,
-                ) => {
-                  const archivo =
-                    evento.target.files?.[
-                      0
-                    ] ??
-                    null;
-
-                  setArchivoNuevo(
-                    archivo,
-                  );
-
-                  if (
-                    archivo
-                  ) {
-                    setArchivoTitulo(
-                      archivo.name.replace(
-                        /\.[^/.]+$/,
-                        '',
-                      ),
-                    );
-                  }
-                }}
-              />
-            </label>
-
-            <label>
-              <span>
-                Título visible
-              </span>
-
-              <input
-                value={
-                  archivoTitulo
-                }
-                onChange={(
-                  evento,
-                ) =>
-                  setArchivoTitulo(
-                    evento.target.value,
-                  )
-                }
-              />
-            </label>
-
-            {recursoAbierto?.uso !==
-              'AULA' &&
-              archivoNuevo?.name
-                .toLocaleLowerCase(
-                  'es',
-                )
-                .endsWith(
-                  '.pdf',
-                ) && (
-              <label className="check-inline">
-                <input
-                  type="checkbox"
-                  checked={
-                    archivoQuiz
-                  }
-                  onChange={(
-                    evento,
-                  ) =>
-                    setArchivoQuiz(
-                      evento.target.checked,
-                    )
-                  }
-                />
-
-                Disponible como fuente para Quizzes
-              </label>
-            )}
-          </div>
-        ) : (
-          <div className="mini-form">
-            <label>
-              <span>
-                Título
-              </span>
-
-              <input
-                value={
-                  enlaceTitulo
-                }
-                onChange={(
-                  evento,
-                ) =>
-                  setEnlaceTitulo(
-                    evento.target.value,
-                  )
-                }
-              />
-            </label>
-
-            <label>
-              <span>
-                URL
-              </span>
-
-              <input
-                value={
-                  enlaceUrl
-                }
-                placeholder="https://..."
-                onChange={(
-                  evento,
-                ) =>
-                  setEnlaceUrl(
-                    evento.target.value,
-                  )
-                }
-              />
-            </label>
-          </div>
-        )}
+        <FormularioRecurso
+          valor={
+            formularioMateriales
+          }
+          paso={
+            2
+          }
+          hitos={
+            hitos
+          }
+          deshabilitado={
+            procesando
+          }
+          onChange={
+            setFormularioMateriales
+          }
+          onAbrirCatalogoCategoria={() => {}}
+        />
       </AulaModal>
 
       <ReemplazarContenidoModal
@@ -2920,63 +2887,6 @@ const styles = `
       var(--app-danger);
   }
 
-  .mini-form {
-    display: grid;
-    gap: 11px;
-  }
-
-  .mini-form label {
-    display: grid;
-    gap: 6px;
-  }
-
-  .mini-form span {
-    color:
-      var(--app-text-secondary);
-
-    font-size: 9px;
-    font-weight: 850;
-  }
-
-  .mini-form input {
-    width: 100%;
-
-    box-sizing: border-box;
-
-    padding:
-      10px
-      11px;
-
-    border:
-      1px solid
-      var(--app-border-strong);
-    border-radius: 11px;
-
-    color:
-      var(--app-text);
-
-    background:
-      var(--app-surface);
-
-    font: inherit;
-    font-size: 11px;
-  }
-
-  .mini-form .check-inline {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-
-    color:
-      var(--app-text-secondary);
-
-    font-size: 9px;
-  }
-
-  .mini-form .check-inline input {
-    width: auto;
-  }
-
   .confirm-text {
     margin: 0;
 
@@ -2985,96 +2895,6 @@ const styles = `
 
     font-size: 10px;
     line-height: 1.5;
-  }
-
-  .selector-material {
-    display: grid;
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(
-          0,
-          1fr
-        )
-      );
-    gap: 10px;
-  }
-
-  .selector-material button {
-    min-height: 120px;
-
-    display: grid;
-    align-content: start;
-    gap: 10px;
-
-    padding: 14px;
-
-    border:
-      1px solid
-      var(--app-border);
-    border-radius: 15px;
-
-    color:
-      var(--app-text);
-
-    background:
-      var(--app-surface-alt);
-
-    text-align: left;
-    font: inherit;
-
-    cursor: pointer;
-
-    transition:
-      border-color .16s ease,
-      background .16s ease,
-      transform .16s ease;
-  }
-
-  .selector-material button:hover {
-    transform:
-      translateY(
-        -1px
-      );
-
-    border-color:
-      var(--app-accent);
-
-    background:
-      var(--app-accent-soft);
-  }
-
-  .selector-material button > span {
-    width: 44px;
-    height: 44px;
-
-    display: grid;
-    place-items: center;
-
-    border-radius: 12px;
-
-    color:
-      var(--app-accent-dark);
-
-    background:
-      var(--app-surface);
-  }
-
-  .selector-material button div {
-    display: grid;
-    gap: 4px;
-  }
-
-  .selector-material button strong {
-    font-size: 12px;
-  }
-
-  .selector-material button small {
-    color:
-      var(--app-text-muted);
-
-    font-size: 9.5px;
-    line-height: 1.4;
   }
 
   @media (
@@ -3106,22 +2926,11 @@ const styles = `
     max-width:
       700px
   ) {
-    .selector-material {
-      grid-template-columns:
-        1fr;
-    }
   }
 
   @media (
     prefers-reduced-motion:
       reduce
   ) {
-    .selector-material button {
-      transition: none;
-    }
-
-    .selector-material button:hover {
-      transform: none;
-    }
   }
 `;

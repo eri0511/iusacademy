@@ -9,6 +9,7 @@ import {
   AlcanceRecursoCurso,
   EstadoInscripcion,
   EstadoRecursoCurso,
+  EstadoProcesamientoDataset,
   EstadoVersionRecurso,
   Rol,
   TipoContenidoRecurso,
@@ -16,6 +17,7 @@ import {
 } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ArchivosService } from '../archivos/archivos.service';
+import { DatasetProcesamientoService } from './dataset-procesamiento.service';
 import type { UsuarioAutenticado } from '../archivos/interfaces/usuario-autenticado.interface';
 import { ActualizarContenidoDto } from './dto/actualizar-contenido.dto';
 import { ActualizarRecursoDto } from './dto/actualizar-recurso.dto';
@@ -34,8 +36,14 @@ type ArchivoSubido = {
 @Injectable()
 export class RecursosService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly archivosService: ArchivosService,
+    private readonly prisma:
+      PrismaService,
+
+    private readonly archivosService:
+      ArchivosService,
+
+    private readonly datasetProcesamiento:
+      DatasetProcesamientoService,
   ) {}
 
   private includeDetalle = {
@@ -360,86 +368,244 @@ export class RecursosService {
     recursoId: number,
     datos: ActualizarRecursoDto,
   ) {
-    const recursoActual = await this.buscarRecursoDocente(
-      usuario,
-      cursoId,
-      recursoId,
-    );
+    const recursoActual =
+      await this.buscarRecursoDocente(
+        usuario,
+        cursoId,
+        recursoId,
+      );
 
-    const curso = await this.validarCurso(usuario, cursoId);
-    const alcance = datos.alcance ?? recursoActual.alcance;
-    const hitoId = await this.validarAlcance(
-      curso,
-      alcance,
-      alcance === AlcanceRecursoCurso.HITO
-        ? datos.hitoId ?? recursoActual.hitoId
-        : null,
-    );
+    const curso =
+      await this.validarCurso(
+        usuario,
+        cursoId,
+      );
+
+    const alcance =
+      datos.alcance ??
+      recursoActual.alcance;
+
+    const hitoId =
+      await this.validarAlcance(
+        curso,
+        alcance,
+        alcance ===
+        AlcanceRecursoCurso.HITO
+          ? datos.hitoId ??
+            recursoActual.hitoId
+          : null,
+      );
 
     const uso =
       datos.uso ??
       recursoActual.uso;
 
     const visibleParaEstudiantes =
-      uso === UsoRecursoCurso.SOLO_QUIZZES
+      uso ===
+      UsoRecursoCurso.SOLO_QUIZZES
         ? false
         : datos.visibleParaEstudiantes ??
           recursoActual.visibleParaEstudiantes;
 
-    const recurso = await this.prisma.$transaction(
-      async (tx) => {
-        if (
-          uso === UsoRecursoCurso.AULA &&
-          recursoActual.uso !== UsoRecursoCurso.AULA
-        ) {
-          await tx.recursoContenido.updateMany({
-            where: {
-              recursoId,
-              disponibleParaQuiz: true,
-            },
-            data: {
-              disponibleParaQuiz: false,
-            },
-          });
-        }
+    const recurso =
+      await this.prisma.$transaction(
+        async (
+          tx,
+        ) => {
+          const contenidosArchivo =
+            await tx.recursoContenido.findMany({
+              where: {
+                recursoId,
 
-        return tx.recursoCurso.update({
-          where: {
-            id: recursoId,
-          },
-          data: {
-            ...(datos.titulo !== undefined
-              ? {
-                  titulo:
-                    datos.titulo.trim(),
-                }
-              : {}),
-            ...(datos.descripcion !== undefined
-              ? {
-                  descripcion:
-                    datos.descripcion.trim() ||
-                    null,
-                }
-              : {}),
-            ...(datos.categoria !== undefined
-              ? {
-                  categoria:
-                    datos.categoria,
-                }
-              : {}),
-            alcance,
-            hitoId,
-            uso,
-            visibleParaEstudiantes,
-          },
-          include:
-            this.includeDetalle,
-        });
-      },
-    );
+                estaActivo:
+                  true,
+
+                tipo:
+                  TipoContenidoRecurso.ARCHIVO,
+              },
+
+              select: {
+                id:
+                  true,
+
+                versiones: {
+                  where: {
+                    esVigente:
+                      true,
+
+                    estado:
+                      EstadoVersionRecurso.VIGENTE,
+                  },
+
+                  select: {
+                    id:
+                      true,
+
+                    estadoDataset:
+                      true,
+
+                    archivo: {
+                      select: {
+                        extension:
+                          true,
+                      },
+                    },
+                  },
+
+                  take:
+                    1,
+                },
+              },
+            });
+
+          const participaEnQuizzes =
+            uso ===
+              UsoRecursoCurso.AULA_Y_QUIZZES ||
+            uso ===
+              UsoRecursoCurso.SOLO_QUIZZES;
+
+          for (
+            const contenido
+            of contenidosArchivo
+          ) {
+            const extension =
+              contenido.versiones[
+                0
+              ]?.archivo.extension
+                ?.trim()
+                .toLowerCase() ??
+              '';
+
+            const disponibleParaQuiz =
+              participaEnQuizzes &&
+              extension ===
+                'pdf';
+
+            await tx.recursoContenido.update({
+              where: {
+                id:
+                  contenido.id,
+              },
+
+              data: {
+                disponibleParaQuiz,
+              },
+            });
+
+            const versionVigente =
+              contenido.versiones[
+                0
+              ];
+
+            if (
+              versionVigente
+            ) {
+              const yaListo =
+                versionVigente.estadoDataset ===
+                EstadoProcesamientoDataset.LISTO;
+
+              await tx.recursoContenidoVersion.update({
+                where: {
+                  id:
+                    versionVigente.id,
+                },
+
+                data: disponibleParaQuiz
+                  ? {
+                      estadoDataset:
+                        yaListo
+                          ? EstadoProcesamientoDataset.LISTO
+                          : EstadoProcesamientoDataset.PENDIENTE,
+
+                      progresoDataset:
+                        yaListo
+                          ? 100
+                          : 0,
+
+                      errorDataset:
+                        yaListo
+                          ? undefined
+                          : null,
+
+                      procesadoDatasetEn:
+                        yaListo
+                          ? undefined
+                          : null,
+                    }
+                  : {
+                      estadoDataset:
+                        EstadoProcesamientoDataset.NO_APLICA,
+
+                      progresoDataset:
+                        0,
+
+                      errorDataset:
+                        null,
+
+                      procesadoDatasetEn:
+                        null,
+                    },
+              });
+            }
+          }
+
+          return tx.recursoCurso.update({
+            where: {
+              id:
+                recursoId,
+            },
+
+            data: {
+              ...(datos.titulo !==
+              undefined
+                ? {
+                    titulo:
+                      datos.titulo.trim(),
+                  }
+                : {}),
+
+              ...(datos.descripcion !==
+              undefined
+                ? {
+                    descripcion:
+                      datos.descripcion.trim() ||
+                      null,
+                  }
+                : {}),
+
+              ...(datos.categoria !==
+              undefined
+                ? {
+                    categoria:
+                      datos.categoria,
+                  }
+                : {}),
+
+              alcance,
+              hitoId,
+              uso,
+              visibleParaEstudiantes,
+            },
+
+            include:
+              this.includeDetalle,
+          });
+        },
+      );
+
+    if (
+      uso ===
+        UsoRecursoCurso.AULA_Y_QUIZZES ||
+      uso ===
+        UsoRecursoCurso.SOLO_QUIZZES
+    ) {
+      this.datasetProcesamiento.despertar();
+    }
 
     return {
-      mensaje: 'Recurso actualizado correctamente',
+      mensaje:
+        'Recurso actualizado correctamente',
+
       recurso,
     };
   }
@@ -527,11 +693,21 @@ export class RecursosService {
   }
 
   async agregarArchivo(
-    usuario: UsuarioAutenticado,
-    cursoId: number,
-    recursoId: number,
-    datos: CrearContenidoArchivoDto,
-    archivo: ArchivoSubido | undefined,
+    usuario:
+      UsuarioAutenticado,
+
+    cursoId:
+      number,
+
+    recursoId:
+      number,
+
+    datos:
+      CrearContenidoArchivoDto,
+
+    archivo:
+      ArchivoSubido |
+      undefined,
   ) {
     const recurso =
       await this.buscarRecursoDocente(
@@ -540,68 +716,136 @@ export class RecursosService {
         recursoId,
       );
 
-    if (!archivo) {
-      throw new BadRequestException('Debes seleccionar un archivo');
-    }
-
-    const extension = archivo.originalname
-      .split('.')
-      .pop()
-      ?.trim()
-      .toLowerCase();
-
     if (
-      datos.disponibleParaQuiz &&
-      recurso.uso === UsoRecursoCurso.AULA
+      !archivo
     ) {
       throw new BadRequestException(
-        'Este recurso está configurado únicamente para el aula y no puede ofrecer fuentes para Quizzes',
+        'Debes seleccionar un archivo',
       );
     }
 
-    if (datos.disponibleParaQuiz && extension !== 'pdf') {
-      throw new BadRequestException(
-        'Solo los archivos PDF pueden marcarse como disponibles para Quizzes',
-      );
-    }
+    const extension =
+      archivo.originalname
+        .split(
+          '.',
+        )
+        .pop()
+        ?.trim()
+        .toLowerCase() ??
+      '';
 
-    const contenido = await this.prisma.recursoContenido.create({
-      data: {
-        recursoId,
-        tipo: TipoContenidoRecurso.ARCHIVO,
-        titulo: datos.titulo?.trim() || archivo.originalname,
-        descripcion: datos.descripcion?.trim() || null,
-        orden: datos.orden ?? 0,
-        disponibleParaQuiz: datos.disponibleParaQuiz,
-      },
-    });
+    const participaEnQuizzes =
+      recurso.uso ===
+        UsoRecursoCurso.AULA_Y_QUIZZES ||
+      recurso.uso ===
+        UsoRecursoCurso.SOLO_QUIZZES;
+
+    const disponibleParaQuiz =
+      participaEnQuizzes &&
+      extension ===
+        'pdf';
+
+    const contenido =
+      await this.prisma.recursoContenido.create({
+        data: {
+          recursoId,
+
+          tipo:
+            TipoContenidoRecurso.ARCHIVO,
+
+          titulo:
+            datos.titulo?.trim() ||
+            archivo.originalname,
+
+          descripcion:
+            datos.descripcion?.trim() ||
+            null,
+
+          orden:
+            datos.orden ??
+            0,
+
+          disponibleParaQuiz,
+        },
+      });
+
+    let archivoGuardado:
+      Awaited<
+        ReturnType<
+          ArchivosService['subirArchivoContenidoRecurso']
+        >
+      > |
+      null =
+      null;
 
     try {
-      const archivoGuardado = await this.archivosService.subirArchivoContenidoRecurso(
-        usuario,
-        cursoId,
-        contenido.id,
-        1,
-        archivo,
-      );
+      archivoGuardado =
+        await this.archivosService.subirArchivoContenidoRecurso(
+          usuario,
+          cursoId,
+          contenido.id,
+          1,
+          archivo,
+        );
 
       await this.prisma.recursoContenidoVersion.create({
         data: {
-          contenidoId: contenido.id,
-          archivoId: archivoGuardado.id,
-          numeroVersion: 1,
-          estado: EstadoVersionRecurso.VIGENTE,
-          esVigente: true,
+          contenidoId:
+            contenido.id,
+
+          archivoId:
+            archivoGuardado.id,
+
+          numeroVersion:
+            1,
+
+          estado:
+            EstadoVersionRecurso.VIGENTE,
+
+          esVigente:
+            true,
+
+          estadoDataset:
+            disponibleParaQuiz
+              ? EstadoProcesamientoDataset.PENDIENTE
+              : EstadoProcesamientoDataset.NO_APLICA,
+
+          progresoDataset:
+            0,
         },
       });
-    } catch (error) {
+
+      if (
+        disponibleParaQuiz
+      ) {
+        this.datasetProcesamiento.despertar();
+      }
+    } catch (
+      error
+    ) {
+      if (
+        archivoGuardado
+      ) {
+        await this.archivosService.eliminarArchivoFisicoSeguro(
+          archivoGuardado.id,
+        );
+      }
+
       await this.prisma.recursoContenido.delete({
-        where: { id: contenido.id },
+        where: {
+          id:
+            contenido.id,
+        },
       });
+
       throw error;
     }
 
-    return this.obtener(usuario, cursoId, recursoId);
+    return this.obtener(
+      usuario,
+      cursoId,
+      recursoId,
+    );
   }
 
   async actualizarContenido(
@@ -618,59 +862,103 @@ export class RecursosService {
         recursoId,
       );
 
-    const contenidoActual = await this.buscarContenidoDocente(
-      usuario,
-      cursoId,
-      recursoId,
-      contenidoId,
-    );
+    const contenidoActual =
+      await this.buscarContenidoDocente(
+        usuario,
+        cursoId,
+        recursoId,
+        contenidoId,
+      );
 
-    let urlExterna = contenidoActual.urlExterna;
-    let disponibleParaQuiz = contenidoActual.disponibleParaQuiz;
+    let urlExterna =
+      contenidoActual.urlExterna;
 
-    if (contenidoActual.tipo === TipoContenidoRecurso.ENLACE) {
-      if (datos.urlExterna !== undefined) {
-        urlExterna = this.normalizarUrlExterna(datos.urlExterna);
-      }
-      disponibleParaQuiz = false;
-    } else if (datos.disponibleParaQuiz !== undefined) {
+    let disponibleParaQuiz =
+      false;
+
+    if (
+      contenidoActual.tipo ===
+      TipoContenidoRecurso.ENLACE
+    ) {
       if (
-        datos.disponibleParaQuiz &&
-        recurso.uso === UsoRecursoCurso.AULA
+        datos.urlExterna !==
+        undefined
       ) {
-        throw new BadRequestException(
-          'Este recurso está configurado únicamente para el aula y no puede ofrecer fuentes para Quizzes',
-        );
-      }
-
-      if (datos.disponibleParaQuiz) {
-        const vigente = contenidoActual.versiones.find((version) => version.esVigente);
-        if (!vigente || vigente.archivo.extension.toLowerCase() !== 'pdf') {
-          throw new BadRequestException(
-            'Solo los contenidos cuyo archivo vigente es PDF pueden utilizarse para Quizzes',
+        urlExterna =
+          this.normalizarUrlExterna(
+            datos.urlExterna,
           );
-        }
       }
-      disponibleParaQuiz = datos.disponibleParaQuiz;
+    } else {
+      const vigente =
+        contenidoActual.versiones.find(
+          (
+            version,
+          ) =>
+            version.esVigente,
+        );
+
+      const esPdf =
+        vigente?.archivo.extension
+          .trim()
+          .toLowerCase() ===
+        'pdf';
+
+      const participaEnQuizzes =
+        recurso.uso ===
+          UsoRecursoCurso.AULA_Y_QUIZZES ||
+        recurso.uso ===
+          UsoRecursoCurso.SOLO_QUIZZES;
+
+      disponibleParaQuiz =
+        Boolean(
+          esPdf &&
+          participaEnQuizzes,
+        );
     }
 
-    const contenido = await this.prisma.recursoContenido.update({
-      where: { id: contenidoId },
-      data: {
-        ...(datos.titulo !== undefined
-          ? { titulo: datos.titulo.trim() }
-          : {}),
-        ...(datos.descripcion !== undefined
-          ? { descripcion: datos.descripcion.trim() || null }
-          : {}),
-        ...(datos.orden !== undefined ? { orden: datos.orden } : {}),
-        urlExterna,
-        disponibleParaQuiz,
-      },
-    });
+    const contenido =
+      await this.prisma.recursoContenido.update({
+        where: {
+          id:
+            contenidoId,
+        },
+
+        data: {
+          ...(datos.titulo !==
+          undefined
+            ? {
+                titulo:
+                  datos.titulo.trim(),
+              }
+            : {}),
+
+          ...(datos.descripcion !==
+          undefined
+            ? {
+                descripcion:
+                  datos.descripcion.trim() ||
+                  null,
+              }
+            : {}),
+
+          ...(datos.orden !==
+          undefined
+            ? {
+                orden:
+                  datos.orden,
+              }
+            : {}),
+
+          urlExterna,
+          disponibleParaQuiz,
+        },
+      });
 
     return {
-      mensaje: 'Contenido actualizado correctamente',
+      mensaje:
+        'Contenido actualizado correctamente',
+
       contenido,
     };
   }
@@ -696,88 +984,255 @@ export class RecursosService {
   }
 
   async reemplazarContenido(
-    usuario: UsuarioAutenticado,
-    cursoId: number,
-    recursoId: number,
-    contenidoId: number,
-    datos: ReemplazarContenidoDto,
-    archivo: ArchivoSubido | undefined,
+    usuario:
+      UsuarioAutenticado,
+
+    cursoId:
+      number,
+
+    recursoId:
+      number,
+
+    contenidoId:
+      number,
+
+    datos:
+      ReemplazarContenidoDto,
+
+    archivo:
+      ArchivoSubido |
+      undefined,
   ) {
-    const contenido = await this.buscarContenidoDocente(
-      usuario,
-      cursoId,
-      recursoId,
-      contenidoId,
-    );
+    const recurso =
+      await this.buscarRecursoDocente(
+        usuario,
+        cursoId,
+        recursoId,
+      );
 
-    if (contenido.tipo !== TipoContenidoRecurso.ARCHIVO) {
-      throw new BadRequestException('Solo los contenidos de archivo tienen versiones');
-    }
+    const contenido =
+      await this.buscarContenidoDocente(
+        usuario,
+        cursoId,
+        recursoId,
+        contenidoId,
+      );
 
-    if (!archivo) {
-      throw new BadRequestException('Debes seleccionar el nuevo archivo');
-    }
-
-    const extension = archivo.originalname
-      .split('.')
-      .pop()
-      ?.trim()
-      .toLowerCase();
-
-    if (contenido.disponibleParaQuiz && extension !== 'pdf') {
+    if (
+      contenido.tipo !==
+      TipoContenidoRecurso.ARCHIVO
+    ) {
       throw new BadRequestException(
-        'Este contenido se usa para Quizzes, por lo que su nueva versión debe seguir siendo PDF',
+        'Solo los contenidos de archivo tienen versiones',
       );
     }
 
-    const ultimaVersion = contenido.versiones.reduce(
-      (maximo, version) => Math.max(maximo, version.numeroVersion),
-      0,
-    );
-    const numeroVersion = ultimaVersion + 1;
+    if (
+      !archivo
+    ) {
+      throw new BadRequestException(
+        'Debes seleccionar el nuevo archivo',
+      );
+    }
 
-    const archivoGuardado = await this.archivosService.subirArchivoContenidoRecurso(
-      usuario,
-      cursoId,
-      contenidoId,
-      numeroVersion,
-      archivo,
-    );
+    const extension =
+      archivo.originalname
+        .split(
+          '.',
+        )
+        .pop()
+        ?.trim()
+        .toLowerCase() ??
+      '';
+
+    const participaEnQuizzes =
+      recurso.uso ===
+        UsoRecursoCurso.AULA_Y_QUIZZES ||
+      recurso.uso ===
+        UsoRecursoCurso.SOLO_QUIZZES;
+
+    const disponibleParaQuiz =
+      participaEnQuizzes &&
+      extension ===
+        'pdf';
+
+    const ultimaVersion =
+      contenido.versiones.reduce(
+        (
+          maximo,
+          version,
+        ) =>
+          Math.max(
+            maximo,
+            version.numeroVersion,
+          ),
+        0,
+      );
+
+    const numeroVersion =
+      ultimaVersion +
+      1;
+
+    const archivoGuardado =
+      await this.archivosService.subirArchivoContenidoRecurso(
+        usuario,
+        cursoId,
+        contenidoId,
+        numeroVersion,
+        archivo,
+      );
 
     try {
-      await this.prisma.$transaction(async (tx) => {
-        await tx.recursoContenidoVersion.updateMany({
-          where: {
-            contenidoId,
-            esVigente: true,
-          },
-          data: {
-            esVigente: false,
-            estado: EstadoVersionRecurso.REEMPLAZADA,
-            reemplazadaEn: new Date(),
-          },
-        });
+      await this.prisma.$transaction(
+        async (
+          tx,
+        ) => {
+          await tx.recursoContenidoVersion.updateMany({
+            where: {
+              contenidoId,
 
-        await tx.recursoContenidoVersion.create({
-          data: {
-            contenidoId,
-            archivoId: archivoGuardado.id,
-            numeroVersion,
-            estado: EstadoVersionRecurso.VIGENTE,
-            esVigente: true,
-            motivoActualizacion: datos.motivoActualizacion?.trim() || null,
-            fechaDocumento: datos.fechaDocumento
-              ? new Date(datos.fechaDocumento)
-              : null,
-          },
-        });
-      });
-    } catch (error) {
-      await this.archivosService.eliminarArchivoFisicoSeguro(archivoGuardado.id);
+              esVigente:
+                true,
+            },
+
+            data: {
+              esVigente:
+                false,
+
+              estado:
+                EstadoVersionRecurso.REEMPLAZADA,
+
+              reemplazadaEn:
+                new Date(),
+            },
+          });
+
+          await tx.recursoContenidoVersion.create({
+            data: {
+              contenidoId,
+
+              archivoId:
+                archivoGuardado.id,
+
+              numeroVersion,
+
+              estado:
+                EstadoVersionRecurso.VIGENTE,
+
+              esVigente:
+                true,
+
+              motivoActualizacion:
+                datos.motivoActualizacion?.trim() ||
+                null,
+
+              fechaDocumento:
+                datos.fechaDocumento
+                  ? new Date(
+                      datos.fechaDocumento,
+                    )
+                  : null,
+
+              estadoDataset:
+                disponibleParaQuiz
+                  ? EstadoProcesamientoDataset.PENDIENTE
+                  : EstadoProcesamientoDataset.NO_APLICA,
+
+              progresoDataset:
+                0,
+            },
+          });
+
+          await tx.recursoContenido.update({
+            where: {
+              id:
+                contenidoId,
+            },
+
+            data: {
+              disponibleParaQuiz,
+            },
+          });
+        },
+      );
+
+      if (
+        disponibleParaQuiz
+      ) {
+        this.datasetProcesamiento.despertar();
+      }
+    } catch (
+      error
+    ) {
+      await this.archivosService.eliminarArchivoFisicoSeguro(
+        archivoGuardado.id,
+      );
+
       throw error;
     }
 
-    return this.obtener(usuario, cursoId, recursoId);
+    return this.obtener(
+      usuario,
+      cursoId,
+      recursoId,
+    );
+  }
+
+  async reintentarDataset(
+    usuario:
+      UsuarioAutenticado,
+
+    cursoId:
+      number,
+
+    versionId:
+      number,
+  ) {
+    this.exigirDocente(
+      usuario,
+    );
+
+    await this.validarCurso(
+      usuario,
+      cursoId,
+    );
+
+    const version =
+      await this.prisma.recursoContenidoVersion.findFirst({
+        where: {
+          id:
+            versionId,
+
+          contenido: {
+            recurso: {
+              cursoId,
+
+              autorId:
+                usuario.id,
+
+              estaActivo:
+                true,
+            },
+          },
+        },
+
+        select: {
+          id:
+            true,
+        },
+      });
+
+    if (
+      !version
+    ) {
+      throw new NotFoundException(
+        'No se encontró la versión del dataset en este curso',
+      );
+    }
+
+    return this.datasetProcesamiento.reintentar(
+      versionId,
+    );
   }
 
   async listarDisponiblesParaQuiz(
@@ -825,8 +1280,26 @@ export class RecursosService {
           orderBy: { orden: 'asc' },
           include: {
             versiones: {
-              where: { esVigente: true },
-              include: { archivo: true },
+              where: {
+                esVigente:
+                  true,
+
+                estadoDataset:
+                  EstadoProcesamientoDataset.LISTO,
+              },
+
+              orderBy: {
+                numeroVersion:
+                  'desc',
+              },
+
+              take:
+                1,
+
+              include: {
+                archivo:
+                  true,
+              },
             },
           },
         },
