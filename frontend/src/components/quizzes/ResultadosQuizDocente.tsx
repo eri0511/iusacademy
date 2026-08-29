@@ -499,11 +499,11 @@ export default function ResultadosQuizDocente({
           />
 
           <span>
-            Participantes
+            Participación
           </span>
 
           <strong>
-            {resultados.intentos.length}
+            {resultados.totalParticiparon} / {resultados.totalInscritos}
           </strong>
         </article>
 
@@ -593,6 +593,10 @@ export default function ResultadosQuizDocente({
               </th>
 
               <th>
+                Estado
+              </th>
+
+              <th>
                 Respuestas
               </th>
 
@@ -629,7 +633,12 @@ export default function ResultadosQuizDocente({
               ) => (
                 <tr
                   key={
-                    intento.id
+                    intento.estudianteId
+                  }
+                  className={
+                    intento.participo
+                      ? undefined
+                      : 'quiz-resultados__fila-ausente'
                   }
                 >
                   <td>
@@ -653,36 +662,76 @@ export default function ResultadosQuizDocente({
                         </strong>
 
                         <small>
-                          {intento.posicionFinal
-                            ? `${intento.posicionFinal}.º lugar`
-                            : 'Sin posición'}
+                          {intento.participo
+                            ? intento.posicionFinal
+                              ? `${intento.posicionFinal}.º lugar`
+                              : 'Sin posición'
+                            : 'Sin intento registrado'}
                         </small>
                       </div>
                     </div>
                   </td>
 
                   <td>
-                    <div className="quiz-resultados__respuestas-mini">
-                      <span className="correcta">
-                        <CheckCircle2
-                          size={
-                            12
-                          }
-                        />
+                    <span
+                      className={
+                        intento.participo
+                          ? 'quiz-resultados__estado-participacion participo'
+                          : 'quiz-resultados__estado-participacion ausente'
+                      }
+                    >
+                      {intento.participo ? (
+                        <>
+                          <CheckCircle2
+                            size={
+                              12
+                            }
+                          />
 
-                        {intento.respuestasCorrectas}
+                          PARTICIPÓ
+                        </>
+                      ) : (
+                        <>
+                          <XCircle
+                            size={
+                              12
+                            }
+                          />
+
+                          NO PARTICIPÓ
+                        </>
+                      )}
+                    </span>
+                  </td>
+
+                  <td>
+                    {intento.participo ? (
+                      <div className="quiz-resultados__respuestas-mini">
+                        <span className="correcta">
+                          <CheckCircle2
+                            size={
+                              12
+                            }
+                          />
+
+                          {intento.respuestasCorrectas}
+                        </span>
+
+                        <span className="incorrecta">
+                          <XCircle
+                            size={
+                              12
+                            }
+                          />
+
+                          {intento.respuestasIncorrectas}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="quiz-resultados__sin-dato">
+                        —
                       </span>
-
-                      <span className="incorrecta">
-                        <XCircle
-                          size={
-                            12
-                          }
-                        />
-
-                        {intento.respuestasIncorrectas}
-                      </span>
-                    </div>
+                    )}
                   </td>
 
                   <td>
@@ -742,23 +791,29 @@ export default function ResultadosQuizDocente({
                   </td>
 
                   <td>
-                    <button
-                      type="button"
-                      className="quiz-resultados__detalle-btn"
-                      onClick={() =>
-                        void abrirDetalle(
-                          intento.estudianteId,
-                        )
-                      }
-                    >
-                      <Eye
-                        size={
-                          13
+                    {intento.participo ? (
+                      <button
+                        type="button"
+                        className="quiz-resultados__detalle-btn"
+                        onClick={() =>
+                          void abrirDetalle(
+                            intento.estudianteId,
+                          )
                         }
-                      />
+                      >
+                        <Eye
+                          size={
+                            13
+                          }
+                        />
 
-                      Ver detalle
-                    </button>
+                        Ver detalle
+                      </button>
+                    ) : (
+                      <span className="quiz-resultados__sin-intento">
+                        Sin detalle
+                      </span>
+                    )}
                   </td>
                 </tr>
               ),
@@ -1214,7 +1269,7 @@ const styles = `
 
   .quiz-resultados__tabla {
     width: 100%;
-    min-width: 940px;
+    min-width: 1040px;
     border-collapse: collapse;
   }
 
@@ -1332,6 +1387,55 @@ const styles = `
   .quiz-resultados__dato-chip {
     color: var(--app-text-muted);
     background: var(--app-surface-alt);
+  }
+
+  .quiz-resultados__fila-ausente {
+    background: color-mix(in srgb, var(--app-surface-alt) 72%, var(--app-surface));
+  }
+
+  .quiz-resultados__fila-ausente:hover {
+    background: color-mix(in srgb, var(--app-warning-bg, #fffbeb) 45%, var(--app-surface));
+  }
+
+  .quiz-resultados__estado-participacion {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 25px;
+    padding: 4px 7px;
+    border-radius: 999px;
+    font-size: 7.5px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .quiz-resultados__estado-participacion.participo {
+    color: var(--app-success);
+    background: var(--app-success-bg);
+  }
+
+  .quiz-resultados__estado-participacion.ausente {
+    color: var(--app-danger);
+    background: var(--app-danger-bg);
+  }
+
+  .quiz-resultados__sin-dato {
+    color: var(--app-text-muted);
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .quiz-resultados__sin-intento {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 6px 9px;
+    border-radius: 999px;
+    color: var(--app-text-muted);
+    background: var(--app-surface-alt);
+    font-size: 7.8px;
+    font-weight: 800;
+    white-space: nowrap;
   }
 
   .quiz-resultados__descuento {

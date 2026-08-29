@@ -284,9 +284,12 @@ export type ResultadoDocenteQuiz = {
     puntajeMinimoVelocidad: number | string;
     resultadosPublicados: boolean;
   };
+  totalInscritos: number;
+  totalParticiparon: number;
   intentos: Array<{
-    id: number;
+    id: number | null;
     estudianteId: number;
+    participo: boolean;
     posicionFinal: number | null;
     respuestasCorrectas: number;
     respuestasIncorrectas: number;

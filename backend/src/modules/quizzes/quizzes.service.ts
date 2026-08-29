@@ -4633,6 +4633,164 @@ export class QuizzesService {
           }
         }
 
+        if (
+          quiz.esCalificable &&
+          quiz.actividadCalificable
+        ) {
+          const estudiantesConIntento =
+            new Set(
+              calculados.map(
+                (
+                  item,
+                ) =>
+                  item.intento.estudianteId,
+              ),
+            );
+
+          const inscripcionesActivas =
+            await tx.inscripcionCurso.findMany({
+              where: {
+                cursoId,
+
+                estado:
+                  EstadoInscripcion.ACTIVA,
+              },
+
+              select: {
+                estudianteId:
+                  true,
+              },
+            });
+
+          const ausentes =
+            inscripcionesActivas.filter(
+              (
+                inscripcion,
+              ) =>
+                !estudiantesConIntento.has(
+                  inscripcion.estudianteId,
+                ),
+            );
+
+          for (
+            const ausente
+            of ausentes
+          ) {
+            const calificacion =
+              await tx.calificacionEstudiante.upsert({
+                where: {
+                  actividadId_estudianteId: {
+                    actividadId:
+                      quiz.actividadCalificable.id,
+
+                    estudianteId:
+                      ausente.estudianteId,
+                  },
+                },
+
+                create: {
+                  actividadId:
+                    quiz.actividadCalificable.id,
+
+                  estudianteId:
+                    ausente.estudianteId,
+
+                  calificadorId:
+                    usuario.id,
+
+                  notaBase:
+                    0,
+
+                  descuentoRetraso:
+                    0,
+
+                  descuentoComentarios:
+                    0,
+
+                  ajusteIndividual:
+                    0,
+
+                  notaFinal:
+                    0,
+
+                  retroalimentacion:
+                    'No participó en el Quiz.',
+
+                  estado:
+                    EstadoCalificacion.CALIFICADA,
+
+                  calificadaEn:
+                    ahora,
+                },
+
+                update: {
+                  calificadorId:
+                    usuario.id,
+
+                  notaBase:
+                    0,
+
+                  descuentoRetraso:
+                    0,
+
+                  descuentoComentarios:
+                    0,
+
+                  ajusteIndividual:
+                    0,
+
+                  notaFinal:
+                    0,
+
+                  retroalimentacion:
+                    'No participó en el Quiz.',
+
+                  estado:
+                    EstadoCalificacion.CALIFICADA,
+
+                  calificadaEn:
+                    ahora,
+
+                  publicadaEn:
+                    null,
+                },
+              });
+
+            await tx.historialCalificacion.create({
+              data: {
+                actividadId:
+                  quiz.actividadCalificable.id,
+
+                calificacionId:
+                  calificacion.id,
+
+                actorId:
+                  usuario.id,
+
+                accion:
+                  AccionHistorialCalificacion.CALIFICACION_ACTUALIZADA,
+
+                detalle: {
+                  origen:
+                    'QUIZ',
+
+                  quizId:
+                    quiz.id,
+
+                  noParticipo:
+                    true,
+
+                  notaBase:
+                    0,
+
+                  notaFinal:
+                    0,
+                },
+              },
+            });
+          }
+        }
+
         await tx.quizCurso.update({
           where: {
             id:
@@ -4700,45 +4858,295 @@ export class QuizzesService {
         quizId,
       );
 
-    const intentos =
-      await this.prisma.intentoQuiz.findMany({
-        where: {
-          quizId,
-        },
+    const [
+      inscripciones,
+      intentos,
+    ] =
+      await Promise.all([
+        this.prisma.inscripcionCurso.findMany({
+          where: {
+            cursoId,
 
-        include: {
-          estudiante: {
-            select: {
-              id:
+            estado:
+              EstadoInscripcion.ACTIVA,
+
+            estudiante: {
+              estaActivo:
                 true,
 
-              nombres:
-                true,
-
-              apellidoPaterno:
-                true,
-
-              apellidoMaterno:
-                true,
-
-              fotoPerfilUrl:
-                true,
+              rol:
+                Rol.ESTUDIANTE,
             },
           },
-        },
 
-        orderBy: [
-          {
-            posicionFinal:
-              'asc',
+          orderBy: [
+            {
+              estudiante: {
+                apellidoPaterno:
+                  'asc',
+              },
+            },
+            {
+              estudiante: {
+                nombres:
+                  'asc',
+              },
+            },
+          ],
+
+          select: {
+            estudianteId:
+              true,
+
+            estudiante: {
+              select: {
+                id:
+                  true,
+
+                nombres:
+                  true,
+
+                apellidoPaterno:
+                  true,
+
+                apellidoMaterno:
+                  true,
+
+                fotoPerfilUrl:
+                  true,
+              },
+            },
+          },
+        }),
+
+        this.prisma.intentoQuiz.findMany({
+          where: {
+            quizId,
           },
 
-          {
-            notaFinal:
-              'desc',
+          include: {
+            estudiante: {
+              select: {
+                id:
+                  true,
+
+                nombres:
+                  true,
+
+                apellidoPaterno:
+                  true,
+
+                apellidoMaterno:
+                  true,
+
+                fotoPerfilUrl:
+                  true,
+              },
+            },
           },
-        ],
-      });
+        }),
+      ]);
+
+    const intentoPorEstudiante =
+      new Map(
+        intentos.map(
+          (
+            intento,
+          ) => [
+            intento.estudianteId,
+            intento,
+          ],
+        ),
+      );
+
+    const totalPreguntas =
+      quiz.preguntas.filter(
+        (
+          pregunta,
+        ) =>
+          pregunta.estaActiva,
+      ).length;
+
+    const resultados =
+      inscripciones
+        .map(
+          (
+            inscripcion,
+          ) => {
+            const intento =
+              intentoPorEstudiante.get(
+                inscripcion.estudianteId,
+              );
+
+            if (
+              intento
+            ) {
+              return {
+                id:
+                  intento.id,
+
+                estudianteId:
+                  intento.estudianteId,
+
+                participo:
+                  true,
+
+                posicionFinal:
+                  intento.posicionFinal,
+
+                respuestasCorrectas:
+                  intento.respuestasCorrectas,
+
+                respuestasIncorrectas:
+                  intento.respuestasIncorrectas,
+
+                respuestasOmitidas:
+                  intento.respuestasOmitidas,
+
+                puntajeBruto:
+                  intento.puntajeBruto,
+
+                notaBase:
+                  intento.notaBase,
+
+                descuentoPosicion:
+                  intento.descuentoPosicion,
+
+                notaFinal:
+                  intento.notaFinal,
+
+                tiempoTotalMs:
+                  intento.tiempoTotalMs,
+
+                finalizadoEn:
+                  intento.finalizadoEn,
+
+                estudiante:
+                  intento.estudiante,
+              };
+            }
+
+            return {
+              id:
+                null,
+
+              estudianteId:
+                inscripcion.estudianteId,
+
+              participo:
+                false,
+
+              posicionFinal:
+                null,
+
+              respuestasCorrectas:
+                0,
+
+              respuestasIncorrectas:
+                0,
+
+              respuestasOmitidas:
+                totalPreguntas,
+
+              puntajeBruto:
+                0,
+
+              notaBase:
+                0,
+
+              descuentoPosicion:
+                0,
+
+              notaFinal:
+                0,
+
+              tiempoTotalMs:
+                null,
+
+              finalizadoEn:
+                null,
+
+              estudiante:
+                inscripcion.estudiante,
+            };
+          },
+        )
+        .sort(
+          (
+            a,
+            b,
+          ) => {
+            if (
+              a.participo !==
+              b.participo
+            ) {
+              return a.participo
+                ? -1
+                : 1;
+            }
+
+            if (
+              a.participo &&
+              b.participo
+            ) {
+              const posicionA =
+                a.posicionFinal ??
+                Number.MAX_SAFE_INTEGER;
+
+              const posicionB =
+                b.posicionFinal ??
+                Number.MAX_SAFE_INTEGER;
+
+              if (
+                posicionA !==
+                posicionB
+              ) {
+                return (
+                  posicionA -
+                  posicionB
+                );
+              }
+
+              const notaA =
+                Number(
+                  a.notaFinal,
+                );
+
+              const notaB =
+                Number(
+                  b.notaFinal,
+                );
+
+              if (
+                notaA !==
+                notaB
+              ) {
+                return (
+                  notaB -
+                  notaA
+                );
+              }
+            }
+
+            const apellido =
+              a.estudiante.apellidoPaterno.localeCompare(
+                b.estudiante.apellidoPaterno,
+                'es',
+              );
+
+            if (
+              apellido !==
+              0
+            ) {
+              return apellido;
+            }
+
+            return a.estudiante.nombres.localeCompare(
+              b.estudiante.nombres,
+              'es',
+            );
+          },
+        );
 
     return {
       quiz: {
@@ -4783,7 +5191,19 @@ export class QuizzesService {
           quiz.resultadosPublicados,
       },
 
-      intentos,
+      totalInscritos:
+        inscripciones.length,
+
+      totalParticiparon:
+        resultados.filter(
+          (
+            item,
+          ) =>
+            item.participo,
+        ).length,
+
+      intentos:
+        resultados,
     };
   }
 
