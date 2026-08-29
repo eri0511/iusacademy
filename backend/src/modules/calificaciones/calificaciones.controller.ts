@@ -7,12 +7,15 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 
 import type {
   Request,
+  Response,
 } from 'express';
 
 import {
@@ -51,6 +54,14 @@ import {
   CalificacionesService,
 } from './calificaciones.service';
 
+import {
+  CalificacionesReportesService,
+} from './calificaciones-reportes.service';
+
+import {
+  enviarArchivoReporte,
+} from '../reportes';
+
 import type {
   UsuarioAutenticado,
 } from './interfaces/usuario-autenticado.interface';
@@ -72,6 +83,9 @@ export class CalificacionesController {
   constructor(
     private readonly calificacionesService:
       CalificacionesService,
+
+    private readonly calificacionesReportesService:
+      CalificacionesReportesService,
   ) {}
 
   @Post(
@@ -157,10 +171,67 @@ export class CalificacionesController {
     )
     cursoId:
       number,
+
+    @Query(
+      'hitoId',
+      ParseIntPipe,
+    )
+    hitoId:
+      number,
   ) {
     return this.calificacionesService.obtenerLibroDocente(
       request.user,
       cursoId,
+      hitoId,
+    );
+  }
+
+  @Get(
+    'cursos/:cursoId/libro/exportar/:formato',
+  )
+  @Roles(
+    Rol.DOCENTE,
+  )
+  async exportarLibro(
+    @Req()
+    request:
+      RequestAutenticada,
+
+    @Param(
+      'cursoId',
+      ParseIntPipe,
+    )
+    cursoId:
+      number,
+
+    @Param(
+      'formato',
+    )
+    formato:
+      string,
+
+    @Query(
+      'hitoId',
+      ParseIntPipe,
+    )
+    hitoId:
+      number,
+
+    @Res()
+    response:
+      Response,
+  ) {
+    const archivo =
+      await this.calificacionesReportesService.generarLibro(
+        request.user,
+        cursoId,
+        hitoId,
+        formato,
+      );
+
+    enviarArchivoReporte(
+      response,
+      archivo,
     );
   }
 
@@ -295,10 +366,18 @@ export class CalificacionesController {
     )
     cursoId:
       number,
+
+    @Query(
+      'hitoId',
+      ParseIntPipe,
+    )
+    hitoId:
+      number,
   ) {
     return this.calificacionesService.obtenerMisCalificaciones(
       request.user,
       cursoId,
+      hitoId,
     );
   }
 }

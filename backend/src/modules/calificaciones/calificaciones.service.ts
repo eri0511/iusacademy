@@ -503,6 +503,8 @@ export class CalificacionesService {
       UsuarioAutenticado,
     cursoId:
       number,
+    hitoId:
+      number,
   ) {
     this.validarDocente(
       usuario,
@@ -512,6 +514,12 @@ export class CalificacionesService {
       await this.obtenerCursoDocente(
         usuario.id,
         cursoId,
+      );
+
+    const hito =
+      await this.validarHitoCurso(
+        curso.planificacionId,
+        hitoId,
       );
 
     const estudiantes =
@@ -567,15 +575,11 @@ export class CalificacionesService {
       await this.prisma.actividadCalificable.findMany({
         where: {
           cursoId,
+          hitoId:
+            hito.id,
         },
 
         orderBy: [
-          {
-            hito: {
-              numero:
-                'asc',
-            },
-          },
           {
             componente:
               'asc',
@@ -591,22 +595,6 @@ export class CalificacionesService {
         ],
 
         include: {
-          hito: {
-            select: {
-              id:
-                true,
-              numero:
-                true,
-              codigo:
-                true,
-              nombre:
-                true,
-              puntajeContinua:
-                true,
-              puntajeProcesual:
-                true,
-            },
-          },
           calificaciones: {
             select: {
               id:
@@ -632,16 +620,227 @@ export class CalificacionesService {
         },
       });
 
+    const actividadesNormalizadas =
+      actividades.map(
+        (
+          actividad,
+        ) => ({
+          id:
+            actividad.id,
+          titulo:
+            actividad.titulo,
+          descripcion:
+            actividad.descripcion,
+          foroId:
+            actividad.foroId,
+          tareaId:
+            actividad.tareaId,
+          quizId:
+            actividad.quizId,
+          origen:
+            actividad.origen,
+          componente:
+            actividad.componente,
+          estado:
+            actividad.estado,
+          participaEnPromedio:
+            actividad.participaEnPromedio,
+          visibleParaEstudiantes:
+            actividad.visibleParaEstudiantes,
+          orden:
+            actividad.orden,
+          calificaciones:
+            actividad.calificaciones.map(
+              (
+                calificacion,
+              ) => ({
+                ...calificacion,
+                notaBase:
+                  Number(
+                    calificacion.notaBase,
+                  ),
+                descuentoRetraso:
+                  Number(
+                    calificacion.descuentoRetraso,
+                  ),
+                ajusteIndividual:
+                  Number(
+                    calificacion.ajusteIndividual,
+                  ),
+                notaFinal:
+                  Number(
+                    calificacion.notaFinal,
+                  ),
+              }),
+            ),
+          resumen: (() => {
+            const calificacionesValidas =
+              actividad.calificaciones.filter(
+                (item) =>
+                  item.estado ===
+                    EstadoCalificacion.CALIFICADA ||
+                  item.estado ===
+                    EstadoCalificacion.PUBLICADA,
+              );
+
+            const publicadas =
+              calificacionesValidas.filter(
+                (item) =>
+                  item.estado ===
+                  EstadoCalificacion.PUBLICADA,
+              ).length;
+
+            const promedio =
+              calificacionesValidas.length > 0
+                ? calificacionesValidas.reduce(
+                    (suma, item) =>
+                      suma + Number(item.notaFinal),
+                    0,
+                  ) / calificacionesValidas.length
+                : 0;
+
+            return {
+              totalEstudiantes:
+                estudiantes.length,
+              calificadas:
+                calificacionesValidas.length,
+              publicadas,
+              pendientes:
+                Math.max(
+                  0,
+                  estudiantes.length -
+                    calificacionesValidas.length,
+                ),
+              promedio:
+                Number(promedio.toFixed(2)),
+            };
+          })(),
+        }),
+      );
+
+    const calcularResumen = (
+      estudianteId:
+        number,
+      componente:
+        ComponenteEvaluacion,
+    ) => {
+      const actividadesComponente =
+        actividades.filter(
+          (
+            actividad,
+          ) =>
+            actividad.componente ===
+              componente &&
+            actividad.participaEnPromedio &&
+            actividad.estado !==
+              EstadoActividadCalificable.ANULADA,
+        );
+
+      const notas:
+        number[] =
+        [];
+
+      for (
+        const actividad of
+        actividadesComponente
+      ) {
+        const calificacion =
+          actividad.calificaciones.find(
+            (
+              item,
+            ) =>
+              item.estudianteId ===
+                estudianteId &&
+              (
+                item.estado ===
+                  EstadoCalificacion.CALIFICADA ||
+                item.estado ===
+                  EstadoCalificacion.PUBLICADA
+              ),
+          );
+
+        if (calificacion) {
+          notas.push(
+            Number(
+              calificacion.notaFinal,
+            ),
+          );
+        }
+      }
+
+      const promedioSobre100 =
+        notas.length >
+        0
+          ? notas.reduce(
+              (
+                suma,
+                nota,
+              ) =>
+                suma +
+                nota,
+              0,
+            ) /
+            notas.length
+          : 0;
+
+      const maximo =
+        this.obtenerPuntajeMaximoComponente(
+          componente,
+          hito,
+        );
+
+      return {
+        actividadesTotales:
+          actividadesComponente.length,
+        actividadesCalificadas:
+          notas.length,
+        actividadesPendientes:
+          Math.max(
+            0,
+            actividadesComponente.length -
+              notas.length,
+          ),
+        promedioSobre100:
+          Number(
+            promedioSobre100.toFixed(
+              2,
+            ),
+          ),
+        promedioRedondeado:
+          Math.round(
+            promedioSobre100,
+          ),
+        maximo,
+        ...this.convertirPromedio(
+          promedioSobre100,
+          maximo,
+        ),
+      };
+    };
+
     return {
       curso,
+      hito,
+      actividades:
+        actividadesNormalizadas,
       estudiantes:
         estudiantes.map(
           (
             registro,
-          ) =>
-            registro.estudiante,
+          ) => ({
+            ...registro.estudiante,
+            continua:
+              calcularResumen(
+                registro.estudiante.id,
+                ComponenteEvaluacion.CONTINUA,
+              ),
+            procesual:
+              calcularResumen(
+                registro.estudiante.id,
+                ComponenteEvaluacion.PROCESUAL,
+              ),
+          }),
         ),
-      actividades,
     };
   }
 
@@ -1155,6 +1354,8 @@ export class CalificacionesService {
       UsuarioAutenticado,
     cursoId:
       number,
+    hitoId:
+      number,
   ) {
     this.validarEstudiante(
       usuario,
@@ -1177,6 +1378,8 @@ export class CalificacionesService {
             select: {
               id:
                 true,
+              planificacionId:
+                true,
               materia: {
                 select: {
                   nombre:
@@ -1196,10 +1399,18 @@ export class CalificacionesService {
       );
     }
 
+    const hito =
+      await this.validarHitoCurso(
+        inscripcion.curso.planificacionId,
+        hitoId,
+      );
+
     const actividades =
       await this.prisma.actividadCalificable.findMany({
         where: {
           cursoId,
+          hitoId:
+            hito.id,
           visibleParaEstudiantes:
             true,
           estado:
@@ -1208,12 +1419,6 @@ export class CalificacionesService {
 
         orderBy: [
           {
-            hito: {
-              numero:
-                'asc',
-            },
-          },
-          {
             componente:
               'asc',
           },
@@ -1221,25 +1426,13 @@ export class CalificacionesService {
             orden:
               'asc',
           },
+          {
+            creadoEn:
+              'asc',
+          },
         ],
 
         include: {
-          hito: {
-            select: {
-              id:
-                true,
-              numero:
-                true,
-              codigo:
-                true,
-              nombre:
-                true,
-              puntajeContinua:
-                true,
-              puntajeProcesual:
-                true,
-            },
-          },
           calificaciones: {
             where: {
               estudianteId:
@@ -1270,14 +1463,172 @@ export class CalificacionesService {
         },
       });
 
+    const construirComponente = (
+      componente:
+        ComponenteEvaluacion,
+    ) => {
+      const lista =
+        actividades
+          .filter(
+            (
+              actividad,
+            ) =>
+              actividad.componente ===
+              componente,
+          )
+          .map(
+            (
+              actividad,
+            ) => {
+              const calificacion =
+                actividad.calificaciones[0] ??
+                null;
+
+              return {
+                id:
+                  actividad.id,
+                titulo:
+                  actividad.titulo,
+                descripcion:
+                  actividad.descripcion,
+                foroId:
+                  actividad.foroId,
+                tareaId:
+                  actividad.tareaId,
+                quizId:
+                  actividad.quizId,
+                origen:
+                  actividad.origen,
+                componente:
+                  actividad.componente,
+                estado:
+                  actividad.estado,
+                participaEnPromedio:
+                  actividad.participaEnPromedio,
+                calificacion:
+                  calificacion
+                    ? {
+                        ...calificacion,
+                        notaBase:
+                          Number(
+                            calificacion.notaBase,
+                          ),
+                        descuentoRetraso:
+                          Number(
+                            calificacion.descuentoRetraso,
+                          ),
+                        ajusteIndividual:
+                          Number(
+                            calificacion.ajusteIndividual,
+                          ),
+                        notaFinal:
+                          Number(
+                            calificacion.notaFinal,
+                          ),
+                      }
+                    : null,
+              };
+            },
+          );
+
+      const notas =
+        lista
+          .filter(
+            (
+              actividad,
+            ) =>
+              actividad.participaEnPromedio &&
+              actividad.calificacion,
+          )
+          .map(
+            (
+              actividad,
+            ) =>
+              actividad.calificacion!
+                .notaFinal,
+          );
+
+      const promedioSobre100 =
+        notas.length >
+        0
+          ? notas.reduce(
+              (
+                suma,
+                nota,
+              ) =>
+                suma +
+                nota,
+              0,
+            ) /
+            notas.length
+          : 0;
+
+      const maximo =
+        this.obtenerPuntajeMaximoComponente(
+          componente,
+          hito,
+        );
+
+      return {
+        actividades:
+          lista,
+        resumen: {
+          actividadesCalificadas:
+            notas.length,
+          promedioSobre100:
+            Number(
+              promedioSobre100.toFixed(
+                2,
+              ),
+            ),
+          promedioRedondeado:
+            Math.round(
+              promedioSobre100,
+            ),
+          maximo,
+          ...this.convertirPromedio(
+            promedioSobre100,
+            maximo,
+          ),
+        },
+      };
+    };
+
+    const continua =
+      construirComponente(
+        ComponenteEvaluacion.CONTINUA,
+      );
+
+    const procesual =
+      construirComponente(
+        ComponenteEvaluacion.PROCESUAL,
+      );
+
     return {
-      curso:
-        inscripcion.curso,
-      actividades,
-      resumen:
-        this.construirResumenPorHito(
-          actividades,
+      curso: {
+        id:
+          inscripcion.curso.id,
+        materia:
+          inscripcion.curso.materia,
+      },
+      hito,
+      continua,
+      procesual,
+      totalHitoExacto:
+        Number(
+          (
+            continua.resumen.notaExacta +
+            procesual.resumen.notaExacta
+          ).toFixed(2),
         ),
+      totalHito:
+        Math.round(
+          continua.resumen.notaExacta +
+          procesual.resumen.notaExacta,
+        ),
+      maximoHito:
+        hito.puntajeContinua +
+        hito.puntajeProcesual,
     };
   }
 

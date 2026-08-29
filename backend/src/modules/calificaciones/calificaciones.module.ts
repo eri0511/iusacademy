@@ -7,8 +7,16 @@ import {
 } from '../auth/auth.module';
 
 import {
+  ReportesModule,
+} from '../reportes/reportes.module';
+
+import {
   CalificacionesController,
 } from './calificaciones.controller';
+
+import {
+  CalificacionesReportesService,
+} from './calificaciones-reportes.service';
 
 import {
   CalificacionesService,
@@ -17,6 +25,7 @@ import {
 @Module({
   imports: [
     AuthModule,
+    ReportesModule,
   ],
 
   controllers: [
@@ -25,6 +34,7 @@ import {
 
   providers: [
     CalificacionesService,
+    CalificacionesReportesService,
   ],
 
   exports: [

@@ -35,6 +35,7 @@ import Configuracion from '../pages/configuracion/Configuracion';
 
 import AulaCurso from '../pages/docente/curso/AulaCurso';
 import CalificarForo from '../pages/docente/curso/CalificarForo';
+import CalificacionesCurso from '../pages/docente/curso/CalificacionesCurso';
 import DetalleGruposCurso from '../pages/docente/curso/DetalleGruposCurso';
 import DetalleQuizDocente from '../pages/docente/curso/DetalleQuizDocente';
 import DetalleTarea from '../pages/docente/curso/DetalleTarea';
@@ -53,6 +54,7 @@ import MisCursos from '../pages/docente/MisCursos';
 
 import EstudianteInicio from '../pages/estudiante/Inicio';
 
+import CalificacionesCursoEstudiante from '../pages/estudiante/cursos/CalificacionesCursoEstudiante';
 import DetalleForoEstudiante from '../pages/estudiante/cursos/DetalleForoEstudiante';
 import DetalleQuizEstudiante from '../pages/estudiante/cursos/DetalleQuizEstudiante';
 import DetalleTareaEstudiante from '../pages/estudiante/cursos/DetalleTareaEstudiante';
@@ -404,10 +406,7 @@ function AppRouter() {
                   <Route
                     path="calificaciones"
                     element={
-                      <PaginaProximamente
-                        titulo="Calificaciones"
-                        descripcion="Aquí se revisarán las notas del hito seleccionado."
-                      />
+                      <CalificacionesCurso />
                     }
                   />
 
@@ -607,10 +606,7 @@ function AppRouter() {
                   <Route
                     path="calificaciones"
                     element={
-                      <PaginaProximamente
-                        titulo="Mis calificaciones"
-                        descripcion="Aquí el estudiante consultará sus calificaciones del hito seleccionado."
-                      />
+                      <CalificacionesCursoEstudiante />
                     }
                   />
 
