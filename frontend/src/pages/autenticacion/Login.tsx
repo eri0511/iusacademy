@@ -24,6 +24,8 @@ import {
   useAuth,
 } from '../../auth/AuthContext';
 
+import Toast from '../../components/shared/Toast';
+
 import {
   rutaInicioPorRol,
 } from '../../auth/ProtectedRoute';
@@ -323,24 +325,6 @@ export default function Login() {
             </div>
           </label>
 
-          {mensajeError && (
-            <div
-              className="login-error"
-              role="alert"
-            >
-              <span
-                className="login-error__icon"
-                aria-hidden="true"
-              >
-                !
-              </span>
-
-              <p>
-                {mensajeError}
-              </p>
-            </div>
-          )}
-
           <button
             type="submit"
             className="login-button"
@@ -363,6 +347,14 @@ export default function Login() {
           </span>
         </div>
       </section>
+
+      <Toast
+        visible={Boolean(mensajeError)}
+        tipo="error"
+        titulo="No se pudo iniciar sesión"
+        mensaje={mensajeError}
+        onCerrar={limpiarError}
+      />
 
       <style>{styles}</style>
     </main>
@@ -918,64 +910,6 @@ const styles = `
 
   .login-toggle svg {
     display: block;
-  }
-
-  .login-error {
-    display: flex;
-
-    align-items: flex-start;
-
-    gap: 0.65rem;
-
-    padding: 0.75rem;
-
-    border:
-      1px solid
-      #fecaca;
-
-    border-radius: 15px;
-
-    background:
-      rgba(
-        254,
-        242,
-        242,
-        0.96
-      );
-
-    color: #b91c1c;
-  }
-
-  .login-error__icon {
-    width: 23px;
-    height: 23px;
-
-    flex-shrink: 0;
-
-    display: grid;
-
-    place-items: center;
-
-    border-radius: 50%;
-
-    background:
-      rgba(
-        185,
-        28,
-        28,
-        0.11
-      );
-
-    font-size: 0.84rem;
-    font-weight: 900;
-  }
-
-  .login-error p {
-    margin: 0;
-
-    font-size: 0.87rem;
-
-    line-height: 1.42;
   }
 
   .login-button {

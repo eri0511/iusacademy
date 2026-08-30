@@ -15,7 +15,7 @@ import type {
   RespuestaErrorApi,
   RespuestaPrevisualizacionGrupos,
   ValidacionesCreacionGrupos,
-} from '../types/grupos.types';
+} from '../../types/grupos/grupos.types';
 
 const API_URL =
   import.meta.env.VITE_API_URL ??
@@ -85,8 +85,7 @@ async function peticionApi<T>(
 
   if (!respuesta.ok) {
     let datos:
-      RespuestaErrorApi | null =
-      null;
+      RespuestaErrorApi | null;
 
     try {
       datos =

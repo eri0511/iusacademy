@@ -20,6 +20,14 @@ import {
 } from '../auth/guards/jwt-auth.guard';
 
 import {
+  AulaInicioDocenteService,
+} from './aula-inicio-docente.service';
+
+import {
+  AulaInicioEstudianteService,
+} from './aula-inicio-estudiante.service';
+
+import {
   AulaCursoService,
 } from './aula-curso.service';
 
@@ -48,6 +56,10 @@ export class AulaCursoController {
   constructor(
     private readonly aulaCursoService:
       AulaCursoService,
+    private readonly aulaInicioDocenteService:
+      AulaInicioDocenteService,
+    private readonly aulaInicioEstudianteService:
+      AulaInicioEstudianteService,
   ) {}
 
   @Get(
@@ -123,4 +135,65 @@ export class AulaCursoController {
         hitoId,
       );
   }
+  @Get(
+    ':cursoId/hitos/:hitoId/inicio-docente',
+  )
+  obtenerInicioDocente(
+    @Req()
+    request:
+      RequestConUsuario,
+
+    @Param(
+      'cursoId',
+      ParseIntPipe,
+    )
+    cursoId:
+      number,
+
+    @Param(
+      'hitoId',
+      ParseIntPipe,
+    )
+    hitoId:
+      number,
+  ) {
+    return this.aulaInicioDocenteService
+      .obtenerInicioDocente(
+        request.user,
+        cursoId,
+        hitoId,
+      );
+  }
+
+
+  @Get(
+    ':cursoId/hitos/:hitoId/inicio-estudiante',
+  )
+  obtenerInicioEstudiante(
+    @Req()
+    request:
+      RequestConUsuario,
+
+    @Param(
+      'cursoId',
+      ParseIntPipe,
+    )
+    cursoId:
+      number,
+
+    @Param(
+      'hitoId',
+      ParseIntPipe,
+    )
+    hitoId:
+      number,
+  ) {
+    return this.aulaInicioEstudianteService
+      .obtenerInicioEstudiante(
+        request.user,
+        cursoId,
+        hitoId,
+      );
+  }
+
 }

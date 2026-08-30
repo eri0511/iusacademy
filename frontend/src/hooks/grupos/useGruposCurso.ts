@@ -7,7 +7,7 @@ import {
 
 import {
   useAuth,
-} from '../auth/AuthContext';
+} from '../../auth/AuthContext';
 
 import {
   actualizarConjuntoGrupo,
@@ -27,7 +27,7 @@ import {
   obtenerValidacionesCreacionGrupos,
   previsualizarDistribucionGrupos,
   retirarEstudianteGrupo,
-} from '../services/grupos.service';
+} from '../../services/grupos/grupos.service';
 
 import type {
   ActualizarConjuntoGrupoDatos,
@@ -44,7 +44,7 @@ import type {
   RespuestaDetalleConjunto,
   RespuestaPrevisualizacionGrupos,
   ValidacionesCreacionGrupos,
-} from '../types/grupos.types';
+} from '../../types/grupos/grupos.types';
 
 type UseGruposCursoOpciones = {
   cursoId: number;
@@ -55,89 +55,77 @@ type UseGruposCursoOpciones = {
 export default function useGruposCurso({
   cursoId,
   hitoId,
-  cargarAutomaticamente =
-    true,
+  cargarAutomaticamente = true,
 }: UseGruposCursoOpciones) {
   const {
     accessToken,
-  } =
-    useAuth();
+  } = useAuth();
 
   const token =
-    accessToken ??
-    '';
+    accessToken ?? '';
 
   const [
     conjuntos,
     setConjuntos,
-  ] =
-    useState<ConjuntoGrupoResumen[]>(
-      [],
-    );
+  ] = useState<ConjuntoGrupoResumen[]>(
+    [],
+  );
 
   const [
     detalle,
     setDetalle,
-  ] =
-    useState<RespuestaDetalleConjunto | null>(
-      null,
-    );
+  ] = useState<RespuestaDetalleConjunto | null>(
+    null,
+  );
 
   const [
     previsualizacion,
     setPrevisualizacion,
-  ] =
-    useState<RespuestaPrevisualizacionGrupos | null>(
-      null,
-    );
+  ] = useState<RespuestaPrevisualizacionGrupos | null>(
+    null,
+  );
 
   const [
     validaciones,
     setValidaciones,
-  ] =
-    useState<ValidacionesCreacionGrupos | null>(
-      null,
-    );
+  ] = useState<ValidacionesCreacionGrupos | null>(
+    null,
+  );
 
   const [
     historial,
     setHistorial,
-  ] =
-    useState<HistorialGrupoCurso[]>(
-      [],
-    );
+  ] = useState<HistorialGrupoCurso[]>(
+    [],
+  );
 
   const [
     cargando,
     setCargando,
-  ] =
-    useState(
-      false,
-    );
+  ] = useState(
+    false,
+  );
 
   const [
     actualizando,
     setActualizando,
-  ] =
-    useState(
-      false,
-    );
+  ] = useState(
+    false,
+  );
 
   const [
     procesando,
     setProcesando,
-  ] =
-    useState(
-      false,
-    );
+  ] = useState(
+    false,
+  );
 
   const [
     error,
     setError,
-  ] =
-    useState<string | null>(
-      null,
-    );
+  ] = useState<string | null>(
+    null,
+  );
 
   const validarSesion =
     useCallback(
@@ -156,15 +144,12 @@ export default function useGruposCurso({
   const cargarValidaciones =
     useCallback(
       async (
-        mostrarCarga =
-          false,
-      ) => {
+        mostrarCarga = false,
+      ): Promise<ValidacionesCreacionGrupos> => {
         validarSesion();
 
         try {
-          if (
-            mostrarCarga
-          ) {
+          if (mostrarCarga) {
             setActualizando(
               true,
             );
@@ -174,7 +159,8 @@ export default function useGruposCurso({
             null,
           );
 
-          const respuesta =
+          const respuesta:
+            ValidacionesCreacionGrupos =
             await obtenerValidacionesCreacionGrupos(
               cursoId,
               token,
@@ -185,9 +171,7 @@ export default function useGruposCurso({
           );
 
           return respuesta;
-        } catch (
-          problema
-        ) {
+        } catch (problema) {
           setError(
             problema instanceof Error
               ? problema.message
@@ -196,9 +180,7 @@ export default function useGruposCurso({
 
           throw problema;
         } finally {
-          if (
-            mostrarCarga
-          ) {
+          if (mostrarCarga) {
             setActualizando(
               false,
             );
@@ -215,8 +197,7 @@ export default function useGruposCurso({
   const cargarConjuntos =
     useCallback(
       async (
-        mostrarCarga =
-          true,
+        mostrarCarga = true,
       ) => {
         validarSesion();
 
@@ -227,8 +208,7 @@ export default function useGruposCurso({
 
           if (
             mostrarCarga &&
-            conjuntos.length ===
-              0
+            conjuntos.length === 0
           ) {
             setCargando(
               true,
@@ -249,9 +229,7 @@ export default function useGruposCurso({
           setConjuntos(
             respuesta,
           );
-        } catch (
-          problema
-        ) {
+        } catch (problema) {
           const mensaje =
             problema instanceof Error
               ? problema.message
@@ -284,8 +262,7 @@ export default function useGruposCurso({
   const cargarDetalle =
     useCallback(
       async (
-        conjuntoId:
-          number,
+        conjuntoId: number,
       ) => {
         validarSesion();
 
@@ -310,9 +287,7 @@ export default function useGruposCurso({
           );
 
           return respuesta;
-        } catch (
-          problema
-        ) {
+        } catch (problema) {
           setError(
             problema instanceof Error
               ? problema.message
@@ -336,10 +311,8 @@ export default function useGruposCurso({
   const ejecutarAccion =
     useCallback(
       async <T,>(
-        accion:
-          () => Promise<T>,
-        conjuntoIdParaRecargar?:
-          number,
+        accion: () => Promise<T>,
+        conjuntoIdParaRecargar?: number,
       ): Promise<T> => {
         validarSesion();
 
@@ -373,9 +346,7 @@ export default function useGruposCurso({
           }
 
           return respuesta;
-        } catch (
-          problema
-        ) {
+        } catch (problema) {
           setError(
             problema instanceof Error
               ? problema.message
@@ -426,9 +397,7 @@ export default function useGruposCurso({
           );
 
           return respuesta;
-        } catch (
-          problema
-        ) {
+        } catch (problema) {
           setError(
             problema instanceof Error
               ? problema.message
@@ -473,8 +442,7 @@ export default function useGruposCurso({
   const editarConjunto =
     useCallback(
       (
-        conjuntoId:
-          number,
+        conjuntoId: number,
         datos:
           ActualizarConjuntoGrupoDatos,
       ) =>
@@ -498,10 +466,8 @@ export default function useGruposCurso({
   const cambiarBloqueo =
     useCallback(
       (
-        conjuntoId:
-          number,
-        estaBloqueado:
-          boolean,
+        conjuntoId: number,
+        estaBloqueado: boolean,
       ) =>
         ejecutarAccion(
           () =>
@@ -523,8 +489,7 @@ export default function useGruposCurso({
   const retirarConjunto =
     useCallback(
       (
-        conjuntoId:
-          number,
+        conjuntoId: number,
       ) =>
         ejecutarAccion(
           () =>
@@ -565,8 +530,7 @@ export default function useGruposCurso({
   const crearGrupo =
     useCallback(
       (
-        conjuntoId:
-          number,
+        conjuntoId: number,
         datos:
           CrearGrupoCursoDatos,
       ) =>
@@ -590,10 +554,8 @@ export default function useGruposCurso({
   const editarGrupo =
     useCallback(
       (
-        conjuntoId:
-          number,
-        grupoId:
-          number,
+        conjuntoId: number,
+        grupoId: number,
         datos:
           ActualizarGrupoCursoDatos,
       ) =>
@@ -618,10 +580,8 @@ export default function useGruposCurso({
   const retirarGrupo =
     useCallback(
       (
-        conjuntoId:
-          number,
-        grupoId:
-          number,
+        conjuntoId: number,
+        grupoId: number,
       ) =>
         ejecutarAccion(
           () =>
@@ -643,10 +603,8 @@ export default function useGruposCurso({
   const asignarEstudiantes =
     useCallback(
       (
-        conjuntoId:
-          number,
-        grupoId:
-          number,
+        conjuntoId: number,
+        grupoId: number,
         datos:
           AsignarEstudiantesGrupoDatos,
       ) =>
@@ -671,10 +629,8 @@ export default function useGruposCurso({
   const moverEstudiante =
     useCallback(
       (
-        conjuntoId:
-          number,
-        grupoOrigenId:
-          number,
+        conjuntoId: number,
+        grupoOrigenId: number,
         datos:
           MoverEstudianteGrupoDatos,
       ) =>
@@ -699,10 +655,8 @@ export default function useGruposCurso({
   const cambiarRepresentante =
     useCallback(
       (
-        conjuntoId:
-          number,
-        grupoId:
-          number,
+        conjuntoId: number,
+        grupoId: number,
         datos:
           CambiarRepresentanteGrupoDatos,
       ) =>
@@ -727,12 +681,9 @@ export default function useGruposCurso({
   const retirarEstudiante =
     useCallback(
       (
-        conjuntoId:
-          number,
-        grupoId:
-          number,
-        estudianteId:
-          number,
+        conjuntoId: number,
+        grupoId: number,
+        estudianteId: number,
       ) =>
         ejecutarAccion(
           () =>
@@ -755,8 +706,7 @@ export default function useGruposCurso({
   const cargarHistorial =
     useCallback(
       async (
-        conjuntoId:
-          number,
+        conjuntoId: number,
       ) => {
         validarSesion();
 
@@ -777,9 +727,7 @@ export default function useGruposCurso({
           );
 
           return respuesta;
-        } catch (
-          problema
-        ) {
+        } catch (problema) {
           setError(
             problema instanceof Error
               ? problema.message
@@ -805,8 +753,7 @@ export default function useGruposCurso({
       if (
         !cargarAutomaticamente ||
         !token ||
-        cursoId <
-          1
+        cursoId < 1
       ) {
         return;
       }

@@ -35,7 +35,7 @@ import { useAulaContext } from "../../contexts/AulaContext";
 import useCrearForo, {
   type CrearForoDatos,
 } from "../../hooks/foro/useCrearForo";
-import useGruposCurso from "../../hooks/useGruposCurso";
+import useGruposCurso from "../../hooks/grupos/useGruposCurso";
 
 import ConfigSwitchForo from "./ConfigSwitchForo";
 import SelectorTipoForo, {
@@ -881,6 +881,7 @@ export default function FormularioForoInteligente({
     try {
       if (foroId) {
         const { hitoId: _hitoId, ...cambios } = payload;
+        void _hitoId;
         await actualizarForo(foroId, cambios);
       } else {
         await crear(payload);

@@ -1,39 +1,70 @@
 import {
-  BookOpen,
+  BarChart3,
+  BrainCircuit,
   CalendarDays,
   CheckCircle2,
   ClipboardCheck,
   FileQuestion,
-  MessageSquarePlus,
+  Gauge,
   MessageSquareText,
-  Megaphone,
   Newspaper,
-  Sparkles,
-  Target,
+  RefreshCw,
+  UsersRound,
 } from 'lucide-react';
 
 import {
+  useMemo,
+} from 'react';
+
+import {
   useNavigate,
-  useOutletContext,
+  useParams,
 } from 'react-router-dom';
 
+import {
+  useAuth,
+} from '../../../auth/AuthContext';
+
+import AulaEmptyState from '../../../components/aula/AulaEmptyState';
+import AulaHeader from '../../../components/aula/AulaHeader';
+import AulaSkeleton from '../../../components/aula/AulaSkeleton';
+
+import {
+  useAulaContext,
+} from '../../../contexts/AulaContext';
+
+import {
+  useInicioHitoDocente,
+} from '../../../hooks/aula/useInicioHitoDocente';
+
 import type {
-  AulaCursoOutletContext,
-} from '../../../layouts/AulaCursoLayout';
+  ActividadRendimientoInicio,
+  DistribucionRendimientoInicio,
+  EstudianteSeguimientoInicio,
+} from '../../../types/aula/inicioHitoDocente.types';
+
+function formatoDecimal(
+  valor: number,
+) {
+  return Number.isFinite(
+    valor,
+  )
+    ? valor.toFixed(
+        2,
+      )
+    : '0.00';
+}
 
 function formatearFecha(
-  fecha:
-    string,
-): string {
+  fecha: string,
+) {
   return new Intl.DateTimeFormat(
     'es-BO',
     {
       day:
         '2-digit',
-
       month:
-        'long',
-
+        'short',
       year:
         'numeric',
     },
@@ -44,418 +75,793 @@ function formatearFecha(
   );
 }
 
+function nombreEstudiante(
+  estudiante: EstudianteSeguimientoInicio,
+) {
+  return [
+    estudiante.apellidoPaterno,
+    estudiante.apellidoMaterno,
+    estudiante.nombres,
+  ]
+    .filter(
+      Boolean,
+    )
+    .join(
+      ' ',
+    );
+}
+
+function etiquetaOrigen(
+  origen: ActividadRendimientoInicio['origen'],
+) {
+  if (
+    origen ===
+    'FORO'
+  ) {
+    return 'Foro';
+  }
+
+  if (
+    origen ===
+    'QUIZ'
+  ) {
+    return 'Quiz';
+  }
+
+  return 'Tarea';
+}
+
+function IconoOrigen({
+  origen,
+}: {
+  origen: ActividadRendimientoInicio['origen'];
+}) {
+  if (
+    origen ===
+    'FORO'
+  ) {
+    return (
+      <MessageSquareText
+        size={14}
+      />
+    );
+  }
+
+  if (
+    origen ===
+    'QUIZ'
+  ) {
+    return (
+      <BrainCircuit
+        size={14}
+      />
+    );
+  }
+
+  return (
+    <ClipboardCheck
+      size={14}
+    />
+  );
+}
+
 export default function AulaCurso() {
   const navigate =
     useNavigate();
 
   const {
+    cursoId:
+      cursoIdParam,
+  } =
+    useParams();
+
+  const {
+    accessToken,
+  } =
+    useAuth();
+
+  const {
     curso,
-    permisos,
     hitoSeleccionado,
   } =
-    useOutletContext<AulaCursoOutletContext>();
+    useAulaContext();
+
+  const cursoId =
+    Number(
+      cursoIdParam,
+    );
+
+  const {
+    datos,
+    cargando,
+    error,
+    recargar,
+  } =
+    useInicioHitoDocente({
+      cursoId,
+      hitoId:
+        hitoSeleccionado?.id,
+      token:
+        accessToken,
+    });
+
+  const maximoDistribucion =
+    useMemo(
+      () =>
+        Math.max(
+          ...(
+            datos?.distribucion.map(
+              (
+                item: DistribucionRendimientoInicio,
+              ) =>
+                item.cantidad,
+            ) ??
+            [
+              0,
+            ]
+          ),
+          1,
+        ),
+      [
+        datos,
+      ],
+    );
+
+  const actividadesDestacadas =
+    useMemo(
+      () =>
+        datos?.actividadesRendimiento.slice(
+          0,
+          6,
+        ) ??
+        [],
+      [
+        datos,
+      ],
+    );
+
+  const irAActividad =
+    (
+      actividad: ActividadRendimientoInicio,
+    ) => {
+      if (
+        actividad.origen ===
+          'FORO' &&
+        actividad.foroId
+      ) {
+        navigate(
+          `foro/${actividad.foroId}`,
+        );
+        return;
+      }
+
+      if (
+        actividad.origen ===
+          'TAREA' &&
+        actividad.tareaId
+      ) {
+        navigate(
+          `tareas/${actividad.tareaId}`,
+        );
+        return;
+      }
+
+      if (
+        actividad.origen ===
+          'QUIZ' &&
+        actividad.quizId
+      ) {
+        navigate(
+          `quizzes/${actividad.quizId}`,
+        );
+      }
+    };
+
+  if (
+    !hitoSeleccionado
+  ) {
+    return (
+      <AulaEmptyState
+        titulo="Selecciona un hito"
+        descripcion="El resumen académico se organiza de acuerdo con el hito seleccionado."
+        icono={
+          BarChart3
+        }
+      />
+    );
+  }
 
   return (
-    <section className="aula-dashboard">
-      <article className="hito-principal">
-        <div className="hito-principal__glow" />
+    <section className="inicio-hito-docente">
+      <AulaHeader
+        icono={
+          Gauge
+        }
+        etiqueta={`${hitoSeleccionado.codigo} · ${curso.materia.codigo}`}
+        titulo="Inicio del hito"
+        descripcion="Consulta el rendimiento académico, las actividades, las calificaciones pendientes y los estudiantes que requieren seguimiento."
+        informacion={`${curso.materia.nombre} · ${curso.gestion} · Paralelo ${curso.paralelo}`}
+        acciones={[
+          {
+            texto:
+              'Actualizar',
+            icono:
+              RefreshCw,
+            onClick:
+              () => {
+                void recargar();
+              },
+          },
+        ]}
+      />
 
-        <div className="hito-principal__contenido">
-          <span className="section-eyebrow">
-            Hito seleccionado
-          </span>
-
-          <h2>
-            {hitoSeleccionado
-              ? `HITO ${hitoSeleccionado.numero}`
-              : 'Sin hito seleccionado'}
-          </h2>
-
-          <strong className="hito-principal__nombre">
-            {hitoSeleccionado?.nombre ??
-            'Selecciona un hito para continuar'}
-          </strong>
-
-          <p>
-            {hitoSeleccionado?.descripcion ??
-            'La información académica aparecerá cuando selecciones uno de los hitos disponibles.'}
-          </p>
-
-          {hitoSeleccionado && (
-            <div className="hito-principal__meta">
-              <span>
-                <CalendarDays
-                  size={14}
-                />
-
-                {formatearFecha(
-                  hitoSeleccionado.fechaInicio,
-                )}
-                {' — '}
-                {formatearFecha(
-                  hitoSeleccionado.fechaFin,
-                )}
-              </span>
-
-              <span>
-                <Target
-                  size={14}
-                />
-
-                {hitoSeleccionado.puntajeTotal}
-                {' '}
-                puntos
-              </span>
-
-              <span
-                className={`hito-principal__estado ${hitoSeleccionado.estado.toLowerCase()}`}
-              >
-                <Sparkles
-                  size={14}
-                />
-
-                {hitoSeleccionado.estado ===
-                'EN_CURSO'
-                  ? 'En curso'
-                  : hitoSeleccionado.estado ===
-                      'PROXIMO'
-                    ? 'Próximo'
-                    : hitoSeleccionado.estado ===
-                        'FINALIZADO'
-                      ? 'Finalizado'
-                      : 'Pendiente'}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="hito-principal__visual">
-          <span>
-            {hitoSeleccionado?.codigo ??
-            '—'}
-          </span>
-
-          <small>
-            {hitoSeleccionado?.puntajeTotal ??
-            0}
-            {' '}
-            pts.
-          </small>
-        </div>
-      </article>
-
-      <section className="hito-dashboard-grid">
-        <article className="actividad-hito-card">
-          <header className="actividad-hito-card__header">
-            <div>
-              <span className="section-eyebrow">
-                Actividad del hito
-              </span>
-
-              <h3>
-                Resumen académico
-              </h3>
-
-              <p>
-                Consulta el estado general del hito sin repetir los accesos de la navegación superior.
-              </p>
-            </div>
-
-            <span className="actividad-hito-card__codigo">
-              {hitoSeleccionado?.codigo ??
-              '—'}
-            </span>
-          </header>
-
-          <div className="actividad-hito-card__contenido">
-            <div className="actividad-resumen-grid">
-              <button
-                type="button"
-                className="actividad-resumen actividad-resumen--publicaciones"
-                onClick={() =>
-                  navigate(
-                    'tablon',
-                  )
+      {cargando
+        ? (
+            <AulaSkeleton
+              cantidad={6}
+              variante="lista"
+            />
+          )
+        : error
+          ? (
+              <AulaEmptyState
+                titulo="No se pudo cargar el inicio del hito"
+                descripcion={
+                  error
                 }
-              >
-                <span className="actividad-resumen__icono">
-                  <Newspaper
-                    size={20}
-                  />
-                </span>
-
-                <span className="actividad-resumen__datos">
-                  <small>
-                    Publicaciones
-                  </small>
-
-                  <strong>
-                    0
-                  </strong>
-
-                  <em>
-                    Sin novedades
-                  </em>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                className="actividad-resumen actividad-resumen--foros"
-                onClick={() =>
-                  navigate(
-                    'foro',
-                  )
+                icono={
+                  BarChart3
                 }
-              >
-                <span className="actividad-resumen__icono">
-                  <MessageSquareText
-                    size={20}
-                  />
-                </span>
-
-                <span className="actividad-resumen__datos">
-                  <small>
-                    Foros
-                  </small>
-
-                  <strong>
-                    0
-                  </strong>
-
-                  <em>
-                    Sin debates
-                  </em>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                className="actividad-resumen actividad-resumen--tareas"
-                onClick={() =>
-                  navigate(
-                    'tareas',
-                  )
-                }
-              >
-                <span className="actividad-resumen__icono">
-                  <ClipboardCheck
-                    size={20}
-                  />
-                </span>
-
-                <span className="actividad-resumen__datos">
-                  <small>
-                    Tareas
-                  </small>
-
-                  <strong>
-                    0
-                  </strong>
-
-                  <em>
-                    Sin entregas
-                  </em>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                className="actividad-resumen actividad-resumen--quizzes"
-                onClick={() =>
-                  navigate(
-                    'quizzes',
-                  )
-                }
-              >
-                <span className="actividad-resumen__icono">
-                  <FileQuestion
-                    size={20}
-                  />
-                </span>
-
-                <span className="actividad-resumen__datos">
-                  <small>
-                    Quizzes
-                  </small>
-
-                  <strong>
-                    0
-                  </strong>
-
-                  <em>
-                    Sin evaluaciones
-                  </em>
-                </span>
-              </button>
-            </div>
-
-            <div className="actividad-vacia actividad-vacia--mejorada">
-              <div className="actividad-vacia__decoracion">
-                <span />
-                <span />
-                <span />
-              </div>
-
-              <div className="actividad-vacia__icono">
-                <BookOpen
-                  size={28}
-                />
-              </div>
-
-              <div className="actividad-vacia__texto">
-                <span className="actividad-vacia__eyebrow">
-                  Línea de actividad
-                </span>
-
-                <strong>
-                  Este hito todavía está listo para comenzar
-                </strong>
-
-                <p>
-                  Aquí aparecerán automáticamente los avisos, foros, tareas y evaluaciones más recientes del hito seleccionado.
-                </p>
-
-                {permisos.puedeAdministrar ? (
-                  <div className="actividad-vacia__acciones">
+                accionTexto="Reintentar"
+                onAccion={() => {
+                  void recargar();
+                }}
+              />
+            )
+          : datos
+            ? (
+                <>
+                  <div className="inicio-hito-docente__resumen-grid">
                     <button
                       type="button"
+                      className="inicio-hito-docente__resumen-card"
                       onClick={() =>
                         navigate(
-                          'tablon',
+                          'estudiantes',
                         )
                       }
                     >
-                      <Megaphone
-                        size={15}
-                      />
+                      <span className="inicio-hito-docente__resumen-icono">
+                        <UsersRound
+                          size={17}
+                        />
+                      </span>
 
-                      Crear publicación
+                      <div>
+                        <small>
+                          Estudiantes activos
+                        </small>
+
+                        <strong>
+                          {datos.resumen.estudiantesActivos}
+                        </strong>
+
+                        <span>
+                          Inscritos en el curso
+                        </span>
+                      </div>
                     </button>
 
                     <button
                       type="button"
-                      className="secondary"
+                      className="inicio-hito-docente__resumen-card"
                       onClick={() =>
                         navigate(
-                          'foro',
+                          'calificaciones',
                         )
                       }
                     >
-                      <MessageSquarePlus
-                        size={15}
-                      />
+                      <span className="inicio-hito-docente__resumen-icono">
+                        <CheckCircle2
+                          size={17}
+                        />
+                      </span>
 
-                      Abrir foro
+                      <div>
+                        <small>
+                          Pendientes de calificar
+                        </small>
+
+                        <strong>
+                          {datos.resumen.pendientesCalificar}
+                        </strong>
+
+                        <span>
+                          Registros que requieren revisión
+                        </span>
+                      </div>
                     </button>
+
+                    <button
+                      type="button"
+                      className="inicio-hito-docente__resumen-card"
+                      onClick={() =>
+                        navigate(
+                          'calificaciones',
+                        )
+                      }
+                    >
+                      <span className="inicio-hito-docente__resumen-icono">
+                        <BarChart3
+                          size={17}
+                        />
+                      </span>
+
+                      <div>
+                        <small>
+                          Aporte promedio
+                        </small>
+
+                        <strong>
+                          {formatoDecimal(
+                            datos.rendimiento.total.aporteExacto,
+                          )}
+                        </strong>
+
+                        <span>
+                          /{datos.rendimiento.total.maximo} del hito
+                        </span>
+                      </div>
+                    </button>
+
+                    <article className="inicio-hito-docente__resumen-card sin-accion">
+                      <span className="inicio-hito-docente__resumen-icono">
+                        <CalendarDays
+                          size={17}
+                        />
+                      </span>
+
+                      <div>
+                        <small>
+                          Próximo vencimiento
+                        </small>
+
+                        <strong className="fecha">
+                          {datos.proximoVencimiento
+                            ? formatearFecha(
+                                datos.proximoVencimiento.fecha,
+                              )
+                            : '—'}
+                        </strong>
+
+                        <span>
+                          {datos.proximoVencimiento?.titulo ??
+                            'Sin fechas próximas'}
+                        </span>
+                      </div>
+                    </article>
                   </div>
-                ) : (
-                  <span className="actividad-vacia__espera">
-                    Las novedades aparecerán cuando el docente publique contenido.
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </article>
 
-        <aside className="hito-lateral">
-          <article className="pendientes-card">
-            <span className="section-eyebrow">
-              Pendientes
-            </span>
+                  <div className="inicio-hito-docente__contenido-grid">
+                    <section className="inicio-hito-docente__panel rendimiento">
+                      <header>
+                        <div>
+                          <span className="inicio-hito-docente__eyebrow">
+                            Rendimiento académico
+                          </span>
 
-            <h3>
-              Sin pendientes
-            </h3>
+                          <h3>
+                            Continua y Procesual
+                          </h3>
+                        </div>
 
-            <p>
-              {permisos.puedeAdministrar
-                ? 'No tienes actividades por revisar en este hito.'
-                : 'No tienes actividades pendientes en este hito.'}
-            </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(
+                              'calificaciones',
+                            )
+                          }
+                        >
+                          Ver calificaciones
+                        </button>
+                      </header>
 
-            <div className="pendientes-card__estado">
-              <CheckCircle2
-                size={17}
-              />
+                      <div className="inicio-hito-docente__componentes">
+                        <article>
+                          <span>
+                            Continua
+                          </span>
 
-              Todo al día
-            </div>
-          </article>
+                          <strong>
+                            {formatoDecimal(
+                              datos.rendimiento.continua.promedioSobre100,
+                            )}
+                            <small>
+                              /100
+                            </small>
+                          </strong>
 
-          <article className="vencimiento-card">
-            <span className="section-eyebrow">
-              Próximo vencimiento
-            </span>
+                          <div>
+                            <span>
+                              Aporte
+                            </span>
+                            <b>
+                              {formatoDecimal(
+                                datos.rendimiento.continua.aporteExacto,
+                              )}
+                              /{datos.rendimiento.continua.maximo}
+                            </b>
+                          </div>
 
-            <h3>
-              Sin fechas próximas
-            </h3>
+                          <div>
+                            <span>
+                              Nota final
+                            </span>
+                            <b className="final">
+                              {datos.rendimiento.continua.notaFinal}
+                              /{datos.rendimiento.continua.maximo}
+                            </b>
+                          </div>
+                        </article>
 
-            <p>
-              Cuando se registre una tarea, foro o quiz con fecha límite, aparecerá aquí.
-            </p>
+                        <article>
+                          <span>
+                            Procesual
+                          </span>
 
-            <div className="vencimiento-card__fecha">
-              <CalendarDays
-                size={17}
-              />
+                          <strong>
+                            {formatoDecimal(
+                              datos.rendimiento.procesual.promedioSobre100,
+                            )}
+                            <small>
+                              /100
+                            </small>
+                          </strong>
 
-              No disponible
-            </div>
-          </article>
+                          <div>
+                            <span>
+                              Aporte
+                            </span>
+                            <b>
+                              {formatoDecimal(
+                                datos.rendimiento.procesual.aporteExacto,
+                              )}
+                              /{datos.rendimiento.procesual.maximo}
+                            </b>
+                          </div>
 
-          {permisos.puedeAdministrar && (
-            <article className="acciones-docente-card">
-              <span className="section-eyebrow">
-                Acciones rápidas
-              </span>
+                          <div>
+                            <span>
+                              Nota final
+                            </span>
+                            <b className="final">
+                              {datos.rendimiento.procesual.notaFinal}
+                              /{datos.rendimiento.procesual.maximo}
+                            </b>
+                          </div>
+                        </article>
+                      </div>
+                    </section>
 
-              <h3>
-                Comienza el hito
-              </h3>
+                    <section className="inicio-hito-docente__panel distribucion">
+                      <header>
+                        <div>
+                          <span className="inicio-hito-docente__eyebrow">
+                            Distribución
+                          </span>
 
-              <p>
-                Usa estas acciones para crear el primer contenido académico.
-              </p>
+                          <h3>
+                            Rendimiento del curso
+                          </h3>
+                        </div>
+                      </header>
 
-              <div className="acciones-docente-card__botones">
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate(
-                      'tablon',
-                    )
-                  }
-                >
-                  <Megaphone
-                    size={16}
-                  />
+                      <div className="inicio-hito-docente__barras">
+                        {datos.distribucion.map(
+                          (
+                            item: DistribucionRendimientoInicio,
+                          ) => (
+                            <div
+                              key={
+                                item.id
+                              }
+                              className="inicio-hito-docente__barra-item"
+                            >
+                              <div>
+                                <span>
+                                  {item.etiqueta}
+                                </span>
 
-                  Publicar aviso
-                </button>
+                                <strong>
+                                  {item.cantidad}
+                                </strong>
+                              </div>
 
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() =>
-                    navigate(
-                      'foro',
-                    )
-                  }
-                >
-                  <MessageSquarePlus
-                    size={16}
-                  />
+                              <span className="inicio-hito-docente__barra-fondo">
+                                <span
+                                  style={{
+                                    width:
+                                      `${Math.max(
+                                        (item.cantidad /
+                                          maximoDistribucion) *
+                                          100,
+                                        item.cantidad >
+                                        0
+                                          ? 7
+                                          : 0,
+                                      )}%`,
+                                  }}
+                                />
+                              </span>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </section>
+                  </div>
 
-                  Crear foro
-                </button>
-              </div>
-            </article>
-          )}
-        </aside>
-      </section>
+                  <section className="inicio-hito-docente__panel actividades">
+                    <header>
+                      <div>
+                        <span className="inicio-hito-docente__eyebrow">
+                          Actividades del hito
+                        </span>
+
+                        <h3>
+                          Seguimiento por actividad
+                        </h3>
+                      </div>
+
+                      <div className="inicio-hito-docente__conteos">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(
+                              'tablon',
+                            )
+                          }
+                        >
+                          <Newspaper
+                            size={13}
+                          />
+                          {datos.resumen.publicaciones} publicaciones
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(
+                              'foro',
+                            )
+                          }
+                        >
+                          <MessageSquareText
+                            size={13}
+                          />
+                          {datos.resumen.foros} foros
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(
+                              'tareas',
+                            )
+                          }
+                        >
+                          <ClipboardCheck
+                            size={13}
+                          />
+                          {datos.resumen.tareas} tareas
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(
+                              'quizzes',
+                            )
+                          }
+                        >
+                          <FileQuestion
+                            size={13}
+                          />
+                          {datos.resumen.quizzes} quizzes
+                        </button>
+                      </div>
+                    </header>
+
+                    {actividadesDestacadas.length >
+                    0
+                      ? (
+                          <div className="inicio-hito-docente__tabla-wrap">
+                            <table className="inicio-hito-docente__tabla">
+                              <thead>
+                                <tr>
+                                  <th>
+                                    Actividad
+                                  </th>
+                                  <th>
+                                    Componente
+                                  </th>
+                                  <th>
+                                    Promedio
+                                  </th>
+                                  <th>
+                                    Calificadas
+                                  </th>
+                                  <th>
+                                    Pendientes
+                                  </th>
+                                </tr>
+                              </thead>
+
+                              <tbody>
+                                {actividadesDestacadas.map(
+                                  (
+                                    actividad: ActividadRendimientoInicio,
+                                  ) => (
+                                    <tr
+                                      key={
+                                        actividad.id
+                                      }
+                                      onClick={() =>
+                                        irAActividad(
+                                          actividad,
+                                        )
+                                      }
+                                    >
+                                      <td>
+                                        <div className="inicio-hito-docente__actividad">
+                                          <span>
+                                            <IconoOrigen
+                                              origen={
+                                                actividad.origen
+                                              }
+                                            />
+                                            {etiquetaOrigen(
+                                              actividad.origen,
+                                            )}
+                                          </span>
+
+                                          <strong>
+                                            {actividad.titulo}
+                                          </strong>
+                                        </div>
+                                      </td>
+
+                                      <td>
+                                        <span className="inicio-hito-docente__componente">
+                                          {actividad.componente ===
+                                          'CONTINUA'
+                                            ? 'Continua'
+                                            : 'Procesual'}
+                                        </span>
+                                      </td>
+
+                                      <td>
+                                        <strong className="inicio-hito-docente__promedio">
+                                          {actividad.calificadas >
+                                          0
+                                            ? formatoDecimal(
+                                                actividad.promedio,
+                                              )
+                                            : '—'}
+                                        </strong>
+                                      </td>
+
+                                      <td>
+                                        <span className="inicio-hito-docente__estado publicada">
+                                          {actividad.calificadas}/{actividad.totalEstudiantes}
+                                        </span>
+                                      </td>
+
+                                      <td>
+                                        <span className={`inicio-hito-docente__estado ${actividad.pendientes > 0 ? 'pendiente' : 'completo'}`}>
+                                          {actividad.pendientes}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ),
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        )
+                      : (
+                          <div className="inicio-hito-docente__vacio">
+                            Todavía no existen actividades calificables en este hito.
+                          </div>
+                        )}
+                  </section>
+
+                  <section className="inicio-hito-docente__panel seguimiento">
+                    <header>
+                      <div>
+                        <span className="inicio-hito-docente__eyebrow">
+                          Seguimiento
+                        </span>
+
+                        <h3>
+                          Estudiantes que requieren atención
+                        </h3>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            'calificaciones',
+                          )
+                        }
+                      >
+                        Abrir libro de calificaciones
+                      </button>
+                    </header>
+
+                    {datos.estudiantesSeguimiento.length >
+                    0
+                      ? (
+                          <div className="inicio-hito-docente__seguimiento-lista">
+                            {datos.estudiantesSeguimiento.map(
+                              (
+                                estudiante: EstudianteSeguimientoInicio,
+                              ) => (
+                                <article
+                                  key={
+                                    estudiante.id
+                                  }
+                                >
+                                  <div>
+                                    <strong>
+                                      {nombreEstudiante(
+                                        estudiante,
+                                      )}
+                                    </strong>
+
+                                    <small>
+                                      {estudiante.correo}
+                                    </small>
+                                  </div>
+
+                                  <div className="inicio-hito-docente__seguimiento-datos">
+                                    <span>
+                                      Promedio
+                                      <b>
+                                        {estudiante.promedioSobre100 ===
+                                        null
+                                          ? '—'
+                                          : formatoDecimal(
+                                              estudiante.promedioSobre100,
+                                            )}
+                                      </b>
+                                    </span>
+
+                                    <span>
+                                      Pendientes
+                                      <b>
+                                        {estudiante.actividadesPendientes}
+                                      </b>
+                                    </span>
+                                  </div>
+                                </article>
+                              ),
+                            )}
+                          </div>
+                        )
+                      : (
+                          <div className="inicio-hito-docente__todo-bien">
+                            <CheckCircle2
+                              size={17}
+                            />
+                            No se detectaron estudiantes con bajo rendimiento o varios registros pendientes.
+                          </div>
+                        )}
+                  </section>
+                </>
+              )
+            : null}
 
       <style>
         {styles}
@@ -465,671 +871,597 @@ export default function AulaCurso() {
 }
 
 const styles = `
-  .aula-dashboard {
-    display: grid;
-    gap: 18px;
+.inicio-hito-docente {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.inicio-hito-docente__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  color: var(--app-accent-dark);
+  font-size: var(--app-font-xs);
+  font-weight: var(--app-font-bold);
+  letter-spacing: .075em;
+  text-transform: uppercase;
+}
+
+/* HITO */
+
+
+
+
+.inicio-hito-docente__hito > div:first-child {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+
+
+
+
+/* TARJETAS RESUMEN */
+
+.inicio-hito-docente__resumen-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.inicio-hito-docente__resumen-card {
+  position: relative;
+  min-height: 122px;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  overflow: hidden;
+  padding: 17px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-md);
+  color: inherit;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-sm);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform .18s ease,
+    border-color .18s ease,
+    box-shadow .18s ease,
+    background .18s ease;
+}
+
+.inicio-hito-docente__resumen-card::after {
+  content: '';
+  position: absolute;
+  right: -22px;
+  bottom: -36px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: var(--app-accent-softer);
+  pointer-events: none;
+}
+
+.inicio-hito-docente__resumen-card:hover:not(.sin-accion) {
+  transform: translateY(-2px);
+  border-color: var(--app-border-strong);
+  background: var(--app-surface-raised);
+  box-shadow: var(--app-shadow);
+}
+
+.inicio-hito-docente__resumen-card.sin-accion {
+  cursor: default;
+}
+
+.inicio-hito-docente__resumen-icono {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  color: var(--app-accent-dark);
+  background: var(--app-accent-soft);
+}
+
+.inicio-hito-docente__resumen-card > div {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.inicio-hito-docente__resumen-card small,
+.inicio-hito-docente__resumen-card strong,
+.inicio-hito-docente__resumen-card div > span {
+  display: block;
+}
+
+.inicio-hito-docente__resumen-card small {
+  color: var(--app-text-soft);
+  font-size: var(--app-font-xs);
+  font-weight: var(--app-font-bold);
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+.inicio-hito-docente__resumen-card strong {
+  margin-top: 8px;
+  color: var(--app-text);
+  font-size: 29px;
+  font-weight: var(--app-font-black);
+  line-height: 1;
+}
+
+.inicio-hito-docente__resumen-card strong.fecha {
+  margin-top: 9px;
+  font-size: var(--app-font-section);
+  line-height: 1.2;
+}
+
+.inicio-hito-docente__resumen-card div > span {
+  margin-top: 7px;
+  overflow: hidden;
+  color: var(--app-text-muted);
+  font-size: var(--app-font-xs);
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* BLOQUES PRINCIPALES */
+
+.inicio-hito-docente__contenido-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr);
+  gap: 12px;
+}
+
+.inicio-hito-docente__panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-md);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-sm);
+}
+
+.inicio-hito-docente__panel > header {
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--app-border-soft);
+  background:
+    linear-gradient(
+      180deg,
+      var(--app-surface-raised) 0%,
+      var(--app-surface) 100%
+    );
+}
+
+.inicio-hito-docente__panel h3 {
+  margin: 4px 0 0;
+  color: var(--app-text);
+  font-size: var(--app-font-section);
+  font-weight: var(--app-font-bold);
+}
+
+.inicio-hito-docente__panel > header > button,
+.inicio-hito-docente__conteos button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 9px;
+  color: var(--app-accent-dark);
+  background: var(--app-surface);
+  font: inherit;
+  font-size: var(--app-font-xs);
+  font-weight: var(--app-font-bold);
+  cursor: pointer;
+  transition:
+    border-color .16s ease,
+    background .16s ease,
+    transform .16s ease;
+}
+
+.inicio-hito-docente__panel > header > button:hover,
+.inicio-hito-docente__conteos button:hover {
+  transform: translateY(-1px);
+  border-color: var(--app-accent);
+  background: var(--app-accent-soft);
+}
+
+/* CONTINUA / PROCESUAL */
+
+.inicio-hito-docente__componentes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.inicio-hito-docente__componentes article {
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
+  border: 1px solid var(--app-border);
+  border-radius: 13px;
+  background: var(--app-surface-raised);
+}
+
+.inicio-hito-docente__componentes article::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--app-accent);
+}
+
+.inicio-hito-docente__componentes article > span {
+  color: var(--app-text-soft);
+  font-size: var(--app-font-xs);
+  font-weight: var(--app-font-bold);
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+.inicio-hito-docente__componentes article > strong {
+  display: block;
+  margin: 11px 0 14px;
+  color: var(--app-text);
+  font-size: 30px;
+  font-weight: var(--app-font-black);
+  line-height: 1;
+}
+
+.inicio-hito-docente__componentes article > strong small {
+  margin-left: 3px;
+  color: var(--app-text-muted);
+  font-size: var(--app-font-xs);
+  font-weight: var(--app-font-semibold);
+}
+
+.inicio-hito-docente__componentes article > div {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--app-border-soft);
+  color: var(--app-text-soft);
+  font-size: var(--app-font-xs);
+}
+
+.inicio-hito-docente__componentes article > div b {
+  color: var(--app-text);
+  font-size: var(--app-font-sm);
+}
+
+.inicio-hito-docente__componentes article > div b.final {
+  color: var(--app-accent-dark);
+  font-size: var(--app-font-md);
+}
+
+/* DISTRIBUCIÓN */
+
+.inicio-hito-docente__barras {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.inicio-hito-docente__barra-item > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+  color: var(--app-text-secondary);
+  font-size: var(--app-font-xs);
+}
+
+.inicio-hito-docente__barra-item strong {
+  min-width: 25px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--app-accent-dark);
+  background: var(--app-accent-soft);
+  font-size: var(--app-font-xs);
+  text-align: center;
+}
+
+.inicio-hito-docente__barra-fondo {
+  height: 9px;
+  display: block;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--app-surface-alt);
+  box-shadow: inset 0 0 0 1px var(--app-border-soft);
+}
+
+.inicio-hito-docente__barra-fondo > span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      90deg,
+      var(--app-accent-dark),
+      var(--app-accent)
+    );
+  transition: width .3s ease;
+}
+
+/* CONTEOS */
+
+.inicio-hito-docente__conteos {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* TABLA */
+
+.inicio-hito-docente__tabla-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.inicio-hito-docente__tabla {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.inicio-hito-docente__tabla th,
+.inicio-hito-docente__tabla td {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--app-border-soft);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.inicio-hito-docente__tabla th {
+  color: var(--app-text-soft);
+  background: var(--app-surface-alt);
+  font-size: var(--app-font-xs);
+  font-weight: var(--app-font-bold);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.inicio-hito-docente__tabla tbody tr {
+  cursor: pointer;
+  transition: background .14s ease;
+}
+
+.inicio-hito-docente__tabla tbody tr:hover {
+  background: var(--app-accent-softer);
+}
+
+.inicio-hito-docente__tabla tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.inicio-hito-docente__actividad {
+  display: grid;
+  gap: 5px;
+}
+
+.inicio-hito-docente__actividad span {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--app-accent-dark);
+  font-size: var(--app-font-xs);
+  font-weight: var(--app-font-bold);
+}
+
+.inicio-hito-docente__actividad strong {
+  color: var(--app-text);
+  font-size: var(--app-font-sm);
+  font-weight: var(--app-font-semibold);
+}
+
+.inicio-hito-docente__componente,
+.inicio-hito-docente__estado {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: var(--app-font-xs);
+  font-weight: var(--app-font-bold);
+}
+
+.inicio-hito-docente__componente {
+  color: var(--app-accent-dark);
+  background: var(--app-accent-soft);
+}
+
+.inicio-hito-docente__estado.publicada,
+.inicio-hito-docente__estado.completo {
+  color: var(--app-success);
+  background: var(--app-success-bg);
+  box-shadow: inset 0 0 0 1px var(--app-success-border);
+}
+
+.inicio-hito-docente__estado.pendiente {
+  color: var(--app-warning);
+  background: var(--app-warning-bg);
+  box-shadow: inset 0 0 0 1px var(--app-warning-border);
+}
+
+.inicio-hito-docente__promedio {
+  color: var(--app-text);
+  font-size: var(--app-font-md);
+  font-weight: var(--app-font-bold);
+}
+
+/* SEGUIMIENTO */
+
+.inicio-hito-docente__seguimiento-lista {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 15px;
+}
+
+.inicio-hito-docente__seguimiento-lista article {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-raised);
+  transition:
+    border-color .16s ease,
+    box-shadow .16s ease;
+}
+
+.inicio-hito-docente__seguimiento-lista article:hover {
+  border-color: var(--app-border-strong);
+  box-shadow: var(--app-shadow-sm);
+}
+
+.inicio-hito-docente__seguimiento-lista article > div:first-child {
+  min-width: 0;
+}
+
+.inicio-hito-docente__seguimiento-lista article strong,
+.inicio-hito-docente__seguimiento-lista article small {
+  display: block;
+}
+
+.inicio-hito-docente__seguimiento-lista article strong {
+  overflow: hidden;
+  color: var(--app-text);
+  font-size: var(--app-font-sm);
+  font-weight: var(--app-font-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inicio-hito-docente__seguimiento-lista article small {
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--app-text-muted);
+  font-size: var(--app-font-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inicio-hito-docente__seguimiento-datos {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.inicio-hito-docente__seguimiento-datos span {
+  min-width: 68px;
+  display: grid;
+  gap: 3px;
+  padding: 7px 9px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 9px;
+  color: var(--app-text-soft);
+  background: var(--app-surface-alt);
+  font-size: var(--app-font-xs);
+  text-align: center;
+}
+
+.inicio-hito-docente__seguimiento-datos b {
+  color: var(--app-text);
+  font-size: var(--app-font-sm);
+}
+
+.inicio-hito-docente__todo-bien,
+.inicio-hito-docente__vacio {
+  padding: 28px 20px;
+  color: var(--app-text-muted);
+  font-size: var(--app-font-sm);
+  text-align: center;
+}
+
+.inicio-hito-docente__todo-bien {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--app-success);
+  background: var(--app-success-bg);
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1180px) {
+  .inicio-hito-docente__resumen-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .section-eyebrow {
-    display: block;
-    color: var(--app-accent-dark);
-    font-size: 9px;
-    font-weight: 850;
-    letter-spacing: .14em;
-    text-transform: uppercase;
+  .inicio-hito-docente__contenido-grid {
+    grid-template-columns: 1fr;
   }
+}
 
-  .hito-principal {
-    position: relative;
-    min-height: 185px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 25px;
-    padding: 27px 30px;
-    overflow: hidden;
-    border: 1px solid var(--app-border);
-    border-radius: 24px;
-    background:
-      linear-gradient(
-        135deg,
-        var(--app-surface),
-        color-mix(
-          in srgb,
-          var(--app-accent-soft) 56%,
-          var(--app-surface)
-        )
-      );
-    box-shadow: var(--app-shadow-sm);
-    isolation: isolate;
-  }
-
-  .hito-principal__glow {
-    position: absolute;
-    top: -100px;
-    right: 8%;
-    width: 320px;
-    height: 320px;
-    border-radius: 50%;
-    background:
-      radial-gradient(
-        circle,
-        var(--app-warning-bg),
-        transparent 68%
-      );
-    z-index: -1;
-  }
-
-  .hito-principal__contenido {
-    min-width: 0;
-  }
-
-  .hito-principal h2 {
-    margin: 7px 0 0;
-    color: var(--app-accent-dark);
-    font-size: 31px;
-    font-weight: 950;
-    letter-spacing: -.04em;
-  }
-
-  .hito-principal__nombre {
-    display: block;
-    margin-top: 5px;
-    color: var(--app-text);
-    font-size: 18px;
-  }
-
-  .hito-principal p {
-    max-width: 720px;
-    margin: 8px 0 0;
-    color: var(--app-text-soft);
-    font-size: 11px;
-    line-height: 1.6;
-  }
-
-  .hito-principal__meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 15px;
-  }
-
-  .hito-principal__meta > span {
-    min-height: 29px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border: 1px solid var(--app-border-soft);
-    border-radius: 999px;
-    color: var(--app-text-secondary);
-    background: var(--app-surface);
-    font-size: 9px;
-    font-weight: 700;
-  }
-
-  .hito-principal__estado.en_curso {
-    color: var(--app-success);
-    border-color: var(--app-success-border);
-    background: var(--app-success-bg);
-  }
-
-  .hito-principal__estado.proximo {
-    color: var(--app-warning-strong);
-    border-color: var(--app-warning-border);
-    background: var(--app-warning-bg);
-  }
-
-  .hito-principal__estado.finalizado {
-    color: var(--app-purple);
-    background: var(--app-purple-bg);
-  }
-
-  .hito-principal__estado.pendiente {
-    color: var(--app-text-muted);
-    background: var(--app-surface-disabled);
-  }
-
-  .hito-principal__visual {
-    width: 105px;
-    height: 105px;
-    display: grid;
-    place-items: center;
-    align-content: center;
-    flex-shrink: 0;
-    border: 1px solid var(--app-border-strong);
-    border-radius: 30px;
-    color: var(--app-accent-dark);
-    background:
-      linear-gradient(
-        145deg,
-        var(--app-surface),
-        var(--app-warning-bg)
-      );
-    box-shadow:
-      0 18px 34px
-      color-mix(
-        in srgb,
-        var(--app-accent) 14%,
-        transparent
-      );
-  }
-
-  .hito-principal__visual span {
-    font-size: 28px;
-    font-weight: 950;
-  }
-
-  .hito-principal__visual small {
-    margin-top: 5px;
-    color: var(--app-text-soft);
-    font-size: 9px;
-  }
-
-  .puntajes-grid,
-
-  .puntajes-grid span {
-    color: var(--app-text-soft);
-    font-size: 9px;
-  }
-
-  .puntajes-grid strong {
-    margin-top: 5px;
-    color: var(--app-text);
-    font-size: 23px;
-    line-height: 1;
-  }
-
-  .puntajes-grid small {
-    margin-top: 5px;
-    color: var(--app-text-muted);
-    font-size: 8px;
-  }
-
-  .hito-dashboard-grid {
-    display: grid;
-    grid-template-columns:
-      minmax(0, 1.45fr)
-      minmax(270px, .55fr);
-    gap: 14px;
-  }
-
-  .actividad-hito-card,
-  .pendientes-card,
-  .vencimiento-card,
-  .acciones-docente-card,
-  .progress-card,
-  .activity-card {
-    border: 1px solid var(--app-border);
-    border-radius: 22px;
-    background: var(--app-surface);
-    box-shadow: var(--app-shadow-sm);
-  }
-
-  .actividad-hito-card {
-    padding: 22px 23px;
-  }
-
-  .actividad-hito-card__header {
-    display: flex;
+@media (max-width: 760px) {
+  .inicio-hito-docente__panel > header {
     align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
+    flex-direction: column;
   }
 
-  .actividad-hito-card h3,
-  .pendientes-card h3,
-  .vencimiento-card h3,
-  .acciones-docente-card h3,
-  .progress-card h3,
-  .activity-card h3 {
-    margin: 6px 0 0;
-    color: var(--app-text);
-    font-size: 18px;
-    font-weight: 850;
+  .inicio-hito-docente__conteos {
+    justify-content: flex-start;
   }
 
-  .actividad-hito-card__header p,
-  .pendientes-card p,
-  .vencimiento-card p,
-  .acciones-docente-card p,
-  .progress-card p,
-  .activity-card p {
-    margin: 6px 0 0;
-    color: var(--app-text-soft);
-    font-size: 10px;
-    line-height: 1.6;
+  .inicio-hito-docente__seguimiento-lista {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 580px) {
+  .inicio-hito-docente__resumen-grid,
+  .inicio-hito-docente__componentes {
+    grid-template-columns: 1fr;
   }
 
-  .actividad-hito-card__codigo {
-    min-width: 42px;
-    height: 42px;
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    border-radius: 13px;
-    color: var(--app-purple);
-    background: var(--app-purple-bg);
-    font-size: 12px;
-    font-weight: 900;
-  }
-
-  .actividad-hito-card__contenido {
-    margin-top: 18px;
-  }
-
-  .actividad-resumen-grid {
-    display: grid;
-    grid-template-columns:
-      repeat(
-        4,
-        minmax(
-          0,
-          1fr
-        )
-      );
-    gap: 10px;
-  }
-
-  .actividad-resumen {
-    --actividad-color:
-      var(--app-accent);
-
-    --actividad-bg:
-      var(--app-accent-soft);
-
-    min-width: 0;
-    display: grid;
-    grid-template-columns:
-      42px minmax(0, 1fr);
-    gap: 10px;
-    align-items: center;
-    padding: 13px;
-    border: 1px solid var(--app-border-soft);
-    border-radius: 16px;
-    color: var(--app-text);
-    background:
-      linear-gradient(
-        145deg,
-        var(--app-surface-alt),
-        color-mix(
-          in srgb,
-          var(--actividad-bg) 38%,
-          var(--app-surface)
-        )
-      );
-    font-family: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition:
-      transform .18s ease,
-      border-color .18s ease,
-      box-shadow .18s ease;
-  }
-
-  .actividad-resumen:hover {
-    transform: translateY(-3px);
-    border-color:
-      color-mix(
-        in srgb,
-        var(--actividad-color) 42%,
-        var(--app-border)
-      );
-    box-shadow:
-      0 12px 24px
-      color-mix(
-        in srgb,
-        var(--actividad-color) 11%,
-        transparent
-      );
-  }
-
-  .actividad-resumen--foros {
-    --actividad-color:
-      var(--app-purple);
-
-    --actividad-bg:
-      var(--app-purple-bg);
-  }
-
-  .actividad-resumen--tareas {
-    --actividad-color:
-      var(--app-success);
-
-    --actividad-bg:
-      var(--app-success-bg);
-  }
-
-  .actividad-resumen--quizzes {
-    --actividad-color:
-      var(--app-warning);
-
-    --actividad-bg:
-      var(--app-warning-bg);
-  }
-
-  .actividad-resumen__icono {
-    width: 42px;
-    height: 42px;
-    display: grid;
-    place-items: center;
-    border-radius: 13px;
-    color: var(--actividad-color);
-    background: var(--actividad-bg);
-  }
-
-  .actividad-resumen__datos {
-    min-width: 0;
-  }
-
-  .actividad-resumen__datos small,
-  .actividad-resumen__datos strong,
-  .actividad-resumen__datos em {
-    display: block;
-  }
-
-  .actividad-resumen__datos small {
-    color: var(--app-text-soft);
-    font-size: 8px;
-    font-weight: 750;
-  }
-
-  .actividad-resumen__datos strong {
-    margin-top: 3px;
-    color: var(--app-text);
-    font-size: 20px;
-    line-height: 1;
-  }
-
-  .actividad-resumen__datos em {
-    margin-top: 4px;
-    overflow: hidden;
-    color: var(--app-text-muted);
-    font-size: 7px;
-    font-style: normal;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-
-  .actividad-vacia--mejorada {
-    position: relative;
-    min-height: 175px;
-    display: grid;
-    grid-template-columns:
-      58px minmax(0, 1fr);
-    gap: 15px;
-    align-items: center;
-    margin-top: 13px;
-    padding: 20px;
-    overflow: hidden;
-    border: 1px dashed
-      color-mix(
-        in srgb,
-        var(--app-accent) 42%,
-        var(--app-border)
-      );
-    border-radius: 18px;
-    background:
-      linear-gradient(
-        135deg,
-        var(--app-surface-alt),
-        color-mix(
-          in srgb,
-          var(--app-accent-soft) 42%,
-          var(--app-surface)
-        )
-      );
-  }
-
-  .actividad-vacia__decoracion {
-    position: absolute;
-    top: 15px;
-    right: 18px;
-    display: flex;
-    gap: 5px;
-  }
-
-  .actividad-vacia__decoracion span {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--app-accent);
-    opacity: .22;
-  }
-
-  .actividad-vacia__icono {
-    width: 58px;
-    height: 58px;
-    display: grid;
-    place-items: center;
-    border-radius: 18px;
-    color: var(--app-accent-dark);
-    background:
-      linear-gradient(
-        145deg,
-        var(--app-surface),
-        var(--app-accent-soft)
-      );
-    box-shadow:
-      0 12px 24px
-      color-mix(
-        in srgb,
-        var(--app-accent) 12%,
-        transparent
-      );
-  }
-
-  .actividad-vacia__texto {
-    min-width: 0;
-  }
-
-  .actividad-vacia__eyebrow {
-    display: block;
-    color: var(--app-accent-dark);
-    font-size: 8px;
-    font-weight: 850;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-  }
-
-  .actividad-vacia__texto strong {
-    display: block;
-    margin-top: 5px;
-    color: var(--app-text);
-    font-size: 14px;
-    font-weight: 850;
-  }
-
-  .actividad-vacia__texto p {
-    max-width: 720px;
-    margin: 6px 0 0;
-    color: var(--app-text-soft);
-    font-size: 9px;
-    line-height: 1.6;
-  }
-
-  .actividad-vacia__acciones {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 13px;
-  }
-
-  .actividad-vacia__acciones button {
-    min-height: 37px;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 11px;
-    color: #fff;
-    background:
-      linear-gradient(
-        135deg,
-        var(--app-accent),
-        var(--app-accent-hover)
-      );
-    font-family: inherit;
-    font-size: 9px;
-    font-weight: 750;
-    cursor: pointer;
-  }
-
-  .actividad-vacia__acciones button.secondary {
-    border: 1px solid var(--app-border-strong);
-    color: var(--app-accent-dark);
-    background: var(--app-surface);
-  }
-
-  .actividad-vacia__espera {
-    display: inline-flex;
-    margin-top: 12px;
-    padding: 7px 10px;
-    border-radius: 999px;
-    color: var(--app-text-soft);
-    background: var(--app-surface);
-    font-size: 8px;
-  }
-
-  .hito-lateral {
-    display: grid;
-    gap: 12px;
-  }
-
-  .pendientes-card,
-  .vencimiento-card,
-  .acciones-docente-card {
+  .inicio-hito-docente__hito {
     padding: 18px;
   }
 
-  .pendientes-card {
-    background:
-      linear-gradient(
-        145deg,
-        var(--app-surface),
-        var(--app-success-bg)
-      );
+  .inicio-hito-docente__seguimiento-lista article {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .vencimiento-card {
-    background:
-      linear-gradient(
-        145deg,
-        var(--app-surface),
-        var(--app-warning-bg)
-      );
+  .inicio-hito-docente__seguimiento-datos {
+    width: 100%;
   }
 
-  .acciones-docente-card {
-    background:
-      linear-gradient(
-        145deg,
-        var(--app-surface),
-        var(--app-accent-softer)
-      );
+  .inicio-hito-docente__seguimiento-datos span {
+    flex: 1;
   }
-
-  .pendientes-card__estado,
-  .vencimiento-card__fecha {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    margin-top: 13px;
-    padding: 7px 9px;
-    border-radius: 999px;
-    font-size: 9px;
-    font-weight: 750;
-  }
-
-  .pendientes-card__estado {
-    color: var(--app-success);
-    background: var(--app-surface);
-  }
-
-  .vencimiento-card__fecha {
-    color: var(--app-warning-strong);
-    background: var(--app-surface);
-  }
-
-  .acciones-docente-card__botones {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 14px;
-  }
-
-  .acciones-docente-card button {
-    min-height: 40px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    padding: 9px 11px;
-    border: none;
-    border-radius: 11px;
-    color: #fff;
-    background:
-      linear-gradient(
-        135deg,
-        var(--app-accent),
-        var(--app-accent-hover)
-      );
-    font-family: inherit;
-    font-size: 9px;
-    font-weight: 750;
-    cursor: pointer;
-  }
-
-  .acciones-docente-card button.secondary {
-    border: 1px solid var(--app-border-strong);
-    color: var(--app-accent-dark);
-    background: var(--app-surface);
-  }
-
-  @media (max-width: 760px) {
-    .hito-principal {
-      align-items: flex-start;
-      padding: 23px 20px;
-    }
-
-    .hito-principal__visual {
-      width: 75px;
-      height: 75px;
-      border-radius: 22px;
-    }
-
-    .actividad-resumen-grid {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    .hito-dashboard-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 520px) {
-    .hito-principal__visual {
-      display: none;
-    }
-
-    .actividad-hito-card,
-    .pendientes-card,
-    .vencimiento-card,
-    .acciones-docente-card {
-      padding: 18px;
-    }
-
-    .actividad-resumen-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .actividad-vacia--mejorada {
-      grid-template-columns: 1fr;
-    }
-
-    .acciones-docente-card__botones {
-      grid-template-columns: 1fr;
-    }
-  }
+}
 `;

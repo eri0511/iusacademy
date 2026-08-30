@@ -7,11 +7,8 @@ import {
   Scale,
   ScrollText,
   Shield,
+  type LucideIcon,
 } from 'lucide-react';
-
-import type {
-  ComponentType,
-} from 'react';
 
 import type {
   AvatarQuizCodigo,
@@ -32,24 +29,29 @@ type Props = {
 const iconos:
   Record<
     AvatarQuizCodigo,
-    ComponentType<{
-      size?: number;
-    }>
+    LucideIcon
   > = {
     BALANZA:
       Scale,
+
     CODIGO:
       BookOpenText,
+
     TRIBUNAL:
       Landmark,
+
     PERGAMINO:
       ScrollText,
+
     PLUMA:
       Feather,
+
     MAZO:
       Gavel,
+
     ESCUDO:
       Shield,
+
     BIRRETE:
       GraduationCap,
   };
@@ -57,8 +59,7 @@ const iconos:
 export default function AvatarQuiz({
   codigo,
   iniciales,
-  size =
-    22,
+  size = 22,
 }: Props) {
   if (
     !codigo
@@ -98,18 +99,25 @@ export function nombreAvatarQuiz(
     > = {
       BALANZA:
         'Balanza',
+
       CODIGO:
         'Código',
+
       TRIBUNAL:
         'Tribunal',
+
       PERGAMINO:
         'Pergamino',
+
       PLUMA:
         'Pluma',
+
       MAZO:
         'Mazo',
+
       ESCUDO:
         'Escudo',
+
       BIRRETE:
         'Birrete',
     };

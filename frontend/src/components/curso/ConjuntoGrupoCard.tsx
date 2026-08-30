@@ -16,7 +16,7 @@ import AulaDropdown from '../aula/AulaDropdown';
 
 import type {
   ConjuntoGrupoResumen,
-} from '../../types/grupos.types';
+} from '../../types/grupos/grupos.types';
 
 type ConjuntoGrupoCardProps = {
   conjunto:

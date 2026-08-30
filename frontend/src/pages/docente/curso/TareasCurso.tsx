@@ -763,6 +763,9 @@ export default function TareasCurso() {
           } =
             datos;
 
+          void _;
+          void __;
+
           await actualizar(
             tareaEditar.id,
             actualizacion,

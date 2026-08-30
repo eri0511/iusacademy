@@ -10,6 +10,7 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -253,8 +254,15 @@ export class ActualizarForoDto {
     number | null;
 
   @IsOptional()
-  @IsEnum(
-    TipoEvaluacionForo,
+  @IsIn(
+    [
+      TipoEvaluacionForo.MANUAL,
+      TipoEvaluacionForo.AUTOMATICA,
+    ],
+    {
+      message:
+        'La evaluación por rúbrica estará disponible en una próxima versión. Selecciona MANUAL o AUTOMATICA.',
+    },
   )
   tipoEvaluacion?:
     TipoEvaluacionForo;
@@ -441,4 +449,4 @@ export class ActualizarForoDto {
   @IsBoolean()
   participaEnPromedio?:
     boolean;
-}
+} 

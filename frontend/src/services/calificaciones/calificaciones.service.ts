@@ -133,7 +133,7 @@ export async function descargarLibroCalificaciones(
   const disposition =
     respuesta.headers.get('content-disposition') ?? '';
   const coincidencia =
-    disposition.match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i);
+    disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
 
   const extension =
     formato === 'PDF'
@@ -144,7 +144,7 @@ export async function descargarLibroCalificaciones(
 
   enlace.href = url;
   enlace.download = coincidencia?.[1]
-    ? decodeURIComponent(coincidencia[1].replace(/\"/g, ''))
+    ? decodeURIComponent(coincidencia[1].replace(/"/g, ''))
     : `libro-calificaciones-hito-${hitoId}-iusacademy.${extension}`;
 
   document.body.appendChild(enlace);

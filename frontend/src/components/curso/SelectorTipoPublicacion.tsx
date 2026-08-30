@@ -10,7 +10,7 @@ import {
 
 import type {
   TipoPublicacionCurso,
-} from '../../types/comunicacion-curso.types';
+} from '../../types/aula/comunicacion-curso.types';
 
 type SelectorTipoPublicacionProps = {
   abierto: boolean;

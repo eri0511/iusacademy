@@ -20,7 +20,7 @@ import {
 import type {
   PrioridadPublicacion,
   TipoPublicacionCurso,
-} from '../types/comunicacion-curso.types';
+} from '../types/aula/comunicacion-curso.types';
 
 export type CampoDinamicoPublicacion =
   | 'REFERENCIA'

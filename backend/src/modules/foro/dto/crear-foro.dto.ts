@@ -10,6 +10,7 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -314,8 +315,15 @@ export class CrearForoDto {
       objeto.esCalificable ===
       true,
   )
-  @IsEnum(
-    TipoEvaluacionForo,
+  @IsIn(
+    [
+      TipoEvaluacionForo.MANUAL,
+      TipoEvaluacionForo.AUTOMATICA,
+    ],
+    {
+      message:
+        'La evaluación por rúbrica estará disponible en una próxima versión. Selecciona MANUAL o AUTOMATICA.',
+    },
   )
   tipoEvaluacion?:
     TipoEvaluacionForo;
@@ -527,4 +535,4 @@ export class CrearForoDto {
   @IsBoolean()
   participaEnPromedio?:
     boolean;
-}
+} 

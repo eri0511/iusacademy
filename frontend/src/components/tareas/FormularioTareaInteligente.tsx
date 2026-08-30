@@ -30,7 +30,7 @@ import {
   useAulaContext,
 } from '../../contexts/AulaContext';
 
-import useGruposCurso from '../../hooks/useGruposCurso';
+import useGruposCurso from '../../hooks/grupos/useGruposCurso';
 
 import type {
   CapacidadTarea,

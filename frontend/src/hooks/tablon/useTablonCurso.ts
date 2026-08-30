@@ -11,7 +11,7 @@ import {
 
 import {
   useAuth,
-} from '../auth/AuthContext';
+} from '../../auth/AuthContext';
 
 import {
   actualizarComentario,
@@ -29,7 +29,7 @@ import {
   obtenerMensajeErrorServicio,
   obtenerTablonAula,
   registrarLecturaPublicacion,
-} from '../services/comunicacion-curso.service';
+} from '../../services/aula/comunicacion-curso.service';
 
 import type {
   ActualizarComentarioDatos,
@@ -44,7 +44,7 @@ import type {
   PermisosTablon,
   PublicacionCurso,
   ResumenLecturasPublicacion,
-} from '../types/comunicacion-curso.types';
+} from '../../types/aula/comunicacion-curso.types';
 
 type RolTablon =
   | 'DOCENTE'

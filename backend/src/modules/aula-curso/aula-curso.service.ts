@@ -95,9 +95,6 @@ export class AulaCursoService {
       puedeVerEstudiantes:
         esDocente,
 
-      puedeVerEstadisticas:
-        esDocente,
-
       puedeComentar:
         rol ===
           Rol.DOCENTE ||

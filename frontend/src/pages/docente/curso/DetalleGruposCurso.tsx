@@ -37,11 +37,11 @@ import {
   useAulaContext,
 } from '../../../contexts/AulaContext';
 
-import useGruposCurso from '../../../hooks/useGruposCurso';
+import useGruposCurso from '../../../hooks/grupos/useGruposCurso';
 
 import type {
   GrupoCursoDetalle,
-} from '../../../types/grupos.types';
+} from '../../../types/grupos/grupos.types';
 
 function nombreCompleto(
   persona: {

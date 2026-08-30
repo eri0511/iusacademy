@@ -54,6 +54,7 @@ import MisCursos from '../pages/docente/MisCursos';
 
 import EstudianteInicio from '../pages/estudiante/Inicio';
 
+import AulaCursoEstudiante from '../pages/estudiante/cursos/AulaCursoEstudiante';
 import CalificacionesCursoEstudiante from '../pages/estudiante/cursos/CalificacionesCursoEstudiante';
 import DetalleForoEstudiante from '../pages/estudiante/cursos/DetalleForoEstudiante';
 import DetalleQuizEstudiante from '../pages/estudiante/cursos/DetalleQuizEstudiante';
@@ -139,9 +140,6 @@ function AppRouter() {
       <AuthProvider>
         <ConfiguracionProvider>
           <Routes>
-            {/* =====================================================
-                RUTAS PÚBLICAS
-            ====================================================== */}
 
             <Route
               element={
@@ -190,10 +188,6 @@ function AppRouter() {
                 <VerificarReporte />
               }
             />
-
-            {/* =====================================================
-                ADMINISTRADOR
-            ====================================================== */}
 
             <Route
               element={
@@ -268,10 +262,6 @@ function AppRouter() {
               </Route>
             </Route>
 
-            {/* =====================================================
-                DOCENTE
-            ====================================================== */}
-
             <Route
               element={
                 <ProtectedRoute
@@ -301,10 +291,6 @@ function AppRouter() {
                   }
                 />
 
-                {/* =================================================
-                    AULA DEL DOCENTE
-                ================================================== */}
-
                 <Route
                   path="cursos/:cursoId"
                   element={
@@ -321,7 +307,6 @@ function AppRouter() {
                     }
                   />
 
-                  {/* TABLÓN */}
 
                   <Route
                     path="tablon"
@@ -329,8 +314,6 @@ function AppRouter() {
                       <TablonCurso />
                     }
                   />
-
-                  {/* FORO */}
 
                   <Route
                     path="foro"
@@ -353,7 +336,6 @@ function AppRouter() {
                     }
                   />
 
-                  {/* ESTUDIANTES */}
 
                   <Route
                     path="estudiantes"
@@ -361,8 +343,6 @@ function AppRouter() {
                       <EstudiantesCurso />
                     }
                   />
-
-                  {/* TAREAS */}
 
                   <Route
                     path="tareas"
@@ -385,7 +365,6 @@ function AppRouter() {
                     }
                   />
 
-                  {/* QUIZZES */}
 
                   <Route
                     path="quizzes"
@@ -401,8 +380,6 @@ function AppRouter() {
                     }
                   />
 
-                  {/* CALIFICACIONES */}
-
                   <Route
                     path="calificaciones"
                     element={
@@ -410,7 +387,6 @@ function AppRouter() {
                     }
                   />
 
-                  {/* GRUPOS */}
 
                   <Route
                     path="grupos"
@@ -426,7 +402,6 @@ function AppRouter() {
                     }
                   />
 
-                  {/* RECURSOS */}
 
                   <Route
                     path="recursos"
@@ -435,22 +410,7 @@ function AppRouter() {
                     }
                   />
 
-                  {/* ESTADÍSTICAS */}
-
-                  <Route
-                    path="estadisticas"
-                    element={
-                      <PaginaProximamente
-                        titulo="Estadísticas"
-                        descripcion="Aquí se mostrarán indicadores generales del curso."
-                      />
-                    }
-                  />
                 </Route>
-
-                {/* =================================================
-                    MÓDULOS DOCENTE FUERA DEL AULA
-                ================================================== */}
 
                 <Route
                   path="biblioteca"
@@ -521,10 +481,6 @@ function AppRouter() {
                   }
                 />
 
-                {/* =================================================
-                    AULA DEL ESTUDIANTE
-                ================================================== */}
-
                 <Route
                   path="cursos/:cursoId"
                   element={
@@ -537,14 +493,9 @@ function AppRouter() {
                   <Route
                     index
                     element={
-                      <PaginaProximamente
-                        titulo="Inicio del aula"
-                        descripcion="Aquí se mostrará el resumen del hito seleccionado y las actividades del estudiante."
-                      />
+                      <AulaCursoEstudiante />
                     }
                   />
-
-                  {/* TABLÓN */}
 
                   <Route
                     path="tablon"
@@ -552,8 +503,6 @@ function AppRouter() {
                       <TablonCursoEstudiante />
                     }
                   />
-
-                  {/* FORO */}
 
                   <Route
                     path="foro"
@@ -569,7 +518,6 @@ function AppRouter() {
                     }
                   />
 
-                  {/* TAREAS */}
 
                   <Route
                     path="tareas"
@@ -585,8 +533,6 @@ function AppRouter() {
                     }
                   />
 
-                  {/* QUIZZES */}
-
                   <Route
                     path="quizzes"
                     element={
@@ -601,8 +547,6 @@ function AppRouter() {
                     }
                   />
 
-                  {/* CALIFICACIONES */}
-
                   <Route
                     path="calificaciones"
                     element={
@@ -610,7 +554,6 @@ function AppRouter() {
                     }
                   />
 
-                  {/* RECURSOS */}
 
                   <Route
                     path="recursos"
@@ -619,10 +562,6 @@ function AppRouter() {
                     }
                   />
                 </Route>
-
-                {/* =================================================
-                    MÓDULOS ESTUDIANTE FUERA DEL AULA
-                ================================================== */}
 
                 <Route
                   path="biblioteca"
@@ -659,10 +598,6 @@ function AppRouter() {
                 />
               </Route>
             </Route>
-
-            {/* =====================================================
-                RUTA NO ENCONTRADA
-            ====================================================== */}
 
             <Route
               path="*"

@@ -216,9 +216,11 @@ export default function HistorialReportes() {
       return;
     }
 
-    silencioso
-      ? setActualizando(true)
-      : setCargando(true);
+    if (silencioso) {
+      setActualizando(true);
+    } else {
+      setCargando(true);
+    }
 
     try {
       const respuesta = await fetch(

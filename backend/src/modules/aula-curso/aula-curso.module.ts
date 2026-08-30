@@ -11,6 +11,14 @@ import {
 } from './aula-curso.controller';
 
 import {
+  AulaInicioDocenteService,
+} from './aula-inicio-docente.service';
+
+import {
+  AulaInicioEstudianteService,
+} from './aula-inicio-estudiante.service';
+
+import {
   AulaCursoService,
 } from './aula-curso.service';
 
@@ -25,6 +33,8 @@ import {
 
   providers: [
     AulaCursoService,
+    AulaInicioDocenteService,
+    AulaInicioEstudianteService,
   ],
 
   exports: [

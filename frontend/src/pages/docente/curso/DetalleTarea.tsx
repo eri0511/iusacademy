@@ -1036,6 +1036,9 @@ export default function DetalleTarea() {
       } =
         datos;
 
+      void _;
+      void __;
+
       await detalle.actualizar(
         actualizacion,
       );

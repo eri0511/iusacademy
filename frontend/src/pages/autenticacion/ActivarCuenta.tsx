@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import WavesBottom from "../../components/shared/WaveBackground";
+import Toast from "../../components/shared/Toast";
 
 const API_URL =
   import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -458,13 +459,6 @@ export default function ActivarCuenta() {
               )}
             </label>
 
-            {mensajeError && (
-              <div className="errorMessage" role="alert">
-                <span aria-hidden="true">!</span>
-                <p>{mensajeError}</p>
-              </div>
-            )}
-
             <button
               type="submit"
               className="btnPrimary"
@@ -484,6 +478,14 @@ export default function ActivarCuenta() {
       </section>
 
       <WavesBottom height={240} />
+
+      <Toast
+        visible={Boolean(mensajeError)}
+        tipo="error"
+        titulo="No se pudo activar la cuenta"
+        mensaje={mensajeError}
+        onCerrar={() => setMensajeError("")}
+      />
 
       <style>{styles}</style>
     </main>
@@ -1007,41 +1009,7 @@ body {
   color: #b91c1c;
 }
 
-.errorMessage {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.58rem;
 
-  padding: 0.7rem 0.84rem;
-
-  border: 1px solid #ffc7c7;
-  border-radius: 16px;
-
-  background: #ffe8e8;
-  color: #8a1f1f;
-
-  font-size: 0.83rem;
-}
-
-.errorMessage span {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-
-  display: grid;
-  place-items: center;
-
-  border-radius: 999px;
-
-  background: rgba(185, 28, 28, 0.12);
-
-  font-weight: 900;
-}
-
-.errorMessage p {
-  margin: 0;
-  line-height: 1.4;
-}
 
 .btnPrimary {
   width: 100%;
@@ -1442,7 +1410,9 @@ body {
     font-size: 0.78rem;
   }
 
-  .btnPrimary {
+
+
+.btnPrimary {
     min-height: 43px;
     padding-block: 0.72rem;
   }

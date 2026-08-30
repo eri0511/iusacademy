@@ -50,7 +50,11 @@ export default function useForosCurso(cursoId: number, filtros: FiltrosForo) {
   const cargarForos = useCallback(async () => {
     if (!Number.isInteger(cursoId) || cursoId <= 0 || !accessToken) return;
 
-    primeraCarga.current ? setCargando(true) : setActualizando(true);
+    if (primeraCarga.current) {
+      setCargando(true);
+    } else {
+      setActualizando(true);
+    }
     setError(null);
 
     const parametros = new URLSearchParams({

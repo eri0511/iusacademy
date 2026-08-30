@@ -34,6 +34,8 @@ import Toast, {
   type TipoToast,
 } from '../../../components/shared/Toast';
 
+import AulaModal from '../../../components/aula/AulaModal';
+
 import {
   activarQuiz,
   finalizarQuiz,
@@ -582,6 +584,11 @@ export default function DetalleQuizDocentePagina() {
         '',
     });
 
+  const [
+    confirmarFinalizacion,
+    setConfirmarFinalizacion,
+  ] = useState(false);
+
   const mostrarToast =
     useCallback(
       (
@@ -933,6 +940,23 @@ export default function DetalleQuizDocentePagina() {
         mostrarToast,
       ],
     );
+
+  const confirmarFinalizacionDeQuiz =
+    () => {
+      setConfirmarFinalizacion(
+        false,
+      );
+
+      void ejecutar(
+        () =>
+          finalizarQuiz(
+            cursoId,
+            quizId,
+            accessToken!,
+          ),
+        'Quiz finalizado',
+      );
+    };
 
   const preguntaActual =
     useMemo(
@@ -1547,23 +1571,11 @@ export default function DetalleQuizDocentePagina() {
                 quiz.estado ===
                 'CUENTA_REGRESIVA'
               }
-              onClick={() => {
-                if (
-                  window.confirm(
-                    '¿Finalizar el Quiz? Los intentos activos se cerrarán y se calculará la clasificación final.',
-                  )
-                ) {
-                  void ejecutar(
-                    () =>
-                      finalizarQuiz(
-                        cursoId,
-                        quizId,
-                        accessToken!,
-                      ),
-                    'Quiz finalizado',
-                  );
-                }
-              }}
+              onClick={() =>
+                setConfirmarFinalizacion(
+                  true,
+                )
+              }
             >
               <CircleStop
                 size={
@@ -1640,6 +1652,56 @@ export default function DetalleQuizDocentePagina() {
           )
         }
       />
+
+      <AulaModal
+        abierto={
+          confirmarFinalizacion
+        }
+        titulo="Finalizar el quiz"
+        etiqueta="Quiz en vivo"
+        descripcion="Los intentos activos se cerrarán y se calculará la clasificación final."
+        ancho="compacto"
+        icono={CircleStop}
+        onCerrar={() =>
+          setConfirmarFinalizacion(
+            false,
+          )
+        }
+        footer={
+          <div className="quiz-confirmar__footer">
+            <button
+              type="button"
+              className="quiz-confirmar__cancelar"
+              onClick={() =>
+                setConfirmarFinalizacion(
+                  false,
+                )
+              }
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              className="quiz-confirmar__finalizar"
+              onClick={
+                confirmarFinalizacionDeQuiz
+              }
+            >
+              <CircleStop
+                size={17}
+              />
+
+              Finalizar quiz
+            </button>
+          </div>
+        }
+      >
+        <p className="quiz-confirmar__texto">
+          Esta acción no se puede deshacer. Los estudiantes con
+          intentos activos perderán su participación en el quiz.
+        </p>
+      </AulaModal>
 
       <style>
         {styles}
@@ -2682,5 +2744,62 @@ const styles = `
     50% {
       opacity: 1;
     }
+  }
+
+  .quiz-confirmar__footer {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .quiz-confirmar__texto {
+    margin: 0;
+    color: var(--app-text-soft);
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+
+  .quiz-confirmar__cancelar,
+  .quiz-confirmar__finalizar {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border: 1px solid var(--app-border-strong);
+    border-radius: 11px;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 800;
+    cursor: pointer;
+    transition:
+      transform .15s ease,
+      border-color .15s ease,
+      background .15s ease;
+  }
+
+  .quiz-confirmar__cancelar {
+    color: var(--app-text-secondary);
+    background: var(--app-surface-alt);
+  }
+
+  .quiz-confirmar__cancelar:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: var(--app-accent);
+    background: var(--app-accent-soft);
+  }
+
+  .quiz-confirmar__finalizar {
+    border-color: color-mix(in srgb, var(--app-danger) 35%, var(--app-border));
+    color: var(--app-danger);
+    background: var(--app-danger-bg);
+  }
+
+  .quiz-confirmar__finalizar:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: var(--app-danger-border);
   }
 `;

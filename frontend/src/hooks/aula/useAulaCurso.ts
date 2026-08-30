@@ -7,16 +7,16 @@ import {
 
 import {
   useAuth,
-} from '../auth/AuthContext';
+} from '../../auth/AuthContext';
 
 import {
   obtenerAulaCurso,
-} from '../services/aulaCurso.service';
+} from '../../services/aula/aulaCurso.service';
 
 import type {
   AulaCursoRespuesta,
   HitoAula,
-} from '../types/aulaCurso.types';
+} from '../../types/aula/aulaCurso.types';
 
 type ResultadoUseAulaCurso = {
   aula: AulaCursoRespuesta | null;

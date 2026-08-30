@@ -7,7 +7,7 @@ import {
 import type {
   CursoAula,
   RolAula,
-} from '../../types/aulaCurso.types';
+} from '../../types/aula/aulaCurso.types';
 
 type EncabezadoCursoProps = {
   curso:

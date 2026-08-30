@@ -31,11 +31,11 @@ import {
   useAulaContext,
 } from '../../../contexts/AulaContext';
 
-import useGruposCurso from '../../../hooks/useGruposCurso';
+import useGruposCurso from '../../../hooks/grupos/useGruposCurso';
 
 import type {
   ConjuntoGrupoResumen,
-} from '../../../types/grupos.types';
+} from '../../../types/grupos/grupos.types';
 
 export default function GruposCurso() {
   const navigate =

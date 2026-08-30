@@ -37,14 +37,14 @@ import {
   useAulaContext,
 } from '../../../contexts/AulaContext';
 
-import useTablonCurso from '../../../hooks/useTablonCurso';
+import useTablonCurso from '../../../hooks/tablon/useTablonCurso';
 
 import type {
   ActualizarPublicacionDatos,
   ComentarioPublicacion,
   CrearPublicacionDatos,
   PublicacionCurso,
-} from '../../../types/comunicacion-curso.types';
+} from '../../../types/aula/comunicacion-curso.types';
 
 type TipoMensaje =
   | 'exito'

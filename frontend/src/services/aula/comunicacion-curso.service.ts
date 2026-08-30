@@ -18,7 +18,7 @@ import type {
   RespuestaTablonAula,
   RespuestaTemaForoAccion,
   RespuestaTemasForo,
-} from '../types/comunicacion-curso.types';
+} from '../../types/aula/comunicacion-curso.types';
 
 const API_URL =
   import.meta.env.VITE_API_URL ??

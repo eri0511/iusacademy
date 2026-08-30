@@ -5,7 +5,7 @@ import {
 
 import type {
   HitoAula,
-} from '../../types/aulaCurso.types';
+} from '../../types/aula/aulaCurso.types';
 
 type SelectorHitosProps = {
   hitos: HitoAula[];

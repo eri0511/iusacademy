@@ -41,12 +41,12 @@ import {
   useAulaContext,
 } from '../../../contexts/AulaContext';
 
-import useTablonCurso from '../../../hooks/useTablonCurso';
+import useTablonCurso from '../../../hooks/tablon/useTablonCurso';
 
 import type {
   ComentarioPublicacion,
   PublicacionCurso,
-} from '../../../types/comunicacion-curso.types';
+} from '../../../types/aula/comunicacion-curso.types';
 
 type FiltroTablon =
   | 'TODOS'

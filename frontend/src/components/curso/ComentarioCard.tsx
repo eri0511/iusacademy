@@ -5,7 +5,7 @@ import {
 
 import type {
   ComentarioPublicacion,
-} from '../../types/comunicacion-curso.types';
+} from '../../types/aula/comunicacion-curso.types';
 
 type ComentarioCardProps = {
   comentario:

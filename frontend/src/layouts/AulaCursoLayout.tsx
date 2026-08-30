@@ -28,7 +28,7 @@ import SinPlanificacion from '../components/aula/SinPlanificacion';
 
 import {
   useAulaCurso,
-} from '../hooks/useAulaCurso';
+} from '../hooks/aula/useAulaCurso';
 
 import {
   AulaProvider,
@@ -39,7 +39,7 @@ import type {
   AulaCursoRespuesta,
   HitoAula,
   RolAula,
-} from '../types/aulaCurso.types';
+} from '../types/aula/aulaCurso.types';
 
 export type AulaCursoOutletContext = {
   aula:
@@ -141,14 +141,6 @@ function obtenerSeccionActual(
     )
   ) {
     return 'recursos';
-  }
-
-  if (
-    pathname.includes(
-      '/estadisticas',
-    )
-  ) {
-    return 'estadisticas';
   }
 
   return 'inicio';
@@ -545,9 +537,7 @@ export default function AulaCursoLayout({
     seccionActiva ===
       'grupos' ||
     seccionActiva ===
-      'recursos' ||
-    seccionActiva ===
-      'estadisticas';
+      'recursos';
 
   return (
     <AulaProvider

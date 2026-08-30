@@ -16,7 +16,7 @@ import {
 
 import type {
   TemaForoCurso,
-} from '../../types/comunicacion-curso.types';
+} from '../../types/aula/comunicacion-curso.types';
 
 type TemaForoCardProps = {
   tema:

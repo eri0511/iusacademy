@@ -34,7 +34,7 @@ import type {
   RespuestaPrevisualizacionGrupos,
   TipoEvaluacionGrupo,
   ValidacionesCreacionGrupos,
-} from '../../types/grupos.types';
+} from '../../types/grupos/grupos.types';
 
 type HitoFormulario = {
   id: number;

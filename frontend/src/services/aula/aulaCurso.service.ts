@@ -3,7 +3,7 @@ import type {
   ErrorApiAula,
   HitoCursoRespuesta,
   HitosCursoRespuesta,
-} from '../types/aulaCurso.types';
+} from '../../types/aula/aulaCurso.types';
 
 const API_URL =
   import.meta.env.VITE_API_URL ||

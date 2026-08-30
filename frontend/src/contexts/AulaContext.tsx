@@ -6,7 +6,7 @@ import {
 import type {
   AulaCursoRespuesta,
   HitoAula,
-} from '../types/aulaCurso.types';
+} from '../types/aula/aulaCurso.types';
 
 export type AulaContextValue = {
   aula: AulaCursoRespuesta;

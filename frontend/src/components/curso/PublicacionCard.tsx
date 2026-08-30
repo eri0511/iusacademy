@@ -19,7 +19,7 @@ import {
 
 import type {
   PublicacionCurso,
-} from '../../types/comunicacion-curso.types';
+} from '../../types/aula/comunicacion-curso.types';
 
 
 type PublicacionCardProps = {

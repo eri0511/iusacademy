@@ -21,7 +21,7 @@ import AvatarUsuario from '../shared/AvatarUsuario';
 import type {
   ComentarioPublicacion,
   PublicacionCurso,
-} from '../../types/comunicacion-curso.types';
+} from '../../types/aula/comunicacion-curso.types';
 
 type DatosComentarios = {
   publicacionId: number;

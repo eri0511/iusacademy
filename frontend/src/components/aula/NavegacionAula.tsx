@@ -1,5 +1,4 @@
 import {
-  BarChart3,
   ClipboardCheck,
   FileQuestion,
   Home,
@@ -13,7 +12,7 @@ import {
 
 import type {
   PermisosAula,
-} from '../../types/aulaCurso.types';
+} from '../../types/aula/aulaCurso.types';
 
 export type SeccionAula =
   | 'inicio'
@@ -24,8 +23,7 @@ export type SeccionAula =
   | 'calificaciones'
   | 'estudiantes'
   | 'grupos'
-  | 'recursos'
-  | 'estadisticas';
+  | 'recursos';
 
 type NavegacionAulaProps = {
   seccionActiva:
@@ -150,16 +148,6 @@ export default function NavegacionAula({
           PackageOpen,
         visible:
           true,
-      },
-      {
-        id:
-          'estadisticas',
-        label:
-          'Estadísticas',
-        icono:
-          BarChart3,
-        visible:
-          permisos.puedeVerEstadisticas,
       },
     ];
 

@@ -35,7 +35,6 @@ export type PermisosAula = {
   puedeCrearQuizzes: boolean;
   puedeCalificar: boolean;
   puedeVerEstudiantes: boolean;
-  puedeVerEstadisticas: boolean;
   puedeComentar: boolean;
   puedeResponderForos: boolean;
   puedeEntregarTareas: boolean;

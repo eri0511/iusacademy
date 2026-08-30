@@ -31,7 +31,7 @@ import type {
   PrioridadPublicacion,
   PublicacionCurso,
   TipoPublicacionCurso,
-} from '../../types/comunicacion-curso.types';
+} from '../../types/aula/comunicacion-curso.types';
 
 import SelectorTipoPublicacion from './SelectorTipoPublicacion';
 

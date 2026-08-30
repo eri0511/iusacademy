@@ -3414,12 +3414,14 @@ export class ForoService {
         BORRADOR: [
           EstadoForo.PROGRAMADO,
           EstadoForo.ABIERTO,
+          EstadoForo.CERRADO,
           EstadoForo.ANULADO,
         ],
 
         PROGRAMADO: [
           EstadoForo.ABIERTO,
           EstadoForo.BORRADOR,
+          EstadoForo.CERRADO,
           EstadoForo.ANULADO,
         ],
 
