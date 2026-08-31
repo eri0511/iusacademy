@@ -61,10 +61,7 @@ export class ForoEstadisticasService {
     return foro;
   }
 
-  private actualizarUltimaFecha(
-    actual: Date | null,
-    candidata: Date | null,
-  ) {
+  private actualizarUltimaFecha(actual: Date | null, candidata: Date | null) {
     if (!candidata) return actual;
     if (!actual || candidata > actual) return candidata;
     return actual;
@@ -314,9 +311,11 @@ export class ForoEstadisticasService {
           integrantes.length === 0
             ? 0
             : Number(
-                ((integrantes.filter((item) => item.participo).length /
-                  integrantes.length) *
-                  100).toFixed(2),
+                (
+                  (integrantes.filter((item) => item.participo).length /
+                    integrantes.length) *
+                  100
+                ).toFixed(2),
               ),
       };
     });
@@ -367,9 +366,10 @@ export class ForoEstadisticasService {
             integrantes.length === 0
               ? 0
               : Number(
-                  ((integrantesParticipantes / integrantes.length) * 100).toFixed(
-                    2,
-                  ),
+                  (
+                    (integrantesParticipantes / integrantes.length) *
+                    100
+                  ).toFixed(2),
                 ),
         };
       })

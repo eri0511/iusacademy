@@ -13,63 +13,36 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import type {
-  Request,
-  Response,
-} from 'express';
+import type { Request, Response } from 'express';
 
-import {
-  Rol,
-} from '../../generated/prisma/client';
+import { Rol } from '../../generated/prisma/client';
 
-import {
-  Roles,
-} from '../auth/decorators/roles.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-import {
-  JwtAuthGuard,
-} from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-import {
-  RolesGuard,
-} from '../auth/guards/roles.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
-import {
-  enviarArchivoReporte,
-} from '../reportes';
+import { enviarArchivoReporte } from '../reportes';
 
-import {
-  ActivarCuentaDto,
-} from './dto/activar-cuenta.dto';
+import { ActivarCuentaDto } from './dto/activar-cuenta.dto';
 
-import {
-  ActualizarUsuarioDto,
-} from './dto/actualizar-usuario.dto';
+import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 
-import {
-  CambiarEstadoUsuarioDto,
-} from './dto/cambiar-estado-usuario.dto';
+import { CambiarEstadoUsuarioDto } from './dto/cambiar-estado-usuario.dto';
 
-import {
-  CrearUsuarioDto,
-} from './dto/crear-usuario.dto';
+import { CrearUsuarioDto } from './dto/crear-usuario.dto';
 
 import {
   ExportarUsuariosDto,
   FormatoUsuariosReporteDto,
 } from './dto/exportar-usuarios.dto';
 
-import type {
-  UsuarioAutenticado,
-} from './interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
-import {
-  UsuariosReportesService,
-} from './reportes/usuarios-reportes.service';
+import { UsuariosReportesService } from './reportes/usuarios-reportes.service';
 
-import {
-  UsuariosService,
-} from './usuarios.service';
+import { UsuariosService } from './usuarios.service';
 
 type SolicitudAutenticada = Request & {
   user: UsuarioAutenticado;

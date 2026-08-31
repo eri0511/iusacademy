@@ -18,69 +18,33 @@ import {
   TipoPenalizacionComentarios,
 } from '../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-import type {
-  UsuarioAutenticado,
-} from './interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
 @Injectable()
 export class ForoReglasService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  contarPalabras(
-    contenido:
-      string,
-  ) {
-    return contenido
-      .trim()
-      .split(
-        /\s+/,
-      )
-      .filter(
-        Boolean,
-      )
-      .length;
+  contarPalabras(contenido: string) {
+    return contenido.trim().split(/\s+/).filter(Boolean).length;
   }
 
   validarCantidadPalabras(
-    contenido:
-      string,
-    minimo:
-      number | null,
-    maximo:
-      number | null,
-    tipo:
-      'respuesta' |
-      'comentario',
+    contenido: string,
+    minimo: number | null,
+    maximo: number | null,
+    tipo: 'respuesta' | 'comentario',
   ) {
-    const total =
-      this.contarPalabras(
-        contenido,
-      );
+    const total = this.contarPalabras(contenido);
 
-    if (
-      minimo !==
-        null &&
-      total <
-        minimo
-    ) {
+    if (minimo !== null && total < minimo) {
       throw new BadRequestException(
         `El ${tipo} debe tener al menos ${minimo} palabras`,
       );
     }
 
-    if (
-      maximo !==
-        null &&
-      total >
-        maximo
-    ) {
+    if (maximo !== null && total > maximo) {
       throw new BadRequestException(
         `El ${tipo} no puede superar ${maximo} palabras`,
       );
@@ -89,40 +53,25 @@ export class ForoReglasService {
     return total;
   }
 
-  async validarInscripcion(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-  ) {
-    if (
-      usuario.rol !==
-      Rol.ESTUDIANTE
-    ) {
-      throw new ForbiddenException(
-        'Esta acción corresponde a un estudiante',
-      );
+  async validarInscripcion(usuario: UsuarioAutenticado, cursoId: number) {
+    if (usuario.rol !== Rol.ESTUDIANTE) {
+      throw new ForbiddenException('Esta acción corresponde a un estudiante');
     }
 
-    const inscripcion =
-      await this.prisma.inscripcionCurso.findFirst({
-        where: {
-          cursoId,
-          estudianteId:
-            usuario.id,
-          estado:
-            EstadoInscripcion.ACTIVA,
-          estudiante: {
-            estaActivo:
-              true,
-          },
+    const inscripcion = await this.prisma.inscripcionCurso.findFirst({
+      where: {
+        cursoId,
+        estudianteId: usuario.id,
+        estado: EstadoInscripcion.ACTIVA,
+        estudiante: {
+          estaActivo: true,
         },
+      },
 
-        select: {
-          id:
-            true,
-        },
-      });
+      select: {
+        id: true,
+      },
+    });
 
     if (!inscripcion) {
       throw new ForbiddenException(
@@ -133,32 +82,21 @@ export class ForoReglasService {
     return inscripcion;
   }
 
-  async obtenerForo(
-    cursoId:
-      number,
-    foroId:
-      number,
-  ) {
-    const foro =
-      await this.prisma.temaForoCurso.findFirst({
-        where: {
-          id:
-            foroId,
-          cursoId,
-          estaActivo:
-            true,
-        },
+  async obtenerForo(cursoId: number, foroId: number) {
+    const foro = await this.prisma.temaForoCurso.findFirst({
+      where: {
+        id: foroId,
+        cursoId,
+        estaActivo: true,
+      },
 
-        include: {
-          actividadCalificable:
-            true,
-        },
-      });
+      include: {
+        actividadCalificable: true,
+      },
+    });
 
     if (!foro) {
-      throw new NotFoundException(
-        'El foro no existe',
-      );
+      throw new NotFoundException('El foro no existe');
     }
 
     return foro;
@@ -166,84 +104,50 @@ export class ForoReglasService {
 
   validarForoDisponible(
     foro: {
-      estado:
-        EstadoForo;
+      estado: EstadoForo;
 
-      estaCerrado:
-        boolean;
+      estaCerrado: boolean;
 
-      fechaApertura:
-        Date | null;
+      fechaApertura: Date | null;
 
-      fechaLimite:
-        Date | null;
+      fechaLimite: Date | null;
 
-      fechaCierre:
-        Date | null;
+      fechaCierre: Date | null;
 
-      permitirRetrasos:
-        boolean;
+      permitirRetrasos: boolean;
 
-      fechaMaximaRetraso:
-        Date | null;
+      fechaMaximaRetraso: Date | null;
     },
-    ahora =
-      new Date(),
+    ahora = new Date(),
   ) {
     if (
-      foro.estado ===
-        EstadoForo.BORRADOR ||
-      foro.estado ===
-        EstadoForo.PROGRAMADO ||
-      foro.estado ===
-        EstadoForo.ANULADO
+      foro.estado === EstadoForo.BORRADOR ||
+      foro.estado === EstadoForo.PROGRAMADO ||
+      foro.estado === EstadoForo.ANULADO
     ) {
-      throw new BadRequestException(
-        'El foro todavía no está disponible',
-      );
+      throw new BadRequestException('El foro todavía no está disponible');
     }
 
-    if (
-      foro.fechaApertura &&
-      ahora <
-        foro.fechaApertura
-    ) {
-      throw new BadRequestException(
-        'El foro todavía no ha iniciado',
-      );
+    if (foro.fechaApertura && ahora < foro.fechaApertura) {
+      throw new BadRequestException('El foro todavía no ha iniciado');
     }
 
-    const estadosCerrados:
-      EstadoForo[] = [
-        EstadoForo.CERRADO,
-        EstadoForo.CALIFICANDO,
-        EstadoForo.CALIFICADO,
-        EstadoForo.NOTAS_PUBLICADAS,
-      ];
+    const estadosCerrados: EstadoForo[] = [
+      EstadoForo.CERRADO,
+      EstadoForo.CALIFICANDO,
+      EstadoForo.CALIFICADO,
+      EstadoForo.NOTAS_PUBLICADAS,
+    ];
 
-    if (
-      foro.estaCerrado ||
-      estadosCerrados.includes(
-        foro.estado,
-      )
-    ) {
-      throw new BadRequestException(
-        'El foro está cerrado',
-      );
+    if (foro.estaCerrado || estadosCerrados.includes(foro.estado)) {
+      throw new BadRequestException('El foro está cerrado');
     }
 
-    const limiteFinal =
-      foro.permitirRetrasos
-        ? foro.fechaMaximaRetraso ??
-          foro.fechaCierre
-        : foro.fechaLimite ??
-          foro.fechaCierre;
+    const limiteFinal = foro.permitirRetrasos
+      ? (foro.fechaMaximaRetraso ?? foro.fechaCierre)
+      : (foro.fechaLimite ?? foro.fechaCierre);
 
-    if (
-      limiteFinal &&
-      ahora >
-        limiteFinal
-    ) {
+    if (limiteFinal && ahora > limiteFinal) {
       throw new BadRequestException(
         'El plazo para participar en el foro terminó',
       );
@@ -252,131 +156,72 @@ export class ForoReglasService {
 
   calcularRetraso(
     foro: {
-      fechaLimite:
-        Date | null;
+      fechaLimite: Date | null;
 
-      permitirRetrasos:
-        boolean;
+      permitirRetrasos: boolean;
 
-      tipoDescuentoRetraso:
-        TipoDescuentoRetraso;
+      tipoDescuentoRetraso: TipoDescuentoRetraso;
 
-      valorDescuentoRetraso:
-        Prisma.Decimal | null;
+      valorDescuentoRetraso: Prisma.Decimal | null;
     },
-    fecha:
-      Date,
+    fecha: Date,
   ) {
-    if (
-      !foro.fechaLimite ||
-      fecha <=
-        foro.fechaLimite
-    ) {
+    if (!foro.fechaLimite || fecha <= foro.fechaLimite) {
       return {
-        entregadaTarde:
-          false,
-        minutosRetraso:
-          0,
-        descuento:
-          0,
+        entregadaTarde: false,
+        minutosRetraso: 0,
+        descuento: 0,
       };
     }
 
-    if (
-      !foro.permitirRetrasos
-    ) {
-      throw new BadRequestException(
-        'El foro no permite respuestas tardías',
-      );
+    if (!foro.permitirRetrasos) {
+      throw new BadRequestException('El foro no permite respuestas tardías');
     }
 
-    const minutos =
-      Math.max(
-        1,
-        Math.ceil(
-          (
-            fecha.getTime() -
-            foro.fechaLimite.getTime()
-          ) /
-          60000,
-        ),
-      );
+    const minutos = Math.max(
+      1,
+      Math.ceil((fecha.getTime() - foro.fechaLimite.getTime()) / 60000),
+    );
 
-    const valor =
-      foro.valorDescuentoRetraso
-        ? Number(
-            foro.valorDescuentoRetraso,
-          )
-        : 0;
+    const valor = foro.valorDescuentoRetraso
+      ? Number(foro.valorDescuentoRetraso)
+      : 0;
 
-    let descuento =
-      0;
+    let descuento = 0;
 
-    switch (
-      foro.tipoDescuentoRetraso
-    ) {
+    switch (foro.tipoDescuentoRetraso) {
       case TipoDescuentoRetraso.PUNTOS_FIJOS:
-        descuento =
-          valor;
+        descuento = valor;
         break;
 
       case TipoDescuentoRetraso.PORCENTAJE:
-        descuento =
-          valor;
+        descuento = valor;
         break;
 
       case TipoDescuentoRetraso.POR_HORA:
-        descuento =
-          Math.ceil(
-            minutos /
-            60,
-          ) *
-          valor;
+        descuento = Math.ceil(minutos / 60) * valor;
         break;
 
       case TipoDescuentoRetraso.POR_DIA:
-        descuento =
-          Math.ceil(
-            minutos /
-            1440,
-          ) *
-          valor;
+        descuento = Math.ceil(minutos / 1440) * valor;
         break;
 
       case TipoDescuentoRetraso.NOTA_MAXIMA:
-        descuento =
-          Math.max(
-            0,
-            100 -
-            valor,
-          );
+        descuento = Math.max(0, 100 - valor);
         break;
 
       default:
-        descuento =
-          0;
+        descuento = 0;
     }
 
     return {
-      entregadaTarde:
-        true,
-      minutosRetraso:
-        minutos,
-      descuento:
-        Math.min(
-          100,
-          Math.max(
-            0,
-            descuento,
-          ),
-        ),
+      entregadaTarde: true,
+      minutosRetraso: minutos,
+      descuento: Math.min(100, Math.max(0, descuento)),
     };
   }
 
-  obtenerEstadoRespuesta(
-    entregadaTarde:
-      boolean,
-  ) {
+  obtenerEstadoRespuesta(entregadaTarde: boolean) {
     return entregadaTarde
       ? EstadoRespuestaForo.TARDIA
       : EstadoRespuestaForo.PUBLICADA;
@@ -384,25 +229,15 @@ export class ForoReglasService {
 
   validarModalidadIds(
     foro: {
-      modalidadParticipacion:
-        ModalidadParticipacionForo;
+      modalidadParticipacion: ModalidadParticipacionForo;
 
-      origenGrupo:
-        OrigenGrupoForo;
+      origenGrupo: OrigenGrupoForo;
     },
-    grupoCursoId:
-      number | undefined,
-    equipoAfinidadId:
-      number | undefined,
+    grupoCursoId: number | undefined,
+    equipoAfinidadId: number | undefined,
   ) {
-    if (
-      foro.modalidadParticipacion ===
-      ModalidadParticipacionForo.INDIVIDUAL
-    ) {
-      if (
-        grupoCursoId ||
-        equipoAfinidadId
-      ) {
+    if (foro.modalidadParticipacion === ModalidadParticipacionForo.INDIVIDUAL) {
+      if (grupoCursoId || equipoAfinidadId) {
         throw new BadRequestException(
           'Un foro individual no acepta identificadores de grupo',
         );
@@ -411,102 +246,67 @@ export class ForoReglasService {
       return;
     }
 
-    if (
-      foro.origenGrupo ===
-        OrigenGrupoForo.PLATAFORMA &&
-      !grupoCursoId
-    ) {
-      throw new BadRequestException(
-        'Debes seleccionar tu grupo de plataforma',
-      );
+    if (foro.origenGrupo === OrigenGrupoForo.PLATAFORMA && !grupoCursoId) {
+      throw new BadRequestException('Debes seleccionar tu grupo de plataforma');
     }
 
-    if (
-      foro.origenGrupo ===
-        OrigenGrupoForo.AFINIDAD &&
-      !equipoAfinidadId
-    ) {
-      throw new BadRequestException(
-        'Debes seleccionar tu equipo por afinidad',
-      );
+    if (foro.origenGrupo === OrigenGrupoForo.AFINIDAD && !equipoAfinidadId) {
+      throw new BadRequestException('Debes seleccionar tu equipo por afinidad');
     }
   }
 
   async obtenerGrupoPlataforma(
     foro: {
-      conjuntoGrupoId:
-        number | null;
+      conjuntoGrupoId: number | null;
 
-      requiereRepresentante:
-        boolean;
+      requiereRepresentante: boolean;
 
-      dinamicaGrupal:
-        DinamicaGrupalForo;
+      dinamicaGrupal: DinamicaGrupalForo;
     },
-    grupoCursoId:
-      number,
-    estudianteId:
-      number,
-    exigirRepresentante =
-      false,
+    grupoCursoId: number,
+    estudianteId: number,
+    exigirRepresentante = false,
   ) {
-    if (
-      !foro.conjuntoGrupoId
-    ) {
+    if (!foro.conjuntoGrupoId) {
       throw new BadRequestException(
         'El foro no tiene un conjunto de grupos configurado',
       );
     }
 
-    const grupo =
-      await this.prisma.grupoCurso.findFirst({
-        where: {
-          id:
-            grupoCursoId,
-          conjuntoId:
-            foro.conjuntoGrupoId,
-          estaActivo:
-            true,
-          integrantes: {
-            some: {
-              estudianteId,
-              estaActivo:
-                true,
-            },
+    const grupo = await this.prisma.grupoCurso.findFirst({
+      where: {
+        id: grupoCursoId,
+        conjuntoId: foro.conjuntoGrupoId,
+        estaActivo: true,
+        integrantes: {
+          some: {
+            estudianteId,
+            estaActivo: true,
           },
         },
+      },
 
-        include: {
-          integrantes: {
-            where: {
-              estaActivo:
-                true,
-            },
+      include: {
+        integrantes: {
+          where: {
+            estaActivo: true,
+          },
 
-            select: {
-              estudianteId:
-                true,
-              esRepresentante:
-                true,
-            },
+          select: {
+            estudianteId: true,
+            esRepresentante: true,
           },
         },
-      });
+      },
+    });
 
     if (!grupo) {
-      throw new ForbiddenException(
-        'No perteneces al grupo seleccionado',
-      );
+      throw new ForbiddenException('No perteneces al grupo seleccionado');
     }
 
-    const integrante =
-      grupo.integrantes.find(
-        (
-          item,
-        ) =>
-          item.estudianteId ===
-          estudianteId,
-      );
+    const integrante = grupo.integrantes.find(
+      (item) => item.estudianteId === estudianteId,
+    );
 
     /*
      * En IusAcademy una actividad grupal siempre tiene
@@ -526,10 +326,7 @@ export class ForoReglasService {
      * Por ello la creación/borrador/publicación de la
      * respuesta principal siempre exige representante.
      */
-    if (
-      exigirRepresentante &&
-      !integrante?.esRepresentante
-    ) {
+    if (exigirRepresentante && !integrante?.esRepresentante) {
       throw new ForbiddenException(
         'Solo el representante del grupo puede publicar la respuesta principal',
       );
@@ -539,59 +336,42 @@ export class ForoReglasService {
   }
 
   async obtenerEquipoAfinidad(
-    foroId:
-      number,
-    equipoId:
-      number,
-    estudianteId:
-      number,
-    requiereRepresentante:
-      boolean,
-    dinamica:
-      DinamicaGrupalForo,
-    exigirRepresentante =
-      false,
+    foroId: number,
+    equipoId: number,
+    estudianteId: number,
+    requiereRepresentante: boolean,
+    dinamica: DinamicaGrupalForo,
+    exigirRepresentante = false,
   ) {
-    const equipo =
-      await this.prisma.equipoAfinidadForo.findFirst({
-        where: {
-          id:
-            equipoId,
-          temaId:
-            foroId,
-          estaActivo:
-            true,
-          estado: {
-            in: [
-              'APROBADO',
-              'BLOQUEADO',
-            ],
-          },
-          integrantes: {
-            some: {
-              estudianteId,
-              estaActivo:
-                true,
-            },
+    const equipo = await this.prisma.equipoAfinidadForo.findFirst({
+      where: {
+        id: equipoId,
+        temaId: foroId,
+        estaActivo: true,
+        estado: {
+          in: ['APROBADO', 'BLOQUEADO'],
+        },
+        integrantes: {
+          some: {
+            estudianteId,
+            estaActivo: true,
           },
         },
+      },
 
-        include: {
-          integrantes: {
-            where: {
-              estaActivo:
-                true,
-            },
+      include: {
+        integrantes: {
+          where: {
+            estaActivo: true,
+          },
 
-            select: {
-              estudianteId:
-                true,
-              esRepresentante:
-                true,
-            },
+          select: {
+            estudianteId: true,
+            esRepresentante: true,
           },
         },
-      });
+      },
+    });
 
     if (!equipo) {
       throw new ForbiddenException(
@@ -599,19 +379,11 @@ export class ForoReglasService {
       );
     }
 
-    const integrante =
-      equipo.integrantes.find(
-        (
-          item,
-        ) =>
-          item.estudianteId ===
-          estudianteId,
-      );
+    const integrante = equipo.integrantes.find(
+      (item) => item.estudianteId === estudianteId,
+    );
 
-    if (
-      exigirRepresentante &&
-      !integrante?.esRepresentante
-    ) {
+    if (exigirRepresentante && !integrante?.esRepresentante) {
       throw new ForbiddenException(
         'Solo el representante del equipo puede publicar la respuesta principal',
       );
@@ -622,115 +394,80 @@ export class ForoReglasService {
 
   async validarPermisoComentarioGrupal(
     foro: {
-      id:
-        number;
+      id: number;
 
-      modalidadParticipacion:
-        ModalidadParticipacionForo;
+      modalidadParticipacion: ModalidadParticipacionForo;
 
-      origenGrupo:
-        OrigenGrupoForo;
+      origenGrupo: OrigenGrupoForo;
 
-      dinamicaGrupal:
-        DinamicaGrupalForo;
+      dinamicaGrupal: DinamicaGrupalForo;
 
-      conjuntoGrupoId:
-        number | null;
+      conjuntoGrupoId: number | null;
     },
     respuesta: {
-      grupoCursoId:
-        number | null;
+      grupoCursoId: number | null;
 
-      equipoAfinidadId:
-        number | null;
+      equipoAfinidadId: number | null;
     },
-    estudianteId:
-      number,
+    estudianteId: number,
   ) {
-    if (
-      foro.modalidadParticipacion ===
-      ModalidadParticipacionForo.INDIVIDUAL
-    ) {
+    if (foro.modalidadParticipacion === ModalidadParticipacionForo.INDIVIDUAL) {
       return;
     }
 
-    if (
-      foro.dinamicaGrupal ===
-      DinamicaGrupalForo.NINGUNA
-    ) {
+    if (foro.dinamicaGrupal === DinamicaGrupalForo.NINGUNA) {
       throw new ForbiddenException(
         'El foro no tiene una dinámica grupal válida',
       );
     }
 
-    if (
-      foro.origenGrupo ===
-      OrigenGrupoForo.PLATAFORMA
-    ) {
-      if (
-        !foro.conjuntoGrupoId ||
-        !respuesta.grupoCursoId
-      ) {
+    if (foro.origenGrupo === OrigenGrupoForo.PLATAFORMA) {
+      if (!foro.conjuntoGrupoId || !respuesta.grupoCursoId) {
         throw new ForbiddenException(
           'La respuesta no pertenece a un grupo válido del foro',
         );
       }
 
-      const grupoEstudiante =
-        await this.prisma.grupoCurso.findFirst({
-          where: {
-            conjuntoId:
-              foro.conjuntoGrupoId,
-            estaActivo:
-              true,
-            integrantes: {
-              some: {
-                estudianteId,
-                estaActivo:
-                  true,
-              },
+      const grupoEstudiante = await this.prisma.grupoCurso.findFirst({
+        where: {
+          conjuntoId: foro.conjuntoGrupoId,
+          estaActivo: true,
+          integrantes: {
+            some: {
+              estudianteId,
+              estaActivo: true,
             },
           },
+        },
 
-          include: {
-            integrantes: {
-              where: {
-                estudianteId,
-                estaActivo:
-                  true,
-              },
+        include: {
+          integrantes: {
+            where: {
+              estudianteId,
+              estaActivo: true,
+            },
 
-              select: {
-                esRepresentante:
-                  true,
-              },
+            select: {
+              esRepresentante: true,
             },
           },
-        });
+        },
+      });
 
       if (!grupoEstudiante) {
-        throw new ForbiddenException(
-          'No perteneces a un grupo de este foro',
-        );
+        throw new ForbiddenException('No perteneces a un grupo de este foro');
       }
 
-      if (
-        foro.dinamicaGrupal ===
-        DinamicaGrupalForo.REPRESENTANTE_UNICO
-      ) {
+      if (foro.dinamicaGrupal === DinamicaGrupalForo.REPRESENTANTE_UNICO) {
         throw new ForbiddenException(
           'En esta dinámica la participación se realiza únicamente mediante la respuesta principal del representante',
         );
       }
 
       if (
-        foro.dinamicaGrupal ===
-        DinamicaGrupalForo.PARTICIPACION_DISTRIBUIDA
+        foro.dinamicaGrupal === DinamicaGrupalForo.PARTICIPACION_DISTRIBUIDA
       ) {
-        if (
-          grupoEstudiante.id !==
-          respuesta.grupoCursoId
-        ) {
+        if (grupoEstudiante.id !== respuesta.grupoCursoId) {
           throw new ForbiddenException(
             'Solo puedes comentar la respuesta principal de tu propio grupo',
           );
@@ -739,10 +476,7 @@ export class ForoReglasService {
         return;
       }
 
-      if (
-        foro.dinamicaGrupal ===
-        DinamicaGrupalForo.COLABORACION_ABIERTA
-      ) {
+      if (foro.dinamicaGrupal === DinamicaGrupalForo.COLABORACION_ABIERTA) {
         /*
          * Colaboración abierta en IusAcademy:
          * los integrantes participan comentando respuestas
@@ -752,10 +486,7 @@ export class ForoReglasService {
          * la participación interna de ese equipo, por lo que no
          * se habilitan comentarios sobre ella en esta dinámica.
          */
-        if (
-          grupoEstudiante.id ===
-          respuesta.grupoCursoId
-        ) {
+        if (grupoEstudiante.id === respuesta.grupoCursoId) {
           throw new ForbiddenException(
             'En colaboración abierta debes comentar respuestas de otros grupos',
           );
@@ -769,55 +500,41 @@ export class ForoReglasService {
       );
     }
 
-    if (
-      foro.origenGrupo ===
-      OrigenGrupoForo.AFINIDAD
-    ) {
-      if (
-        !respuesta.equipoAfinidadId
-      ) {
+    if (foro.origenGrupo === OrigenGrupoForo.AFINIDAD) {
+      if (!respuesta.equipoAfinidadId) {
         throw new ForbiddenException(
           'La respuesta no pertenece a un equipo por afinidad válido',
         );
       }
 
-      const equipoEstudiante =
-        await this.prisma.equipoAfinidadForo.findFirst({
-          where: {
-            temaId:
-              foro.id,
-            estaActivo:
-              true,
-            estado: {
-              in: [
-                'APROBADO',
-                'BLOQUEADO',
-              ],
-            },
-            integrantes: {
-              some: {
-                estudianteId,
-                estaActivo:
-                  true,
-              },
+      const equipoEstudiante = await this.prisma.equipoAfinidadForo.findFirst({
+        where: {
+          temaId: foro.id,
+          estaActivo: true,
+          estado: {
+            in: ['APROBADO', 'BLOQUEADO'],
+          },
+          integrantes: {
+            some: {
+              estudianteId,
+              estaActivo: true,
             },
           },
+        },
 
-          include: {
-            integrantes: {
-              where: {
-                estudianteId,
-                estaActivo:
-                  true,
-              },
+        include: {
+          integrantes: {
+            where: {
+              estudianteId,
+              estaActivo: true,
+            },
 
-              select: {
-                esRepresentante:
-                  true,
-              },
+            select: {
+              esRepresentante: true,
             },
           },
-        });
+        },
+      });
 
       if (!equipoEstudiante) {
         throw new ForbiddenException(
@@ -825,23 +542,16 @@ export class ForoReglasService {
         );
       }
 
-      if (
-        foro.dinamicaGrupal ===
-        DinamicaGrupalForo.REPRESENTANTE_UNICO
-      ) {
+      if (foro.dinamicaGrupal === DinamicaGrupalForo.REPRESENTANTE_UNICO) {
         throw new ForbiddenException(
           'En esta dinámica la participación se realiza únicamente mediante la respuesta principal del representante',
         );
       }
 
       if (
-        foro.dinamicaGrupal ===
-        DinamicaGrupalForo.PARTICIPACION_DISTRIBUIDA
+        foro.dinamicaGrupal === DinamicaGrupalForo.PARTICIPACION_DISTRIBUIDA
       ) {
-        if (
-          equipoEstudiante.id !==
-          respuesta.equipoAfinidadId
-        ) {
+        if (equipoEstudiante.id !== respuesta.equipoAfinidadId) {
           throw new ForbiddenException(
             'Solo puedes comentar la respuesta principal de tu propio equipo',
           );
@@ -850,14 +560,8 @@ export class ForoReglasService {
         return;
       }
 
-      if (
-        foro.dinamicaGrupal ===
-        DinamicaGrupalForo.COLABORACION_ABIERTA
-      ) {
-        if (
-          equipoEstudiante.id ===
-          respuesta.equipoAfinidadId
-        ) {
+      if (foro.dinamicaGrupal === DinamicaGrupalForo.COLABORACION_ABIERTA) {
+        if (equipoEstudiante.id === respuesta.equipoAfinidadId) {
           throw new ForbiddenException(
             'En colaboración abierta debes comentar respuestas de otros equipos',
           );
@@ -913,10 +617,8 @@ export class ForoReglasService {
       !foro ||
       foro.modalidadParticipacion !== ModalidadParticipacionForo.GRUPAL ||
       foro.minimoComentariosPorEstudiante <= 0 ||
-      (
-        foro.dinamicaGrupal !== DinamicaGrupalForo.PARTICIPACION_DISTRIBUIDA &&
-        foro.dinamicaGrupal !== DinamicaGrupalForo.COLABORACION_ABIERTA
-      )
+      (foro.dinamicaGrupal !== DinamicaGrupalForo.PARTICIPACION_DISTRIBUIDA &&
+        foro.dinamicaGrupal !== DinamicaGrupalForo.COLABORACION_ABIERTA)
     ) {
       return base;
     }
@@ -1008,12 +710,12 @@ export class ForoReglasService {
       },
     });
 
-    const cumplio =
-      comentariosValidos >= foro.minimoComentariosPorEstudiante;
+    const cumplio = comentariosValidos >= foro.minimoComentariosPorEstudiante;
 
     const penalizacionConfigurada =
       foro.penalizarIncumplimientoComentarios &&
-      foro.tipoPenalizacionComentarios !== TipoPenalizacionComentarios.NINGUNA &&
+      foro.tipoPenalizacionComentarios !==
+        TipoPenalizacionComentarios.NINGUNA &&
       foro.valorPenalizacionComentarios !== null;
 
     let descuentoComentarios = 0;
@@ -1022,7 +724,8 @@ export class ForoReglasService {
       const valor = Number(foro.valorPenalizacionComentarios);
 
       descuentoComentarios =
-        foro.tipoPenalizacionComentarios === TipoPenalizacionComentarios.PORCENTAJE
+        foro.tipoPenalizacionComentarios ===
+        TipoPenalizacionComentarios.PORCENTAJE
           ? (Math.max(0, notaBase) * valor) / 100
           : valor;
     }
@@ -1037,5 +740,4 @@ export class ForoReglasService {
       descuentoComentarios: Math.max(0, Math.min(100, descuentoComentarios)),
     };
   }
-
 }

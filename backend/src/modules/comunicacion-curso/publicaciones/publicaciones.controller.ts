@@ -12,17 +12,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import type {
-  Request,
-} from 'express';
+import type { Request } from 'express';
 
-import {
-  Rol,
-} from '../../../generated/prisma/client';
+import { Rol } from '../../../generated/prisma/client';
 
-import {
-  JwtAuthGuard,
-} from '../../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
 import {
   ActualizarPublicacionDto,
@@ -30,17 +24,11 @@ import {
   CambiarFijadoPublicacionDto,
 } from '../dto/actualizar-publicacion.dto';
 
-import {
-  CambiarVisibilidadPublicacionDto,
-} from '../dto/cambiar-visibilidad-publicacion.dto';
+import { CambiarVisibilidadPublicacionDto } from '../dto/cambiar-visibilidad-publicacion.dto';
 
-import {
-  CrearPublicacionDto,
-} from '../dto/crear-publicacion.dto';
+import { CrearPublicacionDto } from '../dto/crear-publicacion.dto';
 
-import {
-  PublicacionesService,
-} from './publicaciones.service';
+import { PublicacionesService } from './publicaciones.service';
 
 type UsuarioAutenticado = {
   id: number;
@@ -48,292 +36,178 @@ type UsuarioAutenticado = {
   rol: Rol;
 };
 
-type RequestConUsuario =
-  Request & {
-    user:
-      UsuarioAutenticado;
-  };
+type RequestConUsuario = Request & {
+  user: UsuarioAutenticado;
+};
 
-@Controller(
-  'aula/cursos/:cursoId/hitos/:hitoId/tablon',
-)
-@UseGuards(
-  JwtAuthGuard,
-)
+@Controller('aula/cursos/:cursoId/hitos/:hitoId/tablon')
+@UseGuards(JwtAuthGuard)
 export class PublicacionesController {
-  constructor(
-    private readonly publicacionesService:
-      PublicacionesService,
-  ) {}
+  constructor(private readonly publicacionesService: PublicacionesService) {}
 
   @Get()
   obtenerTablon(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Param('hitoId', ParseIntPipe)
+    hitoId: number,
   ) {
-    return this.publicacionesService
-      .obtenerTablon(
-        request.user,
-        cursoId,
-        hitoId,
-      );
+    return this.publicacionesService.obtenerTablon(
+      request.user,
+      cursoId,
+      hitoId,
+    );
   }
 
   @Post()
   crearPublicacion(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Param('hitoId', ParseIntPipe)
+    hitoId: number,
 
     @Body()
-    datos:
-      CrearPublicacionDto,
+    datos: CrearPublicacionDto,
   ) {
-    return this.publicacionesService
-      .crearPublicacion(
-        request.user,
-        cursoId,
-        hitoId,
-        datos,
-      );
+    return this.publicacionesService.crearPublicacion(
+      request.user,
+      cursoId,
+      hitoId,
+      datos,
+    );
   }
 
-  @Put(
-    ':publicacionId',
-  )
+  @Put(':publicacionId')
   actualizarPublicacion(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Param('hitoId', ParseIntPipe)
+    hitoId: number,
 
-    @Param(
-      'publicacionId',
-      ParseIntPipe,
-    )
-    publicacionId:
-      number,
+    @Param('publicacionId', ParseIntPipe)
+    publicacionId: number,
 
     @Body()
-    datos:
-      ActualizarPublicacionDto,
+    datos: ActualizarPublicacionDto,
   ) {
-    return this.publicacionesService
-      .actualizarPublicacion(
-        request.user,
-        cursoId,
-        hitoId,
-        publicacionId,
-        datos,
-      );
+    return this.publicacionesService.actualizarPublicacion(
+      request.user,
+      cursoId,
+      hitoId,
+      publicacionId,
+      datos,
+    );
   }
 
-  @Patch(
-    ':publicacionId/fijar',
-  )
+  @Patch(':publicacionId/fijar')
   cambiarFijado(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Param('hitoId', ParseIntPipe)
+    hitoId: number,
 
-    @Param(
-      'publicacionId',
-      ParseIntPipe,
-    )
-    publicacionId:
-      number,
+    @Param('publicacionId', ParseIntPipe)
+    publicacionId: number,
 
     @Body()
-    datos:
-      CambiarFijadoPublicacionDto,
+    datos: CambiarFijadoPublicacionDto,
   ) {
-    return this.publicacionesService
-      .cambiarFijado(
-        request.user,
-        cursoId,
-        hitoId,
-        publicacionId,
-        datos.estaFijada,
-      );
+    return this.publicacionesService.cambiarFijado(
+      request.user,
+      cursoId,
+      hitoId,
+      publicacionId,
+      datos.estaFijada,
+    );
   }
 
-  @Patch(
-    ':publicacionId/comentarios',
-  )
+  @Patch(':publicacionId/comentarios')
   cambiarComentarios(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Param('hitoId', ParseIntPipe)
+    hitoId: number,
 
-    @Param(
-      'publicacionId',
-      ParseIntPipe,
-    )
-    publicacionId:
-      number,
+    @Param('publicacionId', ParseIntPipe)
+    publicacionId: number,
 
     @Body()
-    datos:
-      CambiarComentariosPublicacionDto,
+    datos: CambiarComentariosPublicacionDto,
   ) {
-    return this.publicacionesService
-      .cambiarComentarios(
-        request.user,
-        cursoId,
-        hitoId,
-        publicacionId,
-        datos.comentariosHabilitados,
-      );
+    return this.publicacionesService.cambiarComentarios(
+      request.user,
+      cursoId,
+      hitoId,
+      publicacionId,
+      datos.comentariosHabilitados,
+    );
   }
 
-  @Patch(
-    ':publicacionId/visibilidad',
-  )
+  @Patch(':publicacionId/visibilidad')
   cambiarVisibilidad(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Param('hitoId', ParseIntPipe)
+    hitoId: number,
 
-    @Param(
-      'publicacionId',
-      ParseIntPipe,
-    )
-    publicacionId:
-      number,
+    @Param('publicacionId', ParseIntPipe)
+    publicacionId: number,
 
     @Body()
-    datos:
-      CambiarVisibilidadPublicacionDto,
+    datos: CambiarVisibilidadPublicacionDto,
   ) {
-    return this.publicacionesService
-      .cambiarVisibilidad(
-        request.user,
-        cursoId,
-        hitoId,
-        publicacionId,
-        datos.visibleParaEstudiantes,
-      );
+    return this.publicacionesService.cambiarVisibilidad(
+      request.user,
+      cursoId,
+      hitoId,
+      publicacionId,
+      datos.visibleParaEstudiantes,
+    );
   }
 
-  @Delete(
-    ':publicacionId',
-  )
+  @Delete(':publicacionId')
   eliminarPublicacion(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Param('hitoId', ParseIntPipe)
+    hitoId: number,
 
-    @Param(
-      'publicacionId',
-      ParseIntPipe,
-    )
-    publicacionId:
-      number,
+    @Param('publicacionId', ParseIntPipe)
+    publicacionId: number,
   ) {
-    return this.publicacionesService
-      .eliminarPublicacion(
-        request.user,
-        cursoId,
-        hitoId,
-        publicacionId,
-      );
+    return this.publicacionesService.eliminarPublicacion(
+      request.user,
+      cursoId,
+      hitoId,
+      publicacionId,
+    );
   }
 }

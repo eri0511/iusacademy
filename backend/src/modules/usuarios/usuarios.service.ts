@@ -6,10 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import {
-  createHash,
-  randomBytes,
-} from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 
 import * as argon2 from 'argon2';
 
@@ -61,20 +58,14 @@ export class UsuariosService {
    * Crea un usuario pendiente de activación.
    * Todavía no se genera ninguna contraseña.
    */
-  async crearUsuario(
-    datos: CrearUsuarioDto,
-  ) {
-    const correoNormalizado =
-      datos.correo
-        .trim()
-        .toLowerCase();
+  async crearUsuario(datos: CrearUsuarioDto) {
+    const correoNormalizado = datos.correo.trim().toLowerCase();
 
-    const usuarioExistente =
-      await this.prisma.usuario.findUnique({
-        where: {
-          correo: correoNormalizado,
-        },
-      });
+    const usuarioExistente = await this.prisma.usuario.findUnique({
+      where: {
+        correo: correoNormalizado,
+      },
+    });
 
     if (usuarioExistente) {
       throw new ConflictException(
@@ -82,66 +73,52 @@ export class UsuariosService {
       );
     }
 
-    const usuario =
-      await this.prisma.usuario.create({
-        data: {
-          nombres:
-            datos.nombres.trim(),
+    const usuario = await this.prisma.usuario.create({
+      data: {
+        nombres: datos.nombres.trim(),
 
-          apellidoPaterno:
-            datos.apellidoPaterno.trim(),
+        apellidoPaterno: datos.apellidoPaterno.trim(),
 
-          apellidoMaterno:
-            datos.apellidoMaterno?.trim() || null,
+        apellidoMaterno: datos.apellidoMaterno?.trim() || null,
 
-          correo:
-            correoNormalizado,
+        correo: correoNormalizado,
 
-          rol:
-            datos.rol,
+        rol: datos.rol,
 
-          estaActivo:
-            true,
+        estaActivo: true,
 
-          cuentaActivada:
-            false,
+        cuentaActivada: false,
 
-          passwordHash:
-            null,
+        passwordHash: null,
 
-          tokenActivacionHash:
-            null,
+        tokenActivacionHash: null,
 
-          tokenActivacionExpira:
-            null,
+        tokenActivacionExpira: null,
 
-          accesoEnviadoEn:
-            null,
+        accesoEnviadoEn: null,
 
-          passwordCambiadaEn:
-            null,
-        },
+        passwordCambiadaEn: null,
+      },
 
-        select: {
-          id: true,
-          nombres: true,
-          apellidoPaterno: true,
-          apellidoMaterno: true,
-          correo: true,
-          fotoPerfilUrl: true,
-          rol: true,
-          estaActivo: true,
-          cuentaActivada: true,
-          tokenActivacionExpira: true,
-          accesoEnviadoEn: true,
-          creadoEn: true,
-          actualizadoEn: true,
-        },
-      });
+      select: {
+        id: true,
+        nombres: true,
+        apellidoPaterno: true,
+        apellidoMaterno: true,
+        correo: true,
+        fotoPerfilUrl: true,
+        rol: true,
+        estaActivo: true,
+        cuentaActivada: true,
+        tokenActivacionExpira: true,
+        accesoEnviadoEn: true,
+        creadoEn: true,
+        actualizadoEn: true,
+      },
+    });
 
     return {
-      mensaje:
-        'Usuario creado correctamente',
+      mensaje: 'Usuario creado correctamente',
 
       usuario,
     };
@@ -156,41 +133,31 @@ export class UsuariosService {
    * - se eliminan los tokens anteriores;
    * - el administrador deberá enviar una nueva activación.
    */
-  async actualizarUsuario(
-    usuarioId: number,
-    datos: ActualizarUsuarioDto,
-  ) {
-    const usuario =
-      await this.prisma.usuario.findUnique({
-        where: {
-          id: usuarioId,
-        },
-      });
+  async actualizarUsuario(usuarioId: number, datos: ActualizarUsuarioDto) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: {
+        id: usuarioId,
+      },
+    });
 
     if (!usuario) {
-      throw new NotFoundException(
-        'El usuario no existe',
-      );
+      throw new NotFoundException('El usuario no existe');
     }
 
     const correoNormalizado =
       datos.correo !== undefined
-        ? datos.correo
-            .trim()
-            .toLowerCase()
+        ? datos.correo.trim().toLowerCase()
         : undefined;
 
     const cambioCorreo =
-      correoNormalizado !== undefined &&
-      correoNormalizado !== usuario.correo;
+      correoNormalizado !== undefined && correoNormalizado !== usuario.correo;
 
     if (cambioCorreo) {
-      const usuarioConCorreo =
-        await this.prisma.usuario.findUnique({
-          where: {
-            correo: correoNormalizado,
-          },
-        });
+      const usuarioConCorreo = await this.prisma.usuario.findUnique({
+        where: {
+          correo: correoNormalizado,
+        },
+      });
 
       if (usuarioConCorreo) {
         throw new ConflictException(
@@ -199,89 +166,74 @@ export class UsuariosService {
       }
     }
 
-    const usuarioActualizado =
-      await this.prisma.usuario.update({
-        where: {
-          id: usuarioId,
-        },
+    const usuarioActualizado = await this.prisma.usuario.update({
+      where: {
+        id: usuarioId,
+      },
 
-        data: {
-          nombres:
-            datos.nombres !== undefined
-              ? datos.nombres.trim()
-              : undefined,
+      data: {
+        nombres: datos.nombres !== undefined ? datos.nombres.trim() : undefined,
 
-          apellidoPaterno:
-            datos.apellidoPaterno !== undefined
-              ? datos.apellidoPaterno.trim()
-              : undefined,
+        apellidoPaterno:
+          datos.apellidoPaterno !== undefined
+            ? datos.apellidoPaterno.trim()
+            : undefined,
 
-          apellidoMaterno:
-            datos.apellidoMaterno !== undefined
-              ? datos.apellidoMaterno?.trim() || null
-              : undefined,
+        apellidoMaterno:
+          datos.apellidoMaterno !== undefined
+            ? datos.apellidoMaterno?.trim() || null
+            : undefined,
 
-          correo:
-            correoNormalizado,
+        correo: correoNormalizado,
 
-          rol:
-            datos.rol,
+        rol: datos.rol,
 
-          /*
-           * Si cambia el correo, el usuario debe
-           * volver a activar su cuenta.
-           */
-          ...(cambioCorreo
-            ? {
-                cuentaActivada:
-                  false,
+        /*
+         * Si cambia el correo, el usuario debe
+         * volver a activar su cuenta.
+         */
+        ...(cambioCorreo
+          ? {
+              cuentaActivada: false,
 
-                passwordHash:
-                  null,
+              passwordHash: null,
 
-                tokenActivacionHash:
-                  null,
+              tokenActivacionHash: null,
 
-                tokenActivacionExpira:
-                  null,
+              tokenActivacionExpira: null,
 
-                accesoEnviadoEn:
-                  null,
+              accesoEnviadoEn: null,
 
-                passwordCambiadaEn:
-                  null,
-              }
-            : {}),
-        },
+              passwordCambiadaEn: null,
+            }
+          : {}),
+      },
 
-        select: {
-          id: true,
-          nombres: true,
-          apellidoPaterno: true,
-          apellidoMaterno: true,
-          correo: true,
-          fotoPerfilUrl: true,
-          rol: true,
-          estaActivo: true,
-          cuentaActivada: true,
-          tokenActivacionExpira: true,
-          accesoEnviadoEn: true,
-          creadoEn: true,
-          actualizadoEn: true,
-        },
-      });
+      select: {
+        id: true,
+        nombres: true,
+        apellidoPaterno: true,
+        apellidoMaterno: true,
+        correo: true,
+        fotoPerfilUrl: true,
+        rol: true,
+        estaActivo: true,
+        cuentaActivada: true,
+        tokenActivacionExpira: true,
+        accesoEnviadoEn: true,
+        creadoEn: true,
+        actualizadoEn: true,
+      },
+    });
 
     return {
-      mensaje:
-        cambioCorreo
-          ? 'Usuario actualizado. Debes enviar una nueva activación al correo actualizado.'
-          : 'Usuario actualizado correctamente',
+      mensaje: cambioCorreo
+        ? 'Usuario actualizado. Debes enviar una nueva activación al correo actualizado.'
+        : 'Usuario actualizado correctamente',
 
-      requiereNuevaActivacion:
-        cambioCorreo,
+      requiereNuevaActivacion: cambioCorreo,
 
-      usuario:
-        usuarioActualizado,
+      usuario: usuarioActualizado,
     };
   }
 
@@ -297,118 +249,94 @@ export class UsuariosService {
    * - habilita nuevamente la cuenta;
    * - no envía correo automáticamente.
    */
-  async cambiarEstado(
-    usuarioId: number,
-    estaActivo: boolean,
-  ) {
-    const usuario =
-      await this.prisma.usuario.findUnique({
-        where: {
-          id: usuarioId,
-        },
-      });
+  async cambiarEstado(usuarioId: number, estaActivo: boolean) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: {
+        id: usuarioId,
+      },
+    });
 
     if (!usuario) {
-      throw new NotFoundException(
-        'El usuario no existe',
-      );
+      throw new NotFoundException('El usuario no existe');
     }
 
-    if (
-      usuario.estaActivo ===
-      estaActivo
-    ) {
+    if (usuario.estaActivo === estaActivo) {
       return {
-        mensaje:
-          estaActivo
-            ? 'El usuario ya se encuentra activo'
-            : 'El usuario ya se encuentra desactivado',
+        mensaje: estaActivo
+          ? 'El usuario ya se encuentra activo'
+          : 'El usuario ya se encuentra desactivado',
 
         usuario: {
-          id:
-            usuario.id,
+          id: usuario.id,
 
-          nombres:
-            usuario.nombres,
+          nombres: usuario.nombres,
 
-          apellidoPaterno:
-            usuario.apellidoPaterno,
+          apellidoPaterno: usuario.apellidoPaterno,
 
-          correo:
-            usuario.correo,
+          correo: usuario.correo,
 
-          fotoPerfilUrl:
-            usuario.fotoPerfilUrl,
+          fotoPerfilUrl: usuario.fotoPerfilUrl,
 
-          rol:
-            usuario.rol,
+          rol: usuario.rol,
 
-          estaActivo:
-            usuario.estaActivo,
+          estaActivo: usuario.estaActivo,
 
-          cuentaActivada:
-            usuario.cuentaActivada,
+          cuentaActivada: usuario.cuentaActivada,
         },
       };
     }
 
-    const usuarioActualizado =
-      await this.prisma.usuario.update({
-        where: {
-          id: usuarioId,
-        },
+    const usuarioActualizado = await this.prisma.usuario.update({
+      where: {
+        id: usuarioId,
+      },
 
-        data: {
-          estaActivo,
+      data: {
+        estaActivo,
 
-          /*
-           * Al desactivar, cualquier enlace pendiente
-           * queda invalidado.
-           *
-           * No eliminamos passwordHash ni cuentaActivada,
-           * porque si la cuenta ya estaba activada podrá
-           * volver a ingresar con su contraseña al reactivarse.
-           */
-          ...(!estaActivo
-            ? {
-                tokenActivacionHash:
-                  null,
+        /*
+         * Al desactivar, cualquier enlace pendiente
+         * queda invalidado.
+         *
+         * No eliminamos passwordHash ni cuentaActivada,
+         * porque si la cuenta ya estaba activada podrá
+         * volver a ingresar con su contraseña al reactivarse.
+         */
+        ...(!estaActivo
+          ? {
+              tokenActivacionHash: null,
 
-                tokenActivacionExpira:
-                  null,
-              }
-            : {}),
-        },
+              tokenActivacionExpira: null,
+            }
+          : {}),
+      },
 
-        select: {
-          id: true,
-          nombres: true,
-          apellidoPaterno: true,
-          apellidoMaterno: true,
-          correo: true,
-          fotoPerfilUrl: true,
-          rol: true,
-          estaActivo: true,
-          cuentaActivada: true,
-          tokenActivacionExpira: true,
-          accesoEnviadoEn: true,
-          creadoEn: true,
-          actualizadoEn: true,
-        },
-      });
+      select: {
+        id: true,
+        nombres: true,
+        apellidoPaterno: true,
+        apellidoMaterno: true,
+        correo: true,
+        fotoPerfilUrl: true,
+        rol: true,
+        estaActivo: true,
+        cuentaActivada: true,
+        tokenActivacionExpira: true,
+        accesoEnviadoEn: true,
+        creadoEn: true,
+        actualizadoEn: true,
+      },
+    });
 
     return {
-      mensaje:
-        estaActivo
-          ? 'Usuario reactivado correctamente'
-          : 'Usuario desactivado correctamente',
+      mensaje: estaActivo
+        ? 'Usuario reactivado correctamente'
+        : 'Usuario desactivado correctamente',
 
       requiereEnviarActivacion:
-        estaActivo &&
-        !usuarioActualizado.cuentaActivada,
+        estaActivo && !usuarioActualizado.cuentaActivada,
 
-      usuario:
-        usuarioActualizado,
+      usuario: usuarioActualizado,
     };
   }
 
@@ -418,20 +346,15 @@ export class UsuariosService {
    * El token plano se envía exclusivamente por correo.
    * En PostgreSQL solo se guarda su hash.
    */
-  async enviarActivacion(
-    usuarioId: number,
-  ) {
-    const usuario =
-      await this.prisma.usuario.findUnique({
-        where: {
-          id: usuarioId,
-        },
-      });
+  async enviarActivacion(usuarioId: number) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: {
+        id: usuarioId,
+      },
+    });
 
     if (!usuario) {
-      throw new NotFoundException(
-        'El usuario no existe',
-      );
+      throw new NotFoundException('El usuario no existe');
     }
 
     if (!usuario.estaActivo) {
@@ -446,8 +369,7 @@ export class UsuariosService {
       );
     }
 
-    const ahora =
-      new Date();
+    const ahora = new Date();
 
     const enlaceVigente =
       usuario.tokenActivacionExpira !== null &&
@@ -459,43 +381,30 @@ export class UsuariosService {
       );
     }
 
-    const tokenPlano =
-      randomBytes(32).toString('hex');
+    const tokenPlano = randomBytes(32).toString('hex');
 
-    const tokenHash =
-      this.crearHashToken(
-        tokenPlano,
-      );
+    const tokenHash = this.crearHashToken(tokenPlano);
 
-    const fechaExpiracion =
-      new Date(ahora);
+    const fechaExpiracion = new Date(ahora);
 
-    fechaExpiracion.setDate(
-      fechaExpiracion.getDate() + 3,
-    );
+    fechaExpiracion.setDate(fechaExpiracion.getDate() + 3);
 
-    const frontendUrl =
-      process.env.FRONTEND_URL ??
-      'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173';
 
-    const enlaceActivacion =
-      `${frontendUrl}/activar-cuenta?token=${encodeURIComponent(
-        tokenPlano,
-      )}`;
+    const enlaceActivacion = `${frontendUrl}/activar-cuenta?token=${encodeURIComponent(
+      tokenPlano,
+    )}`;
 
     /*
      * Guardamos el estado anterior para restaurarlo
      * si Gmail no puede enviar el mensaje.
      */
     const estadoAnterior = {
-      tokenActivacionHash:
-        usuario.tokenActivacionHash,
+      tokenActivacionHash: usuario.tokenActivacionHash,
 
-      tokenActivacionExpira:
-        usuario.tokenActivacionExpira,
+      tokenActivacionExpira: usuario.tokenActivacionExpira,
 
-      accesoEnviadoEn:
-        usuario.accesoEnviadoEn,
+      accesoEnviadoEn: usuario.accesoEnviadoEn,
     };
 
     await this.prisma.usuario.update({
@@ -504,24 +413,19 @@ export class UsuariosService {
       },
 
       data: {
-        tokenActivacionHash:
-          tokenHash,
+        tokenActivacionHash: tokenHash,
 
-        tokenActivacionExpira:
-          fechaExpiracion,
+        tokenActivacionExpira: fechaExpiracion,
 
-        accesoEnviadoEn:
-          ahora,
+        accesoEnviadoEn: ahora,
       },
     });
 
     try {
       await this.correoService.enviarEnlaceActivacion({
-        destinatario:
-          usuario.correo,
+        destinatario: usuario.correo,
 
-        nombre:
-          usuario.nombres,
+        nombre: usuario.nombres,
 
         enlaceActivacion,
 
@@ -533,14 +437,10 @@ export class UsuariosService {
           id: usuario.id,
         },
 
-        data:
-          estadoAnterior,
+        data: estadoAnterior,
       });
 
-      console.error(
-        'Error al enviar el enlace de activación:',
-        error,
-      );
+      console.error('Error al enviar el enlace de activación:', error);
 
       throw new InternalServerErrorException(
         'No fue posible enviar el enlace de activación',
@@ -548,151 +448,105 @@ export class UsuariosService {
     }
 
     return {
-      mensaje:
-        'Enlace de activación enviado correctamente',
+      mensaje: 'Enlace de activación enviado correctamente',
 
       usuario: {
-        id:
-          usuario.id,
+        id: usuario.id,
 
-        nombres:
-          usuario.nombres,
+        nombres: usuario.nombres,
 
-        apellidoPaterno:
-          usuario.apellidoPaterno,
+        apellidoPaterno: usuario.apellidoPaterno,
 
-        correo:
-          usuario.correo,
+        correo: usuario.correo,
 
-        fotoPerfilUrl:
-          usuario.fotoPerfilUrl,
+        fotoPerfilUrl: usuario.fotoPerfilUrl,
 
-        cuentaActivada:
-          false,
+        cuentaActivada: false,
 
-        accesoEnviadoEn:
-          ahora,
+        accesoEnviadoEn: ahora,
 
-        tokenActivacionExpira:
-          fechaExpiracion,
+        tokenActivacionExpira: fechaExpiracion,
       },
     };
   }
 
   /**
- * Valida el token de activación y permite
- * crear la contraseña definitiva del usuario.
- */
-async activarCuenta(
-  datos: ActivarCuentaDto,
-) {
-  const tokenPlano =
-    datos.token.trim();
+   * Valida el token de activación y permite
+   * crear la contraseña definitiva del usuario.
+   */
+  async activarCuenta(datos: ActivarCuentaDto) {
+    const tokenPlano = datos.token.trim();
 
-  if (!tokenPlano) {
-    throw new BadRequestException(
-      'El token de activación es obligatorio',
-    );
-  }
+    if (!tokenPlano) {
+      throw new BadRequestException('El token de activación es obligatorio');
+    }
 
-  if (
-    datos.password !==
-    datos.confirmarPassword
-  ) {
-    throw new BadRequestException(
-      'Las contraseñas no coinciden',
-    );
-  }
+    if (datos.password !== datos.confirmarPassword) {
+      throw new BadRequestException('Las contraseñas no coinciden');
+    }
 
-  const tokenHash =
-    this.crearHashToken(
-      tokenPlano,
-    );
+    const tokenHash = this.crearHashToken(tokenPlano);
 
-  const usuario =
-    await this.prisma.usuario.findFirst({
+    const usuario = await this.prisma.usuario.findFirst({
       where: {
-        tokenActivacionHash:
-          tokenHash,
+        tokenActivacionHash: tokenHash,
       },
     });
 
-  if (!usuario) {
-    throw new BadRequestException(
-      'El enlace de activación no es válido o ya fue utilizado',
-    );
-  }
+    if (!usuario) {
+      throw new BadRequestException(
+        'El enlace de activación no es válido o ya fue utilizado',
+      );
+    }
 
-  if (usuario.cuentaActivada) {
-    throw new BadRequestException(
-      'Esta cuenta ya fue activada',
-    );
-  }
+    if (usuario.cuentaActivada) {
+      throw new BadRequestException('Esta cuenta ya fue activada');
+    }
 
-  if (!usuario.estaActivo) {
-    throw new BadRequestException(
-      'La cuenta se encuentra desactivada',
-    );
-  }
+    if (!usuario.estaActivo) {
+      throw new BadRequestException('La cuenta se encuentra desactivada');
+    }
 
-  const ahora =
-    new Date();
+    const ahora = new Date();
 
-  if (
-    !usuario.tokenActivacionExpira ||
-    usuario.tokenActivacionExpira <= ahora
-  ) {
-    throw new BadRequestException(
-      'El enlace de activación ha expirado',
-    );
-  }
+    if (
+      !usuario.tokenActivacionExpira ||
+      usuario.tokenActivacionExpira <= ahora
+    ) {
+      throw new BadRequestException('El enlace de activación ha expirado');
+    }
 
-  const passwordHash =
-    await argon2.hash(
-      datos.password,
-      {
-        type:
-          argon2.argon2id,
+    const passwordHash = await argon2.hash(datos.password, {
+      type: argon2.argon2id,
+    });
+
+    await this.prisma.usuario.update({
+      where: {
+        id: usuario.id,
       },
-    );
 
-  await this.prisma.usuario.update({
-    where: {
-      id:
-        usuario.id,
-    },
+      data: {
+        passwordHash,
 
-    data: {
-      passwordHash,
+        cuentaActivada: true,
 
-      cuentaActivada:
-        true,
+        passwordCambiadaEn: ahora,
 
-      passwordCambiadaEn:
-        ahora,
+        tokenActivacionHash: null,
 
-      tokenActivacionHash:
-        null,
+        tokenActivacionExpira: null,
+      },
+    });
 
-      tokenActivacionExpira:
-        null,
-    },
-  });
-
-  return {
-    mensaje:
-      'Cuenta activada correctamente',
-  };
-}
+    return {
+      mensaje: 'Cuenta activada correctamente',
+    };
+  }
 
   /**
    * Genera el hash SHA-256 del token.
    */
-  private crearHashToken(
-    token: string,
-  ): string {
-    return createHash('sha256')
-      .update(token)
-      .digest('hex');
+  private crearHashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
   }
 }

@@ -4,97 +4,79 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import {
-  EstadoInscripcion,
-} from '../../../generated/prisma/client';
+import { EstadoInscripcion } from '../../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class LecturasService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private async obtenerPublicacionActiva(
-    cursoId:
-      number,
+    cursoId: number,
 
-    publicacionId:
-      number,
+    publicacionId: number,
   ) {
-    const publicacion =
-      await this.prisma.publicacionCurso.findFirst({
-        where: {
-          id:
-            publicacionId,
+    const publicacion = await this.prisma.publicacionCurso.findFirst({
+      where: {
+        id: publicacionId,
 
-          cursoId,
+        cursoId,
 
-          estaActiva:
-            true,
-        },
+        estaActiva: true,
+      },
 
-        select: {
-          id: true,
-          cursoId: true,
-          titulo: true,
-          publicadoEn: true,
+      select: {
+        id: true,
+        cursoId: true,
+        titulo: true,
+        publicadoEn: true,
 
-          curso: {
-            select: {
-              id: true,
-              docenteId: true,
-              estado: true,
+        curso: {
+          select: {
+            id: true,
+            docenteId: true,
+            estado: true,
 
-              materia: {
-                select: {
-                  id: true,
-                  nombre: true,
-                  codigo: true,
-                },
+            materia: {
+              select: {
+                id: true,
+                nombre: true,
+                codigo: true,
               },
             },
           },
         },
-      });
+      },
+    });
 
     if (!publicacion) {
-      throw new NotFoundException(
-        'La publicación no existe o fue retirada',
-      );
+      throw new NotFoundException('La publicación no existe o fue retirada');
     }
 
     return publicacion;
   }
 
   private async verificarInscripcionActiva(
-    estudianteId:
-      number,
+    estudianteId: number,
 
-    cursoId:
-      number,
+    cursoId: number,
   ) {
-    const inscripcion =
-      await this.prisma.inscripcionCurso.findFirst({
-        where: {
-          estudianteId,
+    const inscripcion = await this.prisma.inscripcionCurso.findFirst({
+      where: {
+        estudianteId,
 
-          cursoId,
+        cursoId,
 
-          estado:
-            EstadoInscripcion.ACTIVA,
-        },
+        estado: EstadoInscripcion.ACTIVA,
+      },
 
-        select: {
-          id: true,
-          estado: true,
-          inscritoEn: true,
-        },
-      });
+      select: {
+        id: true,
+        estado: true,
+        inscritoEn: true,
+      },
+    });
 
     if (!inscripcion) {
       throw new ForbiddenException(
@@ -106,187 +88,138 @@ export class LecturasService {
   }
 
   async registrarLectura(
-    estudianteId:
-      number,
+    estudianteId: number,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    publicacionId:
-      number,
+    publicacionId: number,
   ) {
-    await this.verificarInscripcionActiva(
-      estudianteId,
-      cursoId,
-    );
+    await this.verificarInscripcionActiva(estudianteId, cursoId);
 
-    await this.obtenerPublicacionActiva(
-      cursoId,
-      publicacionId,
-    );
+    await this.obtenerPublicacionActiva(cursoId, publicacionId);
 
-    const lectura =
-      await this.prisma.lecturaPublicacion.upsert({
-        where: {
-          publicacionId_usuarioId: {
-            publicacionId,
-            usuarioId:
-              estudianteId,
-          },
-        },
-
-        create: {
+    const lectura = await this.prisma.lecturaPublicacion.upsert({
+      where: {
+        publicacionId_usuarioId: {
           publicacionId,
-
-          usuarioId:
-            estudianteId,
-
-          leidoEn:
-            new Date(),
+          usuarioId: estudianteId,
         },
+      },
 
-        update: {
-          leidoEn:
-            new Date(),
-        },
+      create: {
+        publicacionId,
 
-        select: {
-          id: true,
-          publicacionId: true,
-          usuarioId: true,
-          leidoEn: true,
-          creadoEn: true,
-          actualizadoEn: true,
-        },
-      });
+        usuarioId: estudianteId,
+
+        leidoEn: new Date(),
+      },
+
+      update: {
+        leidoEn: new Date(),
+      },
+
+      select: {
+        id: true,
+        publicacionId: true,
+        usuarioId: true,
+        leidoEn: true,
+        creadoEn: true,
+        actualizadoEn: true,
+      },
+    });
 
     return {
-      mensaje:
-        'Lectura registrada correctamente',
+      mensaje: 'Lectura registrada correctamente',
 
       lectura,
     };
   }
 
   async obtenerLecturas(
-    docenteId:
-      number,
+    docenteId: number,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    publicacionId:
-      number,
+    publicacionId: number,
   ) {
-    const publicacion =
-      await this.obtenerPublicacionActiva(
-        cursoId,
-        publicacionId,
-      );
+    const publicacion = await this.obtenerPublicacionActiva(
+      cursoId,
+      publicacionId,
+    );
 
-    if (
-      publicacion.curso.docenteId !==
-      docenteId
-    ) {
+    if (publicacion.curso.docenteId !== docenteId) {
       throw new ForbiddenException(
         'No tienes permiso para consultar las lecturas de este curso',
       );
     }
 
-    const [
-      totalEstudiantes,
-      lecturas,
-    ] =
-      await this.prisma.$transaction([
-        this.prisma.inscripcionCurso.count({
-          where: {
-            cursoId,
+    const [totalEstudiantes, lecturas] = await this.prisma.$transaction([
+      this.prisma.inscripcionCurso.count({
+        where: {
+          cursoId,
 
-            estado:
-              EstadoInscripcion.ACTIVA,
-          },
-        }),
+          estado: EstadoInscripcion.ACTIVA,
+        },
+      }),
 
-        this.prisma.lecturaPublicacion.findMany({
-          where: {
-            publicacionId,
+      this.prisma.lecturaPublicacion.findMany({
+        where: {
+          publicacionId,
 
-            usuario: {
-              inscripcionesComoEstudiante: {
-                some: {
-                  cursoId,
+          usuario: {
+            inscripcionesComoEstudiante: {
+              some: {
+                cursoId,
 
-                  estado:
-                    EstadoInscripcion.ACTIVA,
-                },
+                estado: EstadoInscripcion.ACTIVA,
               },
             },
           },
+        },
 
-          select: {
-            id: true,
-            leidoEn: true,
-            creadoEn: true,
-            actualizadoEn: true,
+        select: {
+          id: true,
+          leidoEn: true,
+          creadoEn: true,
+          actualizadoEn: true,
 
-            usuario: {
-              select: {
-                id: true,
-                nombres: true,
-                apellidoPaterno: true,
-                apellidoMaterno: true,
-                correo: true,
-                fotoPerfilUrl: true,
-                ultimoAccesoEn: true,
-                estaActivo: true,
-                cuentaActivada: true,
-              },
+          usuario: {
+            select: {
+              id: true,
+              nombres: true,
+              apellidoPaterno: true,
+              apellidoMaterno: true,
+              correo: true,
+              fotoPerfilUrl: true,
+              ultimoAccesoEn: true,
+              estaActivo: true,
+              cuentaActivada: true,
             },
           },
+        },
 
-          orderBy: {
-            leidoEn:
-              'desc',
-          },
-        }),
-      ]);
+        orderBy: {
+          leidoEn: 'desc',
+        },
+      }),
+    ]);
 
-    const totalLecturas =
-      lecturas.length;
+    const totalLecturas = lecturas.length;
 
-    const totalPendientes =
-      Math.max(
-        totalEstudiantes -
-          totalLecturas,
-        0,
-      );
+    const totalPendientes = Math.max(totalEstudiantes - totalLecturas, 0);
 
     const porcentajeLectura =
-      totalEstudiantes ===
-      0
+      totalEstudiantes === 0
         ? 0
-        : Number(
-            (
-              (
-                totalLecturas /
-                totalEstudiantes
-              ) *
-              100
-            ).toFixed(
-              2,
-            ),
-          );
+        : Number(((totalLecturas / totalEstudiantes) * 100).toFixed(2));
 
     return {
       publicacion: {
-        id:
-          publicacion.id,
+        id: publicacion.id,
 
-        titulo:
-          publicacion.titulo,
+        titulo: publicacion.titulo,
 
-        publicadoEn:
-          publicacion.publicadoEn,
+        publicadoEn: publicacion.publicadoEn,
       },
 
       resumen: {

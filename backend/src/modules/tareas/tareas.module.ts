@@ -1,53 +1,39 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import {
-  AuthModule,
-} from '../auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
-import {
-  ReportesModule,
-} from '../reportes/reportes.module';
+import { ReportesModule } from '../reportes/reportes.module';
 
-import {
-  TareasController,
-} from './tareas.controller';
+import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 
-import {
-  TareasEntregasController,
-} from './tareas-entregas.controller';
+import { TareasController } from './tareas.controller';
 
-import {
-  TareasEvaluacionController,
-} from './tareas-evaluacion.controller';
+import { TareasEntregasController } from './tareas-entregas.controller';
 
-import {
-  TareasService,
-} from './tareas.service';
+import { TareasEvaluacionController } from './tareas-evaluacion.controller';
 
-import {
-  TareasEntregasService,
-} from './tareas-entregas.service';
+import { TareasRubricasController } from './tareas-rubricas.controller';
 
-import {
-  TareasEvaluacionService,
-} from './tareas-evaluacion.service';
+import { TareasService } from './tareas.service';
 
-import {
-  TareasReportesService,
-} from './tareas-reportes.service';
+import { TareasEntregasService } from './tareas-entregas.service';
+
+import { TareasEvaluacionService } from './tareas-evaluacion.service';
+
+import { TareasReportesService } from './tareas-reportes.service';
+
+import { TareasRubricasService } from './tareas-rubricas.service';
+
+import { TareasCierreAutomaticoService } from './tareas-cierre-automatico.service';
 
 @Module({
-  imports: [
-    AuthModule,
-    ReportesModule,
-  ],
+  imports: [AuthModule, ReportesModule, NotificacionesModule],
 
   controllers: [
     TareasController,
     TareasEntregasController,
     TareasEvaluacionController,
+    TareasRubricasController,
   ],
 
   providers: [
@@ -55,6 +41,8 @@ import {
     TareasEntregasService,
     TareasEvaluacionService,
     TareasReportesService,
+    TareasRubricasService,
+    TareasCierreAutomaticoService,
   ],
 
   exports: [
@@ -62,6 +50,7 @@ import {
     TareasEntregasService,
     TareasEvaluacionService,
     TareasReportesService,
+    TareasRubricasService,
   ],
 })
 export class TareasModule {}

@@ -11,17 +11,11 @@ import {
   Rol,
 } from '../../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
-import {
-  ActualizarComentarioDto,
-} from '../dto/actualizar-comentario.dto';
+import { ActualizarComentarioDto } from '../dto/actualizar-comentario.dto';
 
-import {
-  CrearComentarioDto,
-} from '../dto/crear-comentario.dto';
+import { CrearComentarioDto } from '../dto/crear-comentario.dto';
 
 type UsuarioAutenticado = {
   id: number;
@@ -31,10 +25,7 @@ type UsuarioAutenticado = {
 
 @Injectable()
 export class ComentariosService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private readonly seleccionComentario = {
     id: true,
@@ -61,64 +52,47 @@ export class ComentariosService {
     },
   } as const;
 
-  private async obtenerCurso(
-    cursoId: number,
-  ) {
-    const curso =
-      await this.prisma.curso.findUnique({
-        where: {
-          id:
-            cursoId,
-        },
+  private async obtenerCurso(cursoId: number) {
+    const curso = await this.prisma.curso.findUnique({
+      where: {
+        id: cursoId,
+      },
 
-        select: {
-          id: true,
-          docenteId: true,
-          gestion: true,
-          paralelo: true,
-          semestre: true,
-          estado: true,
-          finalizadoEn: true,
+      select: {
+        id: true,
+        docenteId: true,
+        gestion: true,
+        paralelo: true,
+        semestre: true,
+        estado: true,
+        finalizadoEn: true,
 
-          materia: {
-            select: {
-              id: true,
-              nombre: true,
-              codigo: true,
-            },
+        materia: {
+          select: {
+            id: true,
+            nombre: true,
+            codigo: true,
           },
         },
-      });
+      },
+    });
 
     if (!curso) {
-      throw new NotFoundException(
-        'El curso no existe',
-      );
+      throw new NotFoundException('El curso no existe');
     }
 
     return curso;
   }
 
   private async verificarAccesoCurso(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
   ) {
-    const curso =
-      await this.obtenerCurso(
-        cursoId,
-      );
+    const curso = await this.obtenerCurso(cursoId);
 
-    if (
-      usuario.rol ===
-      Rol.DOCENTE
-    ) {
-      if (
-        curso.docenteId !==
-        usuario.id
-      ) {
+    if (usuario.rol === Rol.DOCENTE) {
+      if (curso.docenteId !== usuario.id) {
         throw new ForbiddenException(
           'No tienes permiso para acceder a este curso',
         );
@@ -126,33 +100,26 @@ export class ComentariosService {
 
       return {
         curso,
-        esDocente:
-          true,
+        esDocente: true,
       };
     }
 
-    if (
-      usuario.rol ===
-      Rol.ESTUDIANTE
-    ) {
-      const inscripcion =
-        await this.prisma.inscripcionCurso.findFirst({
-          where: {
-            cursoId,
+    if (usuario.rol === Rol.ESTUDIANTE) {
+      const inscripcion = await this.prisma.inscripcionCurso.findFirst({
+        where: {
+          cursoId,
 
-            estudianteId:
-              usuario.id,
+          estudianteId: usuario.id,
 
-            estado:
-              EstadoInscripcion.ACTIVA,
-          },
+          estado: EstadoInscripcion.ACTIVA,
+        },
 
-          select: {
-            id: true,
-            estado: true,
-            inscritoEn: true,
-          },
-        });
+        select: {
+          id: true,
+          estado: true,
+          inscritoEn: true,
+        },
+      });
 
       if (!inscripcion) {
         throw new ForbiddenException(
@@ -162,8 +129,7 @@ export class ComentariosService {
 
       return {
         curso,
-        esDocente:
-          false,
+        esDocente: false,
 
         inscripcion,
       };
@@ -174,23 +140,14 @@ export class ComentariosService {
     );
   }
 
-  private validarCursoEditable(
-    estado:
-      EstadoCurso,
-  ) {
-    if (
-      estado ===
-      EstadoCurso.FINALIZADO
-    ) {
+  private validarCursoEditable(estado: EstadoCurso) {
+    if (estado === EstadoCurso.FINALIZADO) {
       throw new BadRequestException(
         'El curso está finalizado y se conserva únicamente como historial',
       );
     }
 
-    if (
-      estado !==
-      EstadoCurso.ACTIVO
-    ) {
+    if (estado !== EstadoCurso.ACTIVO) {
       throw new BadRequestException(
         'El curso debe estar activo para participar en los comentarios',
       );
@@ -198,255 +155,186 @@ export class ComentariosService {
   }
 
   private async obtenerPublicacionActiva(
-    cursoId:
-      number,
+    cursoId: number,
 
-    publicacionId:
-      number,
+    publicacionId: number,
   ) {
-    const publicacion =
-      await this.prisma.publicacionCurso.findFirst({
-        where: {
-          id:
-            publicacionId,
+    const publicacion = await this.prisma.publicacionCurso.findFirst({
+      where: {
+        id: publicacionId,
 
-          cursoId,
+        cursoId,
 
-          estaActiva:
-            true,
-        },
+        estaActiva: true,
+      },
 
-        select: {
-          id: true,
-          cursoId: true,
-          autorId: true,
-          titulo: true,
-          estaActiva: true,
-          comentariosHabilitados: true,
-        },
-      });
+      select: {
+        id: true,
+        cursoId: true,
+        autorId: true,
+        titulo: true,
+        estaActiva: true,
+        comentariosHabilitados: true,
+      },
+    });
 
     if (!publicacion) {
-      throw new NotFoundException(
-        'La publicación no existe o fue retirada',
-      );
+      throw new NotFoundException('La publicación no existe o fue retirada');
     }
 
     return publicacion;
   }
 
   private async obtenerComentarioActivo(
-    publicacionId:
-      number,
+    publicacionId: number,
 
-    comentarioId:
-      number,
+    comentarioId: number,
   ) {
-    const comentario =
-      await this.prisma.comentarioPublicacion.findFirst({
-        where: {
-          id:
-            comentarioId,
+    const comentario = await this.prisma.comentarioPublicacion.findFirst({
+      where: {
+        id: comentarioId,
 
-          publicacionId,
+        publicacionId,
 
-          estaActivo:
-            true,
-        },
+        estaActivo: true,
+      },
 
-        select:
-          this.seleccionComentario,
-      });
+      select: this.seleccionComentario,
+    });
 
     if (!comentario) {
-      throw new NotFoundException(
-        'El comentario no existe o fue retirado',
-      );
+      throw new NotFoundException('El comentario no existe o fue retirado');
     }
 
     return comentario;
   }
 
   async obtenerComentarios(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    publicacionId:
-      number,
+    publicacionId: number,
   ) {
-    await this.verificarAccesoCurso(
-      usuario,
+    await this.verificarAccesoCurso(usuario, cursoId);
+
+    const publicacion = await this.obtenerPublicacionActiva(
       cursoId,
+      publicacionId,
     );
 
-    const publicacion =
-      await this.obtenerPublicacionActiva(
-        cursoId,
+    const comentarios = await this.prisma.comentarioPublicacion.findMany({
+      where: {
         publicacionId,
-      );
 
-    const comentarios =
-      await this.prisma.comentarioPublicacion.findMany({
-        where: {
-          publicacionId,
+        estaActivo: true,
+      },
 
-          estaActivo:
-            true,
-        },
+      select: this.seleccionComentario,
 
-        select:
-          this.seleccionComentario,
-
-        orderBy: {
-          publicadoEn:
-            'asc',
-        },
-      });
+      orderBy: {
+        publicadoEn: 'asc',
+      },
+    });
 
     return {
       publicacion: {
-        id:
-          publicacion.id,
+        id: publicacion.id,
 
-        titulo:
-          publicacion.titulo,
+        titulo: publicacion.titulo,
 
-        comentariosHabilitados:
-          publicacion.comentariosHabilitados,
+        comentariosHabilitados: publicacion.comentariosHabilitados,
       },
 
-      total:
-        comentarios.length,
+      total: comentarios.length,
 
       comentarios,
     };
   }
 
   async crearComentario(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    publicacionId:
-      number,
+    publicacionId: number,
 
-    datos:
-      CrearComentarioDto,
+    datos: CrearComentarioDto,
   ) {
-    const acceso =
-      await this.verificarAccesoCurso(
-        usuario,
-        cursoId,
-      );
+    const acceso = await this.verificarAccesoCurso(usuario, cursoId);
 
-    this.validarCursoEditable(
-      acceso.curso.estado,
+    this.validarCursoEditable(acceso.curso.estado);
+
+    const publicacion = await this.obtenerPublicacionActiva(
+      cursoId,
+      publicacionId,
     );
 
-    const publicacion =
-      await this.obtenerPublicacionActiva(
-        cursoId,
-        publicacionId,
-      );
-
-    if (
-      !publicacion.comentariosHabilitados
-    ) {
+    if (!publicacion.comentariosHabilitados) {
       throw new BadRequestException(
         'Los comentarios se encuentran deshabilitados en esta publicación',
       );
     }
 
-    const comentario =
-      await this.prisma.comentarioPublicacion.create({
-        data: {
-          publicacionId,
+    const comentario = await this.prisma.comentarioPublicacion.create({
+      data: {
+        publicacionId,
 
-          autorId:
-            usuario.id,
+        autorId: usuario.id,
 
-          contenido:
-            datos.contenido,
+        contenido: datos.contenido,
 
-          estaActivo:
-            true,
+        estaActivo: true,
 
-          publicadoEn:
-            new Date(),
+        publicadoEn: new Date(),
 
-          editadoEn:
-            null,
+        editadoEn: null,
 
-          eliminadoEn:
-            null,
-        },
+        eliminadoEn: null,
+      },
 
-        select:
-          this.seleccionComentario,
-      });
+      select: this.seleccionComentario,
+    });
 
     return {
-      mensaje:
-        'Comentario publicado correctamente',
+      mensaje: 'Comentario publicado correctamente',
 
       comentario,
     };
   }
 
   async actualizarComentario(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    publicacionId:
-      number,
+    publicacionId: number,
 
-    comentarioId:
-      number,
+    comentarioId: number,
 
-    datos:
-      ActualizarComentarioDto,
+    datos: ActualizarComentarioDto,
   ) {
-    const acceso =
-      await this.verificarAccesoCurso(
-        usuario,
-        cursoId,
-      );
+    const acceso = await this.verificarAccesoCurso(usuario, cursoId);
 
-    this.validarCursoEditable(
-      acceso.curso.estado,
+    this.validarCursoEditable(acceso.curso.estado);
+
+    const publicacion = await this.obtenerPublicacionActiva(
+      cursoId,
+      publicacionId,
     );
 
-    const publicacion =
-      await this.obtenerPublicacionActiva(
-        cursoId,
-        publicacionId,
-      );
-
-    if (
-      !publicacion.comentariosHabilitados
-    ) {
+    if (!publicacion.comentariosHabilitados) {
       throw new BadRequestException(
         'Los comentarios se encuentran deshabilitados en esta publicación',
       );
     }
 
-    const comentarioActual =
-      await this.obtenerComentarioActivo(
-        publicacionId,
-        comentarioId,
-      );
+    const comentarioActual = await this.obtenerComentarioActivo(
+      publicacionId,
+      comentarioId,
+    );
 
-    const puedeEditar =
-      comentarioActual.autorId ===
-      usuario.id;
+    const puedeEditar = comentarioActual.autorId === usuario.id;
 
     if (!puedeEditar) {
       throw new ForbiddenException(
@@ -454,110 +342,76 @@ export class ComentariosService {
       );
     }
 
-    const comentario =
-      await this.prisma.comentarioPublicacion.update({
-        where: {
-          id:
-            comentarioId,
-        },
+    const comentario = await this.prisma.comentarioPublicacion.update({
+      where: {
+        id: comentarioId,
+      },
 
-        data: {
-          contenido:
-            datos.contenido,
+      data: {
+        contenido: datos.contenido,
 
-          editadoEn:
-            new Date(),
-        },
+        editadoEn: new Date(),
+      },
 
-        select:
-          this.seleccionComentario,
-      });
+      select: this.seleccionComentario,
+    });
 
     return {
-      mensaje:
-        'Comentario actualizado correctamente',
+      mensaje: 'Comentario actualizado correctamente',
 
       comentario,
     };
   }
 
   async eliminarComentario(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    publicacionId:
-      number,
+    publicacionId: number,
 
-    comentarioId:
-      number,
+    comentarioId: number,
   ) {
-    const acceso =
-      await this.verificarAccesoCurso(
-        usuario,
-        cursoId,
-      );
+    const acceso = await this.verificarAccesoCurso(usuario, cursoId);
 
-    this.validarCursoEditable(
-      acceso.curso.estado,
-    );
+    this.validarCursoEditable(acceso.curso.estado);
 
-    await this.obtenerPublicacionActiva(
-      cursoId,
+    await this.obtenerPublicacionActiva(cursoId, publicacionId);
+
+    const comentarioActual = await this.obtenerComentarioActivo(
       publicacionId,
+      comentarioId,
     );
 
-    const comentarioActual =
-      await this.obtenerComentarioActivo(
-        publicacionId,
-        comentarioId,
-      );
-
-    const esAutor =
-      comentarioActual.autorId ===
-      usuario.id;
+    const esAutor = comentarioActual.autorId === usuario.id;
 
     const esDocentePropietario =
-      usuario.rol ===
-        Rol.DOCENTE &&
-      acceso.curso.docenteId ===
-        usuario.id;
+      usuario.rol === Rol.DOCENTE && acceso.curso.docenteId === usuario.id;
 
-    if (
-      !esAutor &&
-      !esDocentePropietario
-    ) {
+    if (!esAutor && !esDocentePropietario) {
       throw new ForbiddenException(
         'No tienes permiso para retirar este comentario',
       );
     }
 
-    const comentario =
-      await this.prisma.comentarioPublicacion.update({
-        where: {
-          id:
-            comentarioId,
-        },
+    const comentario = await this.prisma.comentarioPublicacion.update({
+      where: {
+        id: comentarioId,
+      },
 
-        data: {
-          estaActivo:
-            false,
+      data: {
+        estaActivo: false,
 
-          eliminadoEn:
-            new Date(),
-        },
+        eliminadoEn: new Date(),
+      },
 
-        select:
-          this.seleccionComentario,
-      });
+      select: this.seleccionComentario,
+    });
 
     return {
-      mensaje:
-        esAutor
-          ? 'Comentario retirado correctamente'
-          : 'Comentario moderado y retirado correctamente',
+      mensaje: esAutor
+        ? 'Comentario retirado correctamente'
+        : 'Comentario moderado y retirado correctamente',
 
       comentario,
     };

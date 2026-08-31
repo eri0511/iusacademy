@@ -14,123 +14,67 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
-import {
-  FileInterceptor,
-} from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 
-import {
-  memoryStorage,
-} from 'multer';
+import { memoryStorage } from 'multer';
 
-import type {
-  Request,
-  Response,
-} from 'express';
+import type { Request, Response } from 'express';
 
-import {
-  Rol,
-} from '../../generated/prisma/client';
+import { Rol } from '../../generated/prisma/client';
 
-import {
-  Roles,
-} from '../auth/decorators/roles.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-import {
-  JwtAuthGuard,
-} from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-import {
-  RolesGuard,
-} from '../auth/guards/roles.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
-import {
-  ArchivosService,
-} from './archivos.service';
+import { ArchivosService } from './archivos.service';
 
-import {
-  ActualizarArchivoDto,
-} from './dto/actualizar-archivo.dto';
+import { ActualizarArchivoDto } from './dto/actualizar-archivo.dto';
 
-import type {
-  UsuarioAutenticado,
-} from './interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
-type RequestAutenticada =
-  Request & {
-    user:
-      UsuarioAutenticado;
-  };
-
-type ArchivoMulter = {
-  originalname:
-    string;
-
-  mimetype:
-    string;
-
-  size:
-    number;
-
-  buffer:
-    Buffer;
+type RequestAutenticada = Request & {
+  user: UsuarioAutenticado;
 };
 
-@Controller(
-  'archivos',
-)
-@UseGuards(
-  JwtAuthGuard,
-  RolesGuard,
-)
-export class ArchivosController {
-  constructor(
-    private readonly archivosService:
-      ArchivosService,
-  ) {}
+type ArchivoMulter = {
+  originalname: string;
 
-  @Post(
-    'foro/cursos/:cursoId/temas/:foroId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  mimetype: string;
+
+  size: number;
+
+  buffer: Buffer;
+};
+
+@Controller('archivos')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class ArchivosController {
+  constructor(private readonly archivosService: ArchivosService) {}
+
+  @Post('foro/cursos/:cursoId/temas/:foroId')
+  @Roles(Rol.DOCENTE)
   @UseInterceptors(
-    FileInterceptor(
-      'archivo',
-      {
-        storage:
-          memoryStorage(),
-        limits: {
-          fileSize:
-            100 *
-            1024 *
-            1024,
-        },
+    FileInterceptor('archivo', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 100 * 1024 * 1024,
       },
-    ),
+    }),
   )
   subirTema(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
     @UploadedFile()
-    archivo:
-      ArchivoMulter | undefined,
+    archivo: ArchivoMulter | undefined,
   ) {
     return this.archivosService.subirArchivoTema(
       request.user,
@@ -140,50 +84,28 @@ export class ArchivosController {
     );
   }
 
-  @Post(
-    'foro/cursos/:cursoId/respuestas/:respuestaId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-    Rol.ESTUDIANTE,
-  )
+  @Post('foro/cursos/:cursoId/respuestas/:respuestaId')
+  @Roles(Rol.DOCENTE, Rol.ESTUDIANTE)
   @UseInterceptors(
-    FileInterceptor(
-      'archivo',
-      {
-        storage:
-          memoryStorage(),
-        limits: {
-          fileSize:
-            100 *
-            1024 *
-            1024,
-        },
+    FileInterceptor('archivo', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 100 * 1024 * 1024,
       },
-    ),
+    }),
   )
   subirRespuesta(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'respuestaId',
-      ParseIntPipe,
-    )
-    respuestaId:
-      number,
+    @Param('respuestaId', ParseIntPipe)
+    respuestaId: number,
 
     @UploadedFile()
-    archivo:
-      ArchivoMulter | undefined,
+    archivo: ArchivoMulter | undefined,
   ) {
     return this.archivosService.subirArchivoRespuesta(
       request.user,
@@ -193,50 +115,28 @@ export class ArchivosController {
     );
   }
 
-  @Post(
-    'foro/cursos/:cursoId/comentarios/:comentarioId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-    Rol.ESTUDIANTE,
-  )
+  @Post('foro/cursos/:cursoId/comentarios/:comentarioId')
+  @Roles(Rol.DOCENTE, Rol.ESTUDIANTE)
   @UseInterceptors(
-    FileInterceptor(
-      'archivo',
-      {
-        storage:
-          memoryStorage(),
-        limits: {
-          fileSize:
-            100 *
-            1024 *
-            1024,
-        },
+    FileInterceptor('archivo', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 100 * 1024 * 1024,
       },
-    ),
+    }),
   )
   subirComentario(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'comentarioId',
-      ParseIntPipe,
-    )
-    comentarioId:
-      number,
+    @Param('comentarioId', ParseIntPipe)
+    comentarioId: number,
 
     @UploadedFile()
-    archivo:
-      ArchivoMulter | undefined,
+    archivo: ArchivoMulter | undefined,
   ) {
     return this.archivosService.subirArchivoComentario(
       request.user,
@@ -246,49 +146,28 @@ export class ArchivosController {
     );
   }
 
-  @Post(
-    'tareas/cursos/:cursoId/entregas/:entregaId',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Post('tareas/cursos/:cursoId/entregas/:entregaId')
+  @Roles(Rol.ESTUDIANTE)
   @UseInterceptors(
-    FileInterceptor(
-      'archivo',
-      {
-        storage:
-          memoryStorage(),
-        limits: {
-          fileSize:
-            100 *
-            1024 *
-            1024,
-        },
+    FileInterceptor('archivo', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 100 * 1024 * 1024,
       },
-    ),
+    }),
   )
   subirEntregaTarea(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'entregaId',
-      ParseIntPipe,
-    )
-    entregaId:
-      number,
+    @Param('entregaId', ParseIntPipe)
+    entregaId: number,
 
     @UploadedFile()
-    archivo:
-      ArchivoMulter | undefined,
+    archivo: ArchivoMulter | undefined,
   ) {
     return this.archivosService.subirArchivoEntregaTarea(
       request.user,
@@ -298,136 +177,99 @@ export class ArchivosController {
     );
   }
 
-  @Get(
-    ':archivoId',
+  @Post('tareas/cursos/:cursoId/:tareaId')
+  @Roles(Rol.DOCENTE)
+  @UseInterceptors(
+    FileInterceptor('archivo', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 30 * 1024 * 1024,
+      },
+    }),
   )
-  @Roles(
-    Rol.DOCENTE,
-    Rol.ESTUDIANTE,
-  )
-  obtener(
+  subirArchivoTarea(
     @Req()
-    request:
-      RequestAutenticada,
-
-    @Param(
-      'archivoId',
-      ParseIntPipe,
-    )
-    archivoId:
-      number,
+    request: RequestAutenticada,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
+    @Param('tareaId', ParseIntPipe)
+    tareaId: number,
+    @UploadedFile()
+    archivo: ArchivoMulter | undefined,
   ) {
-    return this.archivosService.obtenerPorId(
+    return this.archivosService.subirArchivoTarea(
       request.user,
-      archivoId,
+      cursoId,
+      tareaId,
+      archivo,
     );
   }
 
-  @Get(
-    ':archivoId/descargar',
-  )
-  @Roles(
-    Rol.DOCENTE,
-    Rol.ESTUDIANTE,
-  )
+  @Get(':archivoId')
+  @Roles(Rol.DOCENTE, Rol.ESTUDIANTE)
+  obtener(
+    @Req()
+    request: RequestAutenticada,
+
+    @Param('archivoId', ParseIntPipe)
+    archivoId: number,
+  ) {
+    return this.archivosService.obtenerPorId(request.user, archivoId);
+  }
+
+  @Get(':archivoId/descargar')
+  @Roles(Rol.DOCENTE, Rol.ESTUDIANTE)
   async descargar(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
     @Res()
-    response:
-      Response,
+    response: Response,
 
-    @Param(
-      'archivoId',
-      ParseIntPipe,
-    )
-    archivoId:
-      number,
+    @Param('archivoId', ParseIntPipe)
+    archivoId: number,
   ) {
-    const resultado =
-      await this.archivosService.descargar(
-        request.user,
-        archivoId,
-      );
-
-    const nombreSeguro =
-      resultado.nombreOriginal.replace(
-        /[\r\n"]/g,
-        '_',
-      );
-
-    response.setHeader(
-      'Content-Type',
-      resultado.mimeType,
+    const resultado = await this.archivosService.descargar(
+      request.user,
+      archivoId,
     );
+
+    const nombreSeguro = resultado.nombreOriginal.replace(/[\r\n"]/g, '_');
+
+    response.setHeader('Content-Type', resultado.mimeType);
     response.setHeader(
       'Content-Disposition',
       `attachment; filename*=UTF-8''${encodeURIComponent(nombreSeguro)}`,
     );
-    response.setHeader(
-      'Content-Length',
-      resultado.buffer.length.toString(),
-    );
+    response.setHeader('Content-Length', resultado.buffer.length.toString());
 
-    response.send(
-      resultado.buffer,
-    );
+    response.send(resultado.buffer);
   }
 
-  @Patch(
-    ':archivoId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-    Rol.ESTUDIANTE,
-  )
+  @Patch(':archivoId')
+  @Roles(Rol.DOCENTE, Rol.ESTUDIANTE)
   actualizar(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'archivoId',
-      ParseIntPipe,
-    )
-    archivoId:
-      number,
+    @Param('archivoId', ParseIntPipe)
+    archivoId: number,
 
     @Body()
-    datos:
-      ActualizarArchivoDto,
+    datos: ActualizarArchivoDto,
   ) {
-    return this.archivosService.actualizar(
-      request.user,
-      archivoId,
-      datos,
-    );
+    return this.archivosService.actualizar(request.user, archivoId, datos);
   }
 
-  @Delete(
-    ':archivoId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-    Rol.ESTUDIANTE,
-  )
+  @Delete(':archivoId')
+  @Roles(Rol.DOCENTE, Rol.ESTUDIANTE)
   eliminar(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'archivoId',
-      ParseIntPipe,
-    )
-    archivoId:
-      number,
+    @Param('archivoId', ParseIntPipe)
+    archivoId: number,
   ) {
-    return this.archivosService.eliminar(
-      request.user,
-      archivoId,
-    );
+    return this.archivosService.eliminar(request.user, archivoId);
   }
 }

@@ -9,33 +9,19 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import type {
-  Request,
-} from 'express';
+import type { Request } from 'express';
 
-import {
-  Rol,
-} from '../../../generated/prisma/client';
+import { Rol } from '../../../generated/prisma/client';
 
-import {
-  Roles,
-} from '../../auth/decorators/roles.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
 
-import {
-  JwtAuthGuard,
-} from '../../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
-import {
-  RolesGuard,
-} from '../../auth/guards/roles.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
 
-import {
-  EstudianteInscripcionesService,
-} from './estudiante-inscripciones.service';
+import { EstudianteInscripcionesService } from './estudiante-inscripciones.service';
 
-import {
-  InscribirseCursoDto,
-} from './dto/inscribirse-curso.dto';
+import { InscribirseCursoDto } from './dto/inscribirse-curso.dto';
 
 type UsuarioAutenticado = {
   id: number;
@@ -43,26 +29,16 @@ type UsuarioAutenticado = {
   rol: Rol;
 };
 
-type RequestConUsuario =
-  Request & {
-    user:
-      UsuarioAutenticado;
-  };
+type RequestConUsuario = Request & {
+  user: UsuarioAutenticado;
+};
 
-@Controller(
-  'estudiante/cursos',
-)
-@UseGuards(
-  JwtAuthGuard,
-  RolesGuard,
-)
-@Roles(
-  Rol.ESTUDIANTE,
-)
+@Controller('estudiante/cursos')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Rol.ESTUDIANTE)
 export class EstudianteInscripcionesController {
   constructor(
-    private readonly estudianteInscripcionesService:
-      EstudianteInscripcionesService,
+    private readonly estudianteInscripcionesService: EstudianteInscripcionesService,
   ) {}
 
   /**
@@ -72,13 +48,11 @@ export class EstudianteInscripcionesController {
   @Get()
   obtenerMisCursos(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
   ) {
-    return this.estudianteInscripcionesService
-      .obtenerMisCursos(
-        request.user.id,
-      );
+    return this.estudianteInscripcionesService.obtenerMisCursos(
+      request.user.id,
+    );
   }
 
   /**
@@ -89,23 +63,18 @@ export class EstudianteInscripcionesController {
    * para evitar que "inscribirse" sea interpretado
    * como un identificador de curso.
    */
-  @Post(
-    'inscribirse',
-  )
+  @Post('inscribirse')
   inscribirseCurso(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
     @Body()
-    datos:
-      InscribirseCursoDto,
+    datos: InscribirseCursoDto,
   ) {
-    return this.estudianteInscripcionesService
-      .inscribirseCurso(
-        request.user.id,
-        datos,
-      );
+    return this.estudianteInscripcionesService.inscribirseCurso(
+      request.user.id,
+      datos,
+    );
   }
 
   /**
@@ -117,20 +86,14 @@ export class EstudianteInscripcionesController {
   @Get(':id')
   obtenerMiCursoPorId(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('id', ParseIntPipe)
+    cursoId: number,
   ) {
-    return this.estudianteInscripcionesService
-      .obtenerMiCursoPorId(
-        request.user.id,
-        cursoId,
-      );
+    return this.estudianteInscripcionesService.obtenerMiCursoPorId(
+      request.user.id,
+      cursoId,
+    );
   }
 }

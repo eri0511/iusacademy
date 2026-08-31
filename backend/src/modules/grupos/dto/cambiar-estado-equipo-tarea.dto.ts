@@ -1,15 +1,8 @@
-import {
-  IsEnum,
-} from 'class-validator';
+import { IsEnum } from 'class-validator';
 
-import {
-  EstadoEquipoAfinidadTarea,
-} from '../../../generated/prisma/client';
+import { EstadoEquipoAfinidadTarea } from '../../../generated/prisma/client';
 
 export class CambiarEstadoEquipoTareaDto {
-  @IsEnum(
-    EstadoEquipoAfinidadTarea,
-  )
-  estado!:
-    EstadoEquipoAfinidadTarea;
+  @IsEnum(EstadoEquipoAfinidadTarea)
+  estado!: EstadoEquipoAfinidadTarea;
 }

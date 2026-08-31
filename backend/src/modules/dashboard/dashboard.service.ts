@@ -1,33 +1,15 @@
-import {
-  Injectable,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import {
-  EstadoCurso,
-  EstadoMateria,
-  Rol,
-} from '../../generated/prisma/client';
+import { EstadoCurso, EstadoMateria, Rol } from '../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-type PrioridadAlerta =
-  | 'ALTA'
-  | 'MEDIA'
-  | 'BAJA';
+type PrioridadAlerta = 'ALTA' | 'MEDIA' | 'BAJA';
 
-type TipoAlerta =
-  | 'USUARIOS'
-  | 'MATERIAS'
-  | 'CURSOS'
-  | 'HITOS';
+type TipoAlerta = 'USUARIOS' | 'MATERIAS' | 'CURSOS' | 'HITOS';
 
 type EstadoPlanificacionDashboard =
-  | 'SIN_PLANIFICACION'
-  | 'PROXIMA'
-  | 'EN_CURSO'
-  | 'FINALIZADA';
+  'SIN_PLANIFICACION' | 'PROXIMA' | 'EN_CURSO' | 'FINALIZADA';
 
 type HitoDashboard = {
   id: number;
@@ -63,132 +45,75 @@ type AlertaDashboard = {
 
 @Injectable()
 export class DashboardService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  private obtenerGestionActual(
-    fecha:
-      Date =
-      new Date(),
-  ): string {
-    return `${fecha.getFullYear()}-${
-      fecha.getMonth() <
-      6
-        ? '1'
-        : '2'
-    }`;
+  private obtenerGestionActual(fecha: Date = new Date()): string {
+    return `${fecha.getFullYear()}-${fecha.getMonth() < 6 ? '1' : '2'}`;
   }
 
   private construirResumenHitos(
-    gestion:
-      string,
+    gestion: string,
 
-    planificacion:
-      {
-        id: number;
-        estaActiva: boolean;
-        hitos: HitoDashboard[];
-      } |
-      null,
+    planificacion: {
+      id: number;
+      estaActiva: boolean;
+      hitos: HitoDashboard[];
+    } | null,
   ): ResumenHitosDashboard {
-    if (
-      !planificacion
-    ) {
+    if (!planificacion) {
       return {
-        tienePlanificacion:
-          false,
+        tienePlanificacion: false,
 
         gestion,
 
-        planificacionId:
-          null,
+        planificacionId: null,
 
-        estaActiva:
-          false,
+        estaActiva: false,
 
-        estado:
-          'SIN_PLANIFICACION',
+        estado: 'SIN_PLANIFICACION',
 
-        hitoActual:
-          null,
+        hitoActual: null,
 
-        proximoHito:
-          null,
+        proximoHito: null,
 
-        totalHitos:
-          0,
+        totalHitos: 0,
 
-        puntajeTotal:
-          0,
+        puntajeTotal: 0,
       };
     }
 
-    const ahora =
-      new Date();
+    const ahora = new Date();
 
-    const hitosOrdenados =
-      [...planificacion.hitos].sort(
-        (
-          a,
-          b,
-        ) =>
-          a.numero -
-          b.numero,
-      );
+    const hitosOrdenados = [...planificacion.hitos].sort(
+      (a, b) => a.numero - b.numero,
+    );
 
     const hitoActual =
       hitosOrdenados.find(
-        (
-          hito,
-        ) =>
-          ahora >=
-            hito.fechaInicio &&
-          ahora <=
-            hito.fechaFin,
-      ) ??
-      null;
+        (hito) => ahora >= hito.fechaInicio && ahora <= hito.fechaFin,
+      ) ?? null;
 
     const proximoHito =
-      hitosOrdenados.find(
-        (
-          hito,
-        ) =>
-          ahora <
-          hito.fechaInicio,
-      ) ??
-      null;
+      hitosOrdenados.find((hito) => ahora < hito.fechaInicio) ?? null;
 
-    let estado:
-      EstadoPlanificacionDashboard;
+    let estado: EstadoPlanificacionDashboard;
 
-    if (
-      hitoActual
-    ) {
-      estado =
-        'EN_CURSO';
-    } else if (
-      proximoHito
-    ) {
-      estado =
-        'PROXIMA';
+    if (hitoActual) {
+      estado = 'EN_CURSO';
+    } else if (proximoHito) {
+      estado = 'PROXIMA';
     } else {
-      estado =
-        'FINALIZADA';
+      estado = 'FINALIZADA';
     }
 
     return {
-      tienePlanificacion:
-        true,
+      tienePlanificacion: true,
 
       gestion,
 
-      planificacionId:
-        planificacion.id,
+      planificacionId: planificacion.id,
 
-      estaActiva:
-        planificacion.estaActiva,
+      estaActiva: planificacion.estaActiva,
 
       estado,
 
@@ -196,335 +121,207 @@ export class DashboardService {
 
       proximoHito,
 
-      totalHitos:
-        hitosOrdenados.length,
+      totalHitos: hitosOrdenados.length,
 
-      puntajeTotal:
-        hitosOrdenados.reduce(
-          (
-            total,
-            hito,
-          ) =>
-            total +
-            (
-              hito.numero ===
-              1
-                ? 0
-                : 25
-            ),
-          0,
-        ),
+      puntajeTotal: hitosOrdenados.reduce(
+        (total, hito) => total + (hito.numero === 1 ? 0 : 25),
+        0,
+      ),
     };
   }
 
   private crearAlertas(
-    pendientesActivacion:
-      number,
+    pendientesActivacion: number,
 
-    usuariosDesactivados:
-      number,
+    usuariosDesactivados: number,
 
-    materiasInactivas:
-      number,
+    materiasInactivas: number,
 
-    cursosInactivos:
-      number,
+    cursosInactivos: number,
 
-    cursosFinalizadosRecientes:
-      number,
+    cursosFinalizadosRecientes: number,
 
-    resumenHitos:
-      ResumenHitosDashboard,
+    resumenHitos: ResumenHitosDashboard,
   ): AlertaDashboard[] {
-    const alertas:
-      AlertaDashboard[] = [];
+    const alertas: AlertaDashboard[] = [];
 
-    if (
-      !resumenHitos.tienePlanificacion
-    ) {
+    if (!resumenHitos.tienePlanificacion) {
       alertas.push({
-        id:
-          'hitos-sin-planificacion',
+        id: 'hitos-sin-planificacion',
 
-        tipo:
-          'HITOS',
+        tipo: 'HITOS',
 
-        prioridad:
-          'ALTA',
+        prioridad: 'ALTA',
 
-        titulo:
-          'Planificación académica pendiente',
+        titulo: 'Planificación académica pendiente',
 
-        descripcion:
-          `La gestión ${resumenHitos.gestion} todavía no tiene configuradas las fechas de H1 a H5. Registra la planificación para organizar tablón, foros, tareas y calificaciones.`,
+        descripcion: `La gestión ${resumenHitos.gestion} todavía no tiene configuradas las fechas de H1 a H5. Registra la planificación para organizar tablón, foros, tareas y calificaciones.`,
 
-        cantidad:
-          1,
+        cantidad: 1,
 
-        ruta:
-          '/admin/hitos',
+        ruta: '/admin/hitos',
 
-        accion:
-          'Registrar planificación',
+        accion: 'Registrar planificación',
       });
-    } else if (
-      !resumenHitos.estaActiva
-    ) {
+    } else if (!resumenHitos.estaActiva) {
       alertas.push({
-        id:
-          'hitos-planificacion-inactiva',
+        id: 'hitos-planificacion-inactiva',
 
-        tipo:
-          'HITOS',
+        tipo: 'HITOS',
 
-        prioridad:
-          'MEDIA',
+        prioridad: 'MEDIA',
 
-        titulo:
-          'Planificación académica inactiva',
+        titulo: 'Planificación académica inactiva',
 
-        descripcion:
-          `La planificación de la gestión ${resumenHitos.gestion} se encuentra desactivada. Actívala para permitir el uso académico de sus hitos.`,
+        descripcion: `La planificación de la gestión ${resumenHitos.gestion} se encuentra desactivada. Actívala para permitir el uso académico de sus hitos.`,
 
-        cantidad:
-          1,
+        cantidad: 1,
 
-        ruta:
-          '/admin/hitos',
+        ruta: '/admin/hitos',
 
-        accion:
-          'Revisar planificación',
+        accion: 'Revisar planificación',
       });
     }
 
-    if (
-      pendientesActivacion >
-      0
-    ) {
+    if (pendientesActivacion > 0) {
       alertas.push({
-        id:
-          'usuarios-pendientes',
+        id: 'usuarios-pendientes',
 
-        tipo:
-          'USUARIOS',
+        tipo: 'USUARIOS',
 
-        prioridad:
-          pendientesActivacion >=
-          5
-            ? 'ALTA'
-            : 'MEDIA',
+        prioridad: pendientesActivacion >= 5 ? 'ALTA' : 'MEDIA',
 
-        titulo:
-          'Cuentas pendientes de activación',
+        titulo: 'Cuentas pendientes de activación',
 
-        descripcion:
-          `${pendientesActivacion} ${
-            pendientesActivacion ===
-            1
-              ? 'usuario todavía no activó su cuenta'
-              : 'usuarios todavía no activaron su cuenta'
-          }. Revisa si corresponde reenviar el acceso institucional.`,
+        descripcion: `${pendientesActivacion} ${
+          pendientesActivacion === 1
+            ? 'usuario todavía no activó su cuenta'
+            : 'usuarios todavía no activaron su cuenta'
+        }. Revisa si corresponde reenviar el acceso institucional.`,
 
-        cantidad:
-          pendientesActivacion,
+        cantidad: pendientesActivacion,
 
-        ruta:
-          '/admin/usuarios',
+        ruta: '/admin/usuarios',
 
-        accion:
-          'Revisar usuarios',
+        accion: 'Revisar usuarios',
       });
     }
 
-    if (
-      usuariosDesactivados >
-      0
-    ) {
+    if (usuariosDesactivados > 0) {
       alertas.push({
-        id:
-          'usuarios-desactivados',
+        id: 'usuarios-desactivados',
 
-        tipo:
-          'USUARIOS',
+        tipo: 'USUARIOS',
 
-        prioridad:
-          'BAJA',
+        prioridad: 'BAJA',
 
-        titulo:
-          'Usuarios desactivados',
+        titulo: 'Usuarios desactivados',
 
-        descripcion:
-          `${usuariosDesactivados} ${
-            usuariosDesactivados ===
-            1
-              ? 'cuenta se encuentra desactivada'
-              : 'cuentas se encuentran desactivadas'
-          }. Verifica si alguna debe reactivarse.`,
+        descripcion: `${usuariosDesactivados} ${
+          usuariosDesactivados === 1
+            ? 'cuenta se encuentra desactivada'
+            : 'cuentas se encuentran desactivadas'
+        }. Verifica si alguna debe reactivarse.`,
 
-        cantidad:
-          usuariosDesactivados,
+        cantidad: usuariosDesactivados,
 
-        ruta:
-          '/admin/usuarios',
+        ruta: '/admin/usuarios',
 
-        accion:
-          'Ver cuentas',
+        accion: 'Ver cuentas',
       });
     }
 
-    if (
-      materiasInactivas >
-      0
-    ) {
+    if (materiasInactivas > 0) {
       alertas.push({
-        id:
-          'materias-inactivas',
+        id: 'materias-inactivas',
 
-        tipo:
-          'MATERIAS',
+        tipo: 'MATERIAS',
 
-        prioridad:
-          'BAJA',
+        prioridad: 'BAJA',
 
-        titulo:
-          'Materias inactivas',
+        titulo: 'Materias inactivas',
 
-        descripcion:
-          `${materiasInactivas} ${
-            materiasInactivas ===
-            1
-              ? 'materia está fuera de disponibilidad'
-              : 'materias están fuera de disponibilidad'
-          }.`,
+        descripcion: `${materiasInactivas} ${
+          materiasInactivas === 1
+            ? 'materia está fuera de disponibilidad'
+            : 'materias están fuera de disponibilidad'
+        }.`,
 
-        cantidad:
-          materiasInactivas,
+        cantidad: materiasInactivas,
 
-        ruta:
-          '/admin/materias',
+        ruta: '/admin/materias',
 
-        accion:
-          'Revisar materias',
+        accion: 'Revisar materias',
       });
     }
 
-    if (
-      cursosInactivos >
-      0
-    ) {
+    if (cursosInactivos > 0) {
       alertas.push({
-        id:
-          'cursos-inactivos',
+        id: 'cursos-inactivos',
 
-        tipo:
-          'CURSOS',
+        tipo: 'CURSOS',
 
-        prioridad:
-          'MEDIA',
+        prioridad: 'MEDIA',
 
-        titulo:
-          'Cursos inactivos',
+        titulo: 'Cursos inactivos',
 
-        descripcion:
-          `${cursosInactivos} ${
-            cursosInactivos ===
-            1
-              ? 'curso está inactivo'
-              : 'cursos están inactivos'
-          }. Confirma si deben reactivarse o finalizarse.`,
+        descripcion: `${cursosInactivos} ${
+          cursosInactivos === 1
+            ? 'curso está inactivo'
+            : 'cursos están inactivos'
+        }. Confirma si deben reactivarse o finalizarse.`,
 
-        cantidad:
-          cursosInactivos,
+        cantidad: cursosInactivos,
 
-        ruta:
-          '/admin/cursos',
+        ruta: '/admin/cursos',
 
-        accion:
-          'Revisar cursos',
+        accion: 'Revisar cursos',
       });
     }
 
-    if (
-      cursosFinalizadosRecientes >
-      0
-    ) {
+    if (cursosFinalizadosRecientes > 0) {
       alertas.push({
-        id:
-          'cursos-finalizados-recientes',
+        id: 'cursos-finalizados-recientes',
 
-        tipo:
-          'CURSOS',
+        tipo: 'CURSOS',
 
-        prioridad:
-          'BAJA',
+        prioridad: 'BAJA',
 
-        titulo:
-          'Cursos finalizados recientemente',
+        titulo: 'Cursos finalizados recientemente',
 
-        descripcion:
-          `${cursosFinalizadosRecientes} ${
-            cursosFinalizadosRecientes ===
-            1
-              ? 'curso fue finalizado en los últimos 30 días'
-              : 'cursos fueron finalizados en los últimos 30 días'
-          }.`,
+        descripcion: `${cursosFinalizadosRecientes} ${
+          cursosFinalizadosRecientes === 1
+            ? 'curso fue finalizado en los últimos 30 días'
+            : 'cursos fueron finalizados en los últimos 30 días'
+        }.`,
 
-        cantidad:
-          cursosFinalizadosRecientes,
+        cantidad: cursosFinalizadosRecientes,
 
-        ruta:
-          '/admin/cursos',
+        ruta: '/admin/cursos',
 
-        accion:
-          'Ver historial',
+        accion: 'Ver historial',
       });
     }
 
-    const orden:
-      Record<
-        PrioridadAlerta,
-        number
-      > = {
-        ALTA:
-          0,
+    const orden: Record<PrioridadAlerta, number> = {
+      ALTA: 0,
 
-        MEDIA:
-          1,
+      MEDIA: 1,
 
-        BAJA:
-          2,
-      };
+      BAJA: 2,
+    };
 
-    return alertas.sort(
-      (
-        a,
-        b,
-      ) =>
-        orden[
-          a.prioridad
-        ] -
-        orden[
-          b.prioridad
-        ],
-    );
+    return alertas.sort((a, b) => orden[a.prioridad] - orden[b.prioridad]);
   }
 
   async obtenerResumen() {
-    const ahora =
-      new Date();
+    const ahora = new Date();
 
-    const gestionActual =
-      this.obtenerGestionActual(
-        ahora,
-      );
+    const gestionActual = this.obtenerGestionActual(ahora);
 
-    const desdeHace30Dias =
-      new Date();
+    const desdeHace30Dias = new Date();
 
-    desdeHace30Dias.setDate(
-      desdeHace30Dias.getDate() -
-        30,
-    );
+    desdeHace30Dias.setDate(desdeHace30Dias.getDate() - 30);
 
     const [
       totalUsuarios,
@@ -547,373 +344,275 @@ export class DashboardService {
       usuariosRecientes,
       materiasRecientes,
       planificacionActual,
-    ] =
-      await Promise.all([
-        this.prisma.usuario.count(),
+    ] = await Promise.all([
+      this.prisma.usuario.count(),
 
-        this.prisma.usuario.count({
-          where: {
-            rol:
-              Rol.ESTUDIANTE,
+      this.prisma.usuario.count({
+        where: {
+          rol: Rol.ESTUDIANTE,
+        },
+      }),
+
+      this.prisma.usuario.count({
+        where: {
+          rol: Rol.DOCENTE,
+        },
+      }),
+
+      this.prisma.usuario.count({
+        where: {
+          rol: Rol.ADMINISTRADOR,
+        },
+      }),
+
+      this.prisma.usuario.count({
+        where: {
+          estaActivo: true,
+        },
+      }),
+
+      this.prisma.usuario.count({
+        where: {
+          estaActivo: false,
+        },
+      }),
+
+      this.prisma.usuario.count({
+        where: {
+          cuentaActivada: true,
+        },
+      }),
+
+      this.prisma.usuario.count({
+        where: {
+          cuentaActivada: false,
+        },
+      }),
+
+      this.prisma.materia.count(),
+
+      this.prisma.materia.count({
+        where: {
+          estado: EstadoMateria.ACTIVA,
+        },
+      }),
+
+      this.prisma.materia.count({
+        where: {
+          estado: EstadoMateria.INACTIVA,
+        },
+      }),
+
+      this.prisma.curso.count(),
+
+      this.prisma.curso.count({
+        where: {
+          estado: EstadoCurso.ACTIVO,
+        },
+      }),
+
+      this.prisma.curso.count({
+        where: {
+          estado: EstadoCurso.INACTIVO,
+        },
+      }),
+
+      this.prisma.curso.count({
+        where: {
+          estado: EstadoCurso.FINALIZADO,
+        },
+      }),
+
+      this.prisma.curso.count({
+        where: {
+          estado: EstadoCurso.FINALIZADO,
+
+          finalizadoEn: {
+            gte: desdeHace30Dias,
           },
-        }),
+        },
+      }),
 
-        this.prisma.usuario.count({
-          where: {
-            rol:
-              Rol.DOCENTE,
-          },
-        }),
+      this.prisma.curso.findMany({
+        take: 5,
 
-        this.prisma.usuario.count({
-          where: {
-            rol:
-              Rol.ADMINISTRADOR,
-          },
-        }),
+        orderBy: {
+          creadoEn: 'desc',
+        },
 
-        this.prisma.usuario.count({
-          where: {
-            estaActivo:
-              true,
-          },
-        }),
+        select: {
+          id: true,
 
-        this.prisma.usuario.count({
-          where: {
-            estaActivo:
-              false,
-          },
-        }),
+          gestion: true,
 
-        this.prisma.usuario.count({
-          where: {
-            cuentaActivada:
-              true,
-          },
-        }),
+          paralelo: true,
 
-        this.prisma.usuario.count({
-          where: {
-            cuentaActivada:
-              false,
-          },
-        }),
+          semestre: true,
 
-        this.prisma.materia.count(),
+          estado: true,
 
-        this.prisma.materia.count({
-          where: {
-            estado:
-              EstadoMateria.ACTIVA,
-          },
-        }),
+          creadoEn: true,
 
-        this.prisma.materia.count({
-          where: {
-            estado:
-              EstadoMateria.INACTIVA,
-          },
-        }),
+          materia: {
+            select: {
+              nombre: true,
 
-        this.prisma.curso.count(),
-
-        this.prisma.curso.count({
-          where: {
-            estado:
-              EstadoCurso.ACTIVO,
-          },
-        }),
-
-        this.prisma.curso.count({
-          where: {
-            estado:
-              EstadoCurso.INACTIVO,
-          },
-        }),
-
-        this.prisma.curso.count({
-          where: {
-            estado:
-              EstadoCurso.FINALIZADO,
-          },
-        }),
-
-        this.prisma.curso.count({
-          where: {
-            estado:
-              EstadoCurso.FINALIZADO,
-
-            finalizadoEn: {
-              gte:
-                desdeHace30Dias,
+              codigo: true,
             },
           },
-        }),
 
-        this.prisma.curso.findMany({
-          take:
-            5,
+          docente: {
+            select: {
+              nombres: true,
 
-          orderBy: {
-            creadoEn:
-              'desc',
-          },
+              apellidoPaterno: true,
 
-          select: {
-            id:
-              true,
-
-            gestion:
-              true,
-
-            paralelo:
-              true,
-
-            semestre:
-              true,
-
-            estado:
-              true,
-
-            creadoEn:
-              true,
-
-            materia: {
-              select: {
-                nombre:
-                  true,
-
-                codigo:
-                  true,
-              },
-            },
-
-            docente: {
-              select: {
-                nombres:
-                  true,
-
-                apellidoPaterno:
-                  true,
-
-                apellidoMaterno:
-                  true,
-              },
+              apellidoMaterno: true,
             },
           },
-        }),
+        },
+      }),
 
-        this.prisma.usuario.findMany({
-          take:
-            5,
+      this.prisma.usuario.findMany({
+        take: 5,
 
-          orderBy: {
-            creadoEn:
-              'desc',
-          },
+        orderBy: {
+          creadoEn: 'desc',
+        },
 
-          select: {
-            id:
-              true,
+        select: {
+          id: true,
 
-            nombres:
-              true,
+          nombres: true,
 
-            apellidoPaterno:
-              true,
+          apellidoPaterno: true,
 
-            estaActivo:
-              true,
+          estaActivo: true,
 
-            creadoEn:
-              true,
-          },
-        }),
+          creadoEn: true,
+        },
+      }),
 
-        this.prisma.materia.findMany({
-          take:
-            5,
+      this.prisma.materia.findMany({
+        take: 5,
 
-          orderBy: {
-            creadoEn:
-              'desc',
-          },
+        orderBy: {
+          creadoEn: 'desc',
+        },
 
-          select: {
-            id:
-              true,
+        select: {
+          id: true,
 
-            nombre:
-              true,
+          nombre: true,
 
-            codigo:
-              true,
+          codigo: true,
 
-            estado:
-              true,
+          estado: true,
 
-            creadoEn:
-              true,
-          },
-        }),
+          creadoEn: true,
+        },
+      }),
 
-        this.prisma.planificacionAcademica.findUnique({
-          where: {
-            gestion:
-              gestionActual,
-          },
+      this.prisma.planificacionAcademica.findUnique({
+        where: {
+          gestion: gestionActual,
+        },
 
-          select: {
-            id:
-              true,
+        select: {
+          id: true,
 
-            estaActiva:
-              true,
+          estaActiva: true,
 
-            hitos: {
-              orderBy: {
-                numero:
-                  'asc',
-              },
+          hitos: {
+            orderBy: {
+              numero: 'asc',
+            },
 
-              select: {
-                id:
-                  true,
+            select: {
+              id: true,
 
-                numero:
-                  true,
+              numero: true,
 
-                codigo:
-                  true,
+              codigo: true,
 
-                nombre:
-                  true,
+              nombre: true,
 
-                fechaInicio:
-                  true,
+              fechaInicio: true,
 
-                fechaFin:
-                  true,
-              },
+              fechaFin: true,
             },
           },
-        }),
-      ]);
+        },
+      }),
+    ]);
 
-    const resumenHitos =
-      this.construirResumenHitos(
-        gestionActual,
-        planificacionActual,
-      );
+    const resumenHitos = this.construirResumenHitos(
+      gestionActual,
+      planificacionActual,
+    );
 
     const actividadReciente = [
-      ...usuariosRecientes.map(
-        (
-          usuario,
-        ) => ({
-          id:
-            `usuario-${usuario.id}`,
+      ...usuariosRecientes.map((usuario) => ({
+        id: `usuario-${usuario.id}`,
 
-          tipo:
-            'USUARIO' as const,
+        tipo: 'USUARIO' as const,
 
-          titulo:
-            'Usuario registrado',
+        titulo: 'Usuario registrado',
 
-          descripcion:
-            `${usuario.nombres} ${usuario.apellidoPaterno}`,
+        descripcion: `${usuario.nombres} ${usuario.apellidoPaterno}`,
 
-          fecha:
-            usuario.creadoEn,
+        fecha: usuario.creadoEn,
 
-          estado:
-            usuario.estaActivo
-              ? 'ACTIVO'
-              : 'INACTIVO',
-        }),
-      ),
+        estado: usuario.estaActivo ? 'ACTIVO' : 'INACTIVO',
+      })),
 
-      ...materiasRecientes.map(
-        (
-          materia,
-        ) => ({
-          id:
-            `materia-${materia.id}`,
+      ...materiasRecientes.map((materia) => ({
+        id: `materia-${materia.id}`,
 
-          tipo:
-            'MATERIA' as const,
+        tipo: 'MATERIA' as const,
 
-          titulo:
-            'Materia registrada',
+        titulo: 'Materia registrada',
 
-          descripcion:
-            `${materia.nombre} · ${materia.codigo}`,
+        descripcion: `${materia.nombre} · ${materia.codigo}`,
 
-          fecha:
-            materia.creadoEn,
+        fecha: materia.creadoEn,
 
-          estado:
-            materia.estado,
-        }),
-      ),
+        estado: materia.estado,
+      })),
 
-      ...cursosRecientes.map(
-        (
-          curso,
-        ) => ({
-          id:
-            `curso-${curso.id}`,
+      ...cursosRecientes.map((curso) => ({
+        id: `curso-${curso.id}`,
 
-          tipo:
-            'CURSO' as const,
+        tipo: 'CURSO' as const,
 
-          titulo:
-            'Curso registrado',
+        titulo: 'Curso registrado',
 
-          descripcion:
-            `${curso.materia.nombre} · ${curso.gestion} · Paralelo ${curso.paralelo}`,
+        descripcion: `${curso.materia.nombre} · ${curso.gestion} · Paralelo ${curso.paralelo}`,
 
-          fecha:
-            curso.creadoEn,
+        fecha: curso.creadoEn,
 
-          estado:
-            curso.estado,
-        }),
-      ),
+        estado: curso.estado,
+      })),
     ]
-      .sort(
-        (
-          a,
-          b,
-        ) =>
-          b.fecha.getTime() -
-          a.fecha.getTime(),
-      )
-      .slice(
-        0,
-        8,
-      );
+      .sort((a, b) => b.fecha.getTime() - a.fecha.getTime())
+      .slice(0, 8);
 
-    const alertas =
-      this.crearAlertas(
-        pendientesActivacion,
-        usuariosDesactivados,
-        materiasInactivas,
-        cursosInactivos,
-        cursosFinalizadosRecientes,
-        resumenHitos,
-      );
+    const alertas = this.crearAlertas(
+      pendientesActivacion,
+      usuariosDesactivados,
+      materiasInactivas,
+      cursosInactivos,
+      cursosFinalizadosRecientes,
+      resumenHitos,
+    );
 
     return {
       gestionActual,
 
-      actualizadoEn:
-        ahora,
+      actualizadoEn: ahora,
 
       usuarios: {
-        total:
-          totalUsuarios,
+        total: totalUsuarios,
 
         estudiantes,
 
@@ -921,11 +620,9 @@ export class DashboardService {
 
         administradores,
 
-        activos:
-          usuariosActivos,
+        activos: usuariosActivos,
 
-        desactivados:
-          usuariosDesactivados,
+        desactivados: usuariosDesactivados,
 
         cuentasActivadas,
 
@@ -933,110 +630,63 @@ export class DashboardService {
       },
 
       materias: {
-        total:
-          totalMaterias,
+        total: totalMaterias,
 
-        activas:
-          materiasActivas,
+        activas: materiasActivas,
 
-        inactivas:
-          materiasInactivas,
+        inactivas: materiasInactivas,
       },
 
       cursos: {
-        total:
-          totalCursos,
+        total: totalCursos,
 
-        activos:
-          cursosActivos,
+        activos: cursosActivos,
 
-        inactivos:
-          cursosInactivos,
+        inactivos: cursosInactivos,
 
-        finalizados:
-          cursosFinalizados,
+        finalizados: cursosFinalizados,
       },
 
-      hitos:
-        resumenHitos,
+      hitos: resumenHitos,
 
-      cursosRecientes:
-        cursosRecientes.map(
-          (
-            curso,
-          ) => ({
-            id:
-              curso.id,
+      cursosRecientes: cursosRecientes.map((curso) => ({
+        id: curso.id,
 
-            materia:
-              curso.materia.nombre,
+        materia: curso.materia.nombre,
 
-            codigo:
-              curso.materia.codigo,
+        codigo: curso.materia.codigo,
 
-            gestion:
-              curso.gestion,
+        gestion: curso.gestion,
 
-            paralelo:
-              curso.paralelo,
+        paralelo: curso.paralelo,
 
-            semestre:
-              curso.semestre,
+        semestre: curso.semestre,
 
-            estado:
-              curso.estado,
+        estado: curso.estado,
 
-            docente: [
-              curso.docente.nombres,
-              curso.docente.apellidoPaterno,
-              curso.docente.apellidoMaterno,
-            ]
-              .filter(
-                Boolean,
-              )
-              .join(
-                ' ',
-              ),
+        docente: [
+          curso.docente.nombres,
+          curso.docente.apellidoPaterno,
+          curso.docente.apellidoMaterno,
+        ]
+          .filter(Boolean)
+          .join(' '),
 
-            creadoEn:
-              curso.creadoEn,
-          }),
-        ),
+        creadoEn: curso.creadoEn,
+      })),
 
       actividadReciente,
 
       alertas,
 
       resumenAlertas: {
-        total:
-          alertas.length,
+        total: alertas.length,
 
-        altas:
-          alertas.filter(
-            (
-              alerta,
-            ) =>
-              alerta.prioridad ===
-              'ALTA',
-          ).length,
+        altas: alertas.filter((alerta) => alerta.prioridad === 'ALTA').length,
 
-        medias:
-          alertas.filter(
-            (
-              alerta,
-            ) =>
-              alerta.prioridad ===
-              'MEDIA',
-          ).length,
+        medias: alertas.filter((alerta) => alerta.prioridad === 'MEDIA').length,
 
-        bajas:
-          alertas.filter(
-            (
-              alerta,
-            ) =>
-              alerta.prioridad ===
-              'BAJA',
-          ).length,
+        bajas: alertas.filter((alerta) => alerta.prioridad === 'BAJA').length,
       },
     };
   }

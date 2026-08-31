@@ -13,212 +13,99 @@ import {
   TipoPreguntaQuiz,
 } from '../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-import type {
-  UsuarioAutenticado,
-} from '../archivos/interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from '../archivos/interfaces/usuario-autenticado.interface';
 
-import {
-  GenerarBorradorPreguntasQuizDto,
-} from './dto/generar-borrador-preguntas-quiz.dto';
+import { GenerarBorradorPreguntasQuizDto } from './dto/generar-borrador-preguntas-quiz.dto';
 
 type FragmentoGeneracion = {
-  id:
-    number;
+  id: number;
 
-  tituloReferencia:
-    string | null;
+  tituloReferencia: string | null;
 
-  tipoReferencia:
-    string | null;
+  tipoReferencia: string | null;
 
-  texto:
-    string;
+  texto: string;
 };
 
 @Injectable()
 export class QuizGeneradorService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  private normalizarEspacios(
-    texto:
-      string,
-  ) {
-    return texto
-      .replace(
-        /\s+/g,
-        ' ',
-      )
-      .trim();
+  private normalizarEspacios(texto: string) {
+    return texto.replace(/\s+/g, ' ').trim();
   }
 
-  private dividirOraciones(
-    texto:
-      string,
-  ) {
-    return this.normalizarEspacios(
-      texto,
-    )
-      .split(
-        /(?<=[.!?])\s+/,
-      )
-      .map(
-        (
-          oracion,
-        ) =>
-          oracion.trim(),
-      )
-      .filter(
-        (
-          oracion,
-        ) =>
-          oracion.length >=
-            45 &&
-          oracion.length <=
-            360,
-      );
+  private dividirOraciones(texto: string) {
+    return this.normalizarEspacios(texto)
+      .split(/(?<=[.!?])\s+/)
+      .map((oracion) => oracion.trim())
+      .filter((oracion) => oracion.length >= 45 && oracion.length <= 360);
   }
 
-  private obtenerBancoOraciones(
-    fragmentos:
-      FragmentoGeneracion[],
-  ) {
-    const banco =
-      fragmentos.flatMap(
-        (
-          fragmento,
-        ) =>
-          this.dividirOraciones(
-            fragmento.texto,
-          ).map(
-            (
-              texto,
-            ) => ({
-              fragmentoId:
-                fragmento.id,
+  private obtenerBancoOraciones(fragmentos: FragmentoGeneracion[]) {
+    const banco = fragmentos.flatMap((fragmento) =>
+      this.dividirOraciones(fragmento.texto).map((texto) => ({
+        fragmentoId: fragmento.id,
 
-              texto,
-            }),
-          ),
-      );
-
-    const vistos =
-      new Set<
-        string
-      >();
-
-    return banco.filter(
-      (
-        item,
-      ) => {
-        const clave =
-          item.texto.toLocaleLowerCase(
-            'es',
-          );
-
-        if (
-          vistos.has(
-            clave,
-          )
-        ) {
-          return false;
-        }
-
-        vistos.add(
-          clave,
-        );
-
-        return true;
-      },
+        texto,
+      })),
     );
+
+    const vistos = new Set<string>();
+
+    return banco.filter((item) => {
+      const clave = item.texto.toLocaleLowerCase('es');
+
+      if (vistos.has(clave)) {
+        return false;
+      }
+
+      vistos.add(clave);
+
+      return true;
+    });
   }
 
   private tomarDistractores(
-    banco:
-      Array<{
-        fragmentoId:
-          number;
+    banco: Array<{
+      fragmentoId: number;
 
-        texto:
-          string;
-      }>,
+      texto: string;
+    }>,
 
-    correcta:
-      string,
+    correcta: string,
 
-    fragmentoId:
-      number,
+    fragmentoId: number,
 
-    cantidad:
-      number,
+    cantidad: number,
   ) {
-    const candidatos =
-      banco.filter(
-        (
-          item,
-        ) =>
-          item.texto !==
-            correcta &&
-          item.fragmentoId !==
-            fragmentoId,
-      );
+    const candidatos = banco.filter(
+      (item) => item.texto !== correcta && item.fragmentoId !== fragmentoId,
+    );
 
-    const resultado:
-      string[] =
-      [];
+    const resultado: string[] = [];
 
-    for (
-      const candidato
-      of candidatos
-    ) {
-      if (
-        resultado.length >=
-        cantidad
-      ) {
+    for (const candidato of candidatos) {
+      if (resultado.length >= cantidad) {
         break;
       }
 
-      resultado.push(
-        candidato.texto,
-      );
+      resultado.push(candidato.texto);
     }
 
-    if (
-      resultado.length <
-      cantidad
-    ) {
-      const secundarios =
-        banco.filter(
-          (
-            item,
-          ) =>
-            item.texto !==
-              correcta &&
-            !resultado.includes(
-              item.texto,
-            ),
-        );
+    if (resultado.length < cantidad) {
+      const secundarios = banco.filter(
+        (item) => item.texto !== correcta && !resultado.includes(item.texto),
+      );
 
-      for (
-        const candidato
-        of secundarios
-      ) {
-        if (
-          resultado.length >=
-          cantidad
-        ) {
+      for (const candidato of secundarios) {
+        if (resultado.length >= cantidad) {
           break;
         }
 
-        resultado.push(
-          candidato.texto,
-        );
+        resultado.push(candidato.texto);
       }
     }
 
@@ -226,80 +113,52 @@ export class QuizGeneradorService {
   }
 
   private construirPreguntaOpcionMultiple(
-    fragmento:
-      FragmentoGeneracion,
+    fragmento: FragmentoGeneracion,
 
-    correcta:
-      string,
+    correcta: string,
 
-    distractores:
-      string[],
+    distractores: string[],
 
-    dificultad:
-      DificultadQuiz,
+    dificultad: DificultadQuiz,
 
-    orden:
-      number,
+    orden: number,
   ) {
     const referencia =
-      fragmento.tituloReferencia ??
-      'el fragmento jurídico seleccionado';
+      fragmento.tituloReferencia ?? 'el fragmento jurídico seleccionado';
 
     const enunciado =
-      dificultad ===
-      DificultadQuiz.FACIL
+      dificultad === DificultadQuiz.FACIL
         ? `Según ${referencia}, ¿cuál de las siguientes afirmaciones corresponde al texto seleccionado?`
-        : dificultad ===
-            DificultadQuiz.DIFICIL
+        : dificultad === DificultadQuiz.DIFICIL
           ? `A partir de ${referencia}, identifica la afirmación que se ajusta con mayor precisión al contenido jurídico seleccionado.`
           : `Con base en ${referencia}, selecciona la afirmación compatible con el contenido del documento.`;
 
-    const opciones =
-      [
-        correcta,
-        ...distractores,
-      ]
-        .slice(
-          0,
-          4,
-        )
-        .map(
-          (
-            texto,
-            indice,
-          ) => ({
-            texto,
+    const opciones = [correcta, ...distractores]
+      .slice(0, 4)
+      .map((texto, indice) => ({
+        texto,
 
-            esCorrecta:
-              indice ===
-              0,
+        esCorrecta: indice === 0,
 
-            orden:
-              indice,
-          }));
+        orden: indice,
+      }));
 
     return {
-      fragmentoId:
-        fragmento.id,
+      fragmentoId: fragmento.id,
 
       enunciado,
 
-      tipo:
-        TipoPreguntaQuiz.OPCION_MULTIPLE,
+      tipo: TipoPreguntaQuiz.OPCION_MULTIPLE,
 
       dificultad,
 
-      origen:
-        OrigenPreguntaQuiz.GENERADA,
+      origen: OrigenPreguntaQuiz.GENERADA,
 
-      explicacion:
-        `La respuesta correcta se encuentra en ${referencia}.`,
+      explicacion: `La respuesta correcta se encuentra en ${referencia}.`,
 
-      tiempoSegundos:
-        null,
+      tiempoSegundos: null,
 
-      puntaje:
-        1,
+      puntaje: 1,
 
       orden,
 
@@ -308,156 +167,106 @@ export class QuizGeneradorService {
   }
 
   private construirPreguntaVerdaderoFalso(
-    fragmento:
-      FragmentoGeneracion,
+    fragmento: FragmentoGeneracion,
 
-    afirmacion:
-      string,
+    afirmacion: string,
 
-    dificultad:
-      DificultadQuiz,
+    dificultad: DificultadQuiz,
 
-    orden:
-      number,
+    orden: number,
   ) {
     const referencia =
-      fragmento.tituloReferencia ??
-      'el fragmento seleccionado';
+      fragmento.tituloReferencia ?? 'el fragmento seleccionado';
 
     return {
-      fragmentoId:
-        fragmento.id,
+      fragmentoId: fragmento.id,
 
-      enunciado:
-        `De acuerdo con ${referencia}, determina si la siguiente afirmación es correcta: “${afirmacion}”`,
+      enunciado: `De acuerdo con ${referencia}, determina si la siguiente afirmación es correcta: “${afirmacion}”`,
 
-      tipo:
-        TipoPreguntaQuiz.VERDADERO_FALSO,
+      tipo: TipoPreguntaQuiz.VERDADERO_FALSO,
 
       dificultad,
 
-      origen:
-        OrigenPreguntaQuiz.GENERADA,
+      origen: OrigenPreguntaQuiz.GENERADA,
 
-      explicacion:
-        `La afirmación fue tomada directamente del contenido seleccionado de ${referencia}.`,
+      explicacion: `La afirmación fue tomada directamente del contenido seleccionado de ${referencia}.`,
 
-      tiempoSegundos:
-        null,
+      tiempoSegundos: null,
 
-      puntaje:
-        1,
+      puntaje: 1,
 
       orden,
 
       opciones: [
         {
-          texto:
-            'Verdadero',
+          texto: 'Verdadero',
 
-          esCorrecta:
-            true,
+          esCorrecta: true,
 
-          orden:
-            0,
+          orden: 0,
         },
 
         {
-          texto:
-            'Falso',
+          texto: 'Falso',
 
-          esCorrecta:
-            false,
+          esCorrecta: false,
 
-          orden:
-            1,
+          orden: 1,
         },
       ],
     };
   }
 
   private construirSeleccionMultiple(
-    fragmento:
-      FragmentoGeneracion,
+    fragmento: FragmentoGeneracion,
 
-    correctas:
-      string[],
+    correctas: string[],
 
-    distractores:
-      string[],
+    distractores: string[],
 
-    dificultad:
-      DificultadQuiz,
+    dificultad: DificultadQuiz,
 
-    orden:
-      number,
+    orden: number,
   ) {
     const referencia =
-      fragmento.tituloReferencia ??
-      'el fragmento jurídico seleccionado';
+      fragmento.tituloReferencia ?? 'el fragmento jurídico seleccionado';
 
-    const opciones =
-      [
-        ...correctas.map(
-          (
-            texto,
-          ) => ({
-            texto,
+    const opciones = [
+      ...correctas.map((texto) => ({
+        texto,
 
-            esCorrecta:
-              true,
-          }),
-        ),
+        esCorrecta: true,
+      })),
 
-        ...distractores.map(
-          (
-            texto,
-          ) => ({
-            texto,
+      ...distractores.map((texto) => ({
+        texto,
 
-            esCorrecta:
-              false,
-          }),
-        ),
-      ]
-        .slice(
-          0,
-          4,
-        )
-        .map(
-          (
-            opcion,
-            indice,
-          ) => ({
-            ...opcion,
+        esCorrecta: false,
+      })),
+    ]
+      .slice(0, 4)
+      .map((opcion, indice) => ({
+        ...opcion,
 
-            orden:
-              indice,
-          }));
+        orden: indice,
+      }));
 
     return {
-      fragmentoId:
-        fragmento.id,
+      fragmentoId: fragmento.id,
 
-      enunciado:
-        `Según ${referencia}, selecciona todas las afirmaciones que corresponden al contenido del documento.`,
+      enunciado: `Según ${referencia}, selecciona todas las afirmaciones que corresponden al contenido del documento.`,
 
-      tipo:
-        TipoPreguntaQuiz.SELECCION_MULTIPLE,
+      tipo: TipoPreguntaQuiz.SELECCION_MULTIPLE,
 
       dificultad,
 
-      origen:
-        OrigenPreguntaQuiz.GENERADA,
+      origen: OrigenPreguntaQuiz.GENERADA,
 
-      explicacion:
-        `Las respuestas correctas se fundamentan en ${referencia}.`,
+      explicacion: `Las respuestas correctas se fundamentan en ${referencia}.`,
 
-      tiempoSegundos:
-        null,
+      tiempoSegundos: null,
 
-      puntaje:
-        1,
+      puntaje: 1,
 
       orden,
 
@@ -466,191 +275,120 @@ export class QuizGeneradorService {
   }
 
   async generarBorrador(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
 
-    datos:
-      GenerarBorradorPreguntasQuizDto,
+    datos: GenerarBorradorPreguntasQuizDto,
   ) {
-    if (
-      usuario.rol !==
-      Rol.DOCENTE
-    ) {
-      throw new ForbiddenException(
-        'Solo el docente puede generar preguntas',
-      );
+    if (usuario.rol !== Rol.DOCENTE) {
+      throw new ForbiddenException('Solo el docente puede generar preguntas');
     }
 
-    const quiz =
-      await this.prisma.quizCurso.findFirst({
-        where: {
-          id:
-            quizId,
+    const quiz = await this.prisma.quizCurso.findFirst({
+      where: {
+        id: quizId,
 
-          cursoId,
+        cursoId,
 
-          creadorId:
-            usuario.id,
+        creadorId: usuario.id,
 
-          estado:
-            EstadoQuiz.BORRADOR,
-        },
+        estado: EstadoQuiz.BORRADOR,
+      },
 
-        select: {
-          id:
-            true,
+      select: {
+        id: true,
 
-          titulo:
-            true,
+        titulo: true,
 
-          dificultad:
-            true,
+        dificultad: true,
 
-          cantidadPreguntas:
-            true,
-        },
-      });
+        cantidadPreguntas: true,
+      },
+    });
 
-    if (
-      !quiz
-    ) {
+    if (!quiz) {
       throw new NotFoundException(
         'El Quiz no existe, no pertenece al docente o ya no está en borrador',
       );
     }
 
-    const fragmentos =
-      await this.prisma.fragmentoFuenteQuiz.findMany({
-        where: {
-          id: {
-            in:
-              datos.fragmentoIds,
-          },
-
-          fuente: {
-            quizId,
-          },
+    const fragmentos = await this.prisma.fragmentoFuenteQuiz.findMany({
+      where: {
+        id: {
+          in: datos.fragmentoIds,
         },
 
-        select: {
-          id:
-            true,
-
-          tituloReferencia:
-            true,
-
-          tipoReferencia:
-            true,
-
-          texto:
-            true,
+        fuente: {
+          quizId,
         },
+      },
 
-        orderBy: {
-          orden:
-            'asc',
-        },
-      });
+      select: {
+        id: true,
 
-    if (
-      fragmentos.length !==
-      new Set(
-        datos.fragmentoIds,
-      ).size
-    ) {
+        tituloReferencia: true,
+
+        tipoReferencia: true,
+
+        texto: true,
+      },
+
+      orderBy: {
+        orden: 'asc',
+      },
+    });
+
+    if (fragmentos.length !== new Set(datos.fragmentoIds).size) {
       throw new BadRequestException(
         'Uno o más fragmentos no pertenecen al Quiz',
       );
     }
 
-    const banco =
-      this.obtenerBancoOraciones(
-        fragmentos,
-      );
+    const banco = this.obtenerBancoOraciones(fragmentos);
 
-    if (
-      banco.length <
-      2
-    ) {
+    if (banco.length < 2) {
       throw new BadRequestException(
         'Los fragmentos seleccionados no contienen suficiente texto útil para generar un borrador de preguntas',
       );
     }
 
-    const tipos =
-      datos.tipos?.length
-        ? datos.tipos
-        : [
-            TipoPreguntaQuiz.OPCION_MULTIPLE,
-          ];
+    const tipos = datos.tipos?.length
+      ? datos.tipos
+      : [TipoPreguntaQuiz.OPCION_MULTIPLE];
 
-    const preguntas:
-      Array<Record<string, unknown>> =
-      [];
+    const preguntas: Array<Record<string, unknown>> = [];
 
-    let cursorBanco =
-      0;
+    let cursorBanco = 0;
 
-    let cursorFragmento =
-      0;
+    let cursorFragmento = 0;
 
     while (
-      preguntas.length <
-        datos.cantidad &&
-      cursorBanco <
-        banco.length *
-          3
+      preguntas.length < datos.cantidad &&
+      cursorBanco < banco.length * 3
     ) {
-      const fragmento =
-        fragmentos[
-          cursorFragmento %
-            fragmentos.length
-        ];
+      const fragmento = fragmentos[cursorFragmento % fragmentos.length];
 
-      const oracionesFragmento =
-        banco.filter(
-          (
-            item,
-          ) =>
-            item.fragmentoId ===
-            fragmento.id,
-        );
+      const oracionesFragmento = banco.filter(
+        (item) => item.fragmentoId === fragmento.id,
+      );
 
-      if (
-        oracionesFragmento.length ===
-        0
-      ) {
-        cursorFragmento +=
-          1;
+      if (oracionesFragmento.length === 0) {
+        cursorFragmento += 1;
 
-        cursorBanco +=
-          1;
+        cursorBanco += 1;
 
         continue;
       }
 
       const principal =
-        oracionesFragmento[
-          cursorBanco %
-            oracionesFragmento.length
-        ];
+        oracionesFragmento[cursorBanco % oracionesFragmento.length];
 
-      const tipo =
-        tipos[
-          preguntas.length %
-            tipos.length
-        ];
+      const tipo = tipos[preguntas.length % tipos.length];
 
-      if (
-        tipo ===
-        TipoPreguntaQuiz.VERDADERO_FALSO
-      ) {
+      if (tipo === TipoPreguntaQuiz.VERDADERO_FALSO) {
         preguntas.push(
           this.construirPreguntaVerdaderoFalso(
             fragmento,
@@ -659,55 +397,30 @@ export class QuizGeneradorService {
             preguntas.length,
           ),
         );
-      } else if (
-        tipo ===
-        TipoPreguntaQuiz.SELECCION_MULTIPLE
-      ) {
-        const correctas =
-          oracionesFragmento
-            .slice(
-              0,
-              2,
-            )
-            .map(
-              (
-                item,
-              ) =>
-                item.texto,
-            );
+      } else if (tipo === TipoPreguntaQuiz.SELECCION_MULTIPLE) {
+        const correctas = oracionesFragmento
+          .slice(0, 2)
+          .map((item) => item.texto);
 
-        if (
-          correctas.length <
-          2
-        ) {
-          cursorBanco +=
-            1;
+        if (correctas.length < 2) {
+          cursorBanco += 1;
 
-          cursorFragmento +=
-            1;
+          cursorFragmento += 1;
 
           continue;
         }
 
-        const distractores =
-          this.tomarDistractores(
-            banco,
-            correctas[
-              0
-            ],
-            fragmento.id,
-            2,
-          );
+        const distractores = this.tomarDistractores(
+          banco,
+          correctas[0],
+          fragmento.id,
+          2,
+        );
 
-        if (
-          distractores.length <
-          2
-        ) {
-          cursorBanco +=
-            1;
+        if (distractores.length < 2) {
+          cursorBanco += 1;
 
-          cursorFragmento +=
-            1;
+          cursorFragmento += 1;
 
           continue;
         }
@@ -722,23 +435,17 @@ export class QuizGeneradorService {
           ),
         );
       } else {
-        const distractores =
-          this.tomarDistractores(
-            banco,
-            principal.texto,
-            fragmento.id,
-            3,
-          );
+        const distractores = this.tomarDistractores(
+          banco,
+          principal.texto,
+          fragmento.id,
+          3,
+        );
 
-        if (
-          distractores.length <
-          3
-        ) {
-          cursorBanco +=
-            1;
+        if (distractores.length < 3) {
+          cursorBanco += 1;
 
-          cursorFragmento +=
-            1;
+          cursorFragmento += 1;
 
           continue;
         }
@@ -754,43 +461,31 @@ export class QuizGeneradorService {
         );
       }
 
-      cursorBanco +=
-        1;
+      cursorBanco += 1;
 
-      cursorFragmento +=
-        1;
+      cursorFragmento += 1;
     }
 
-    if (
-      preguntas.length ===
-      0
-    ) {
+    if (preguntas.length === 0) {
       throw new BadRequestException(
         'No fue posible construir preguntas con los fragmentos seleccionados',
       );
     }
 
     return {
-      quizId:
-        quiz.id,
+      quizId: quiz.id,
 
-      titulo:
-        quiz.titulo,
+      titulo: quiz.titulo,
 
-      motor:
-        'BORRADOR_INTELIGENTE_LOCAL',
+      motor: 'BORRADOR_INTELIGENTE_LOCAL',
 
-      requiereRevisionDocente:
-        true,
+      requiereRevisionDocente: true,
 
-      cantidadSolicitada:
-        datos.cantidad,
+      cantidadSolicitada: datos.cantidad,
 
-      cantidadGenerada:
-        preguntas.length,
+      cantidadGenerada: preguntas.length,
 
-      dificultad:
-        datos.dificultad,
+      dificultad: datos.dificultad,
 
       advertencia:
         'Las preguntas generadas son un borrador y deben ser revisadas, editadas o descartadas por el docente antes de guardarse en el Quiz.',

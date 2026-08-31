@@ -1,11 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 import {
   AlineacionReporte,
@@ -18,18 +13,11 @@ import {
   ValorCeldaReporte,
 } from '../reportes';
 
-import {
-  ForoCalificacionService,
-} from './foro-calificacion.service';
+import { ForoCalificacionService } from './foro-calificacion.service';
 
-import type {
-  UsuarioAutenticado,
-} from './interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
-type FilaResumenForo = Record<
-  string,
-  ValorCeldaReporte
-> & {
+type FilaResumenForo = Record<string, ValorCeldaReporte> & {
   estudiantes: number;
   calificadas: number;
   pendientes: number;
@@ -37,10 +25,7 @@ type FilaResumenForo = Record<
   puntajeMaximo: number;
 };
 
-type FilaCalificacionPdf = Record<
-  string,
-  ValorCeldaReporte
-> & {
+type FilaCalificacionPdf = Record<string, ValorCeldaReporte> & {
   estudiante: string;
   participacion: string;
   entrega: string;
@@ -52,18 +37,12 @@ type FilaCalificacionPdf = Record<
   estado: string;
 };
 
-type FilaRetroalimentacionPdf = Record<
-  string,
-  ValorCeldaReporte
-> & {
+type FilaRetroalimentacionPdf = Record<string, ValorCeldaReporte> & {
   estudiante: string;
   retroalimentacion: string;
 };
 
-type FilaCalificacionCompleta = Record<
-  string,
-  ValorCeldaReporte
-> & {
+type FilaCalificacionCompleta = Record<string, ValorCeldaReporte> & {
   estudiante: string;
   correo: string;
   participacion: string;
@@ -86,14 +65,11 @@ type FilaReporteForo =
 @Injectable()
 export class ForoReportesService {
   constructor(
-    private readonly prisma:
-      PrismaService,
+    private readonly prisma: PrismaService,
 
-    private readonly calificacionService:
-      ForoCalificacionService,
+    private readonly calificacionService: ForoCalificacionService,
 
-    private readonly reportesVerificacionService:
-      ReportesVerificacionService,
+    private readonly reportesVerificacionService: ReportesVerificacionService,
   ) {}
 
   async generarCalificaciones(
@@ -102,217 +78,143 @@ export class ForoReportesService {
     foroId: number,
     formatoSolicitado: string,
   ): Promise<ArchivoReporteGenerado> {
-    const formato =
-      this.normalizarFormato(
-        formatoSolicitado,
-      );
+    const formato = this.normalizarFormato(formatoSolicitado);
 
-    const panel =
-      await this.calificacionService.obtenerPanel(
-        usuario,
-        cursoId,
-        foroId,
-      );
+    const panel = await this.calificacionService.obtenerPanel(
+      usuario,
+      cursoId,
+      foroId,
+    );
 
-    const puntajeMaximo =
-      Number(
-        panel.actividad.puntajeMaximo ??
-          100,
-      );
+    const puntajeMaximo = Number(panel.actividad.puntajeMaximo ?? 100);
 
-    const nombreGenerador =
-      await this.obtenerNombreGenerador(
-        usuario,
-      );
+    const nombreGenerador = await this.obtenerNombreGenerador(usuario);
 
-    const filasCompletas:
-      FilaCalificacionCompleta[] =
-      panel.estudiantes.map(
-        (item) => {
-          const calificacion =
-            item.calificacion;
+    const filasCompletas: FilaCalificacionCompleta[] = panel.estudiantes.map(
+      (item) => {
+        const calificacion = item.calificacion;
 
-          return {
-            estudiante: [
-              item.estudiante.nombres,
-              item.estudiante.apellidoPaterno,
-              item.estudiante.apellidoMaterno,
-            ]
-              .filter(Boolean)
-              .join(' '),
+        return {
+          estudiante: [
+            item.estudiante.nombres,
+            item.estudiante.apellidoPaterno,
+            item.estudiante.apellidoMaterno,
+          ]
+            .filter(Boolean)
+            .join(' '),
 
-            correo:
-              item.estudiante.correo ??
-              '—',
+          correo: item.estudiante.correo ?? '—',
 
-            participacion:
-              item.tieneRespuesta
-                ? 'Participó'
-                : 'Sin respuesta',
+          participacion: item.tieneRespuesta ? 'Participó' : 'Sin respuesta',
 
-            entrega:
-              !item.tieneRespuesta
-                ? '—'
-                : item.entregadaTarde
-                  ? 'Fuera de plazo'
-                  : 'A tiempo',
+          entrega: !item.tieneRespuesta
+            ? '—'
+            : item.entregadaTarde
+              ? 'Fuera de plazo'
+              : 'A tiempo',
 
-            notaBase:
-              this.numeroONull(
-                calificacion?.notaBase,
-              ),
+          notaBase: this.numeroONull(calificacion?.notaBase),
 
-            descuento:
-              this.numeroONull(
-                calificacion?.descuentoRetraso,
-              ),
+          descuento: this.numeroONull(calificacion?.descuentoRetraso),
 
-            descuentoComentarios:
-              this.numeroONull(
-                calificacion?.descuentoComentarios,
-              ),
+          descuentoComentarios: this.numeroONull(
+            calificacion?.descuentoComentarios,
+          ),
 
-            ajuste:
-              this.numeroONull(
-                calificacion?.ajusteIndividual,
-              ),
+          ajuste: this.numeroONull(calificacion?.ajusteIndividual),
 
-            notaFinal:
-              this.numeroONull(
-                calificacion?.notaFinal,
-              ),
+          notaFinal: this.numeroONull(calificacion?.notaFinal),
 
-            estado:
-              this.etiqueta(
-                item.estado,
-              ),
+          estado: this.etiqueta(item.estado),
 
-            retroalimentacion:
-              calificacion?.retroalimentacion?.trim() ||
-              '—',
-          };
-        },
-      );
+          retroalimentacion: calificacion?.retroalimentacion?.trim() || '—',
+        };
+      },
+    );
 
-    const resumen:
-      FilaResumenForo = {
-        estudiantes:
-          panel.resumen.totalEstudiantes,
+    const resumen: FilaResumenForo = {
+      estudiantes: panel.resumen.totalEstudiantes,
 
-        calificadas:
-          panel.resumen.calificadas,
+      calificadas: panel.resumen.calificadas,
 
-        pendientes:
-          panel.resumen.pendientes,
+      pendientes: panel.resumen.pendientes,
 
-        sinRespuesta:
-          panel.resumen.sinRespuesta,
+      sinRespuesta: panel.resumen.sinRespuesta,
 
-        puntajeMaximo,
-      };
+      puntajeMaximo,
+    };
 
-    const definicion:
-      DefinicionReporte<FilaReporteForo> = {
-        metadatos: {
-          titulo:
-            'Calificaciones del foro',
+    const definicion: DefinicionReporte<FilaReporteForo> = {
+      metadatos: {
+        titulo: 'Calificaciones del foro',
 
-          subtitulo:
-            panel.foro.titulo,
+        subtitulo: panel.foro.titulo,
 
-          descripcion:
-            'Resumen académico de participación, entrega y resultados obtenidos por los estudiantes en el foro.',
+        descripcion:
+          'Resumen académico de participación, entrega y resultados obtenidos por los estudiantes en el foro.',
 
-          generadoPor:
-            nombreGenerador,
+        generadoPor: nombreGenerador,
 
-          filtros: {
-            Estado:
-              this.etiqueta(
-                panel.foro.estado,
-              ),
+        filtros: {
+          Estado: this.etiqueta(panel.foro.estado),
 
-            Evaluación:
-              this.etiqueta(
-                panel.foro.tipoEvaluacion,
-              ),
+          Evaluación: this.etiqueta(panel.foro.tipoEvaluacion),
 
-            'Modalidad de nota':
-              this.etiqueta(
-                panel.foro.modalidadNota,
-              ),
-          },
-
-          textoPie:
-            'IusAcademy · Formación jurídica por competencias · UNIFRANZ',
+          'Modalidad de nota': this.etiqueta(panel.foro.modalidadNota),
         },
 
-        opciones: {
-          orientacion:
-            OrientacionReporte.HORIZONTAL,
+        textoPie: 'IusAcademy · Formación jurídica por competencias · UNIFRANZ',
+      },
 
-          incluirQr:
-            true,
+      opciones: {
+        orientacion: OrientacionReporte.HORIZONTAL,
 
-          incluirFiltros:
-            true,
+        incluirQr: true,
 
-          incluirFechaHora:
-            true,
+        incluirFiltros: true,
 
-          nombreHojaExcel:
-            'Calificaciones',
+        incluirFechaHora: true,
 
-          incluirBomCsv:
-            true,
-        },
+        nombreHojaExcel: 'Calificaciones',
 
-        secciones:
-          formato === FormatoReporte.PDF
-            ? this.construirSeccionesPdf(
-                resumen,
-                filasCompletas,
-                panel.resumen.calificadas,
-                panel.resumen.pendientes,
-                panel.resumen.sinRespuesta,
-              )
-            : this.construirSeccionesDatos(
-                resumen,
-                filasCompletas,
-                panel.resumen.calificadas,
-                panel.resumen.pendientes,
-                panel.resumen.sinRespuesta,
-              ),
-      };
+        incluirBomCsv: true,
+      },
+
+      secciones:
+        formato === FormatoReporte.PDF
+          ? this.construirSeccionesPdf(
+              resumen,
+              filasCompletas,
+              panel.resumen.calificadas,
+              panel.resumen.pendientes,
+              panel.resumen.sinRespuesta,
+            )
+          : this.construirSeccionesDatos(
+              resumen,
+              filasCompletas,
+              panel.resumen.calificadas,
+              panel.resumen.pendientes,
+              panel.resumen.sinRespuesta,
+            ),
+    };
 
     return this.reportesVerificacionService.generarVerificable(
       formato,
       definicion,
       {
-        tipo:
-          'FORO_CALIFICACIONES',
+        tipo: 'FORO_CALIFICACIONES',
 
-        generadoPorId:
-          usuario.id,
+        generadoPorId: usuario.id,
 
         filtros: {
           cursoId,
           foroId,
 
-          estado:
-            String(
-              panel.foro.estado,
-            ),
+          estado: String(panel.foro.estado),
 
-          tipoEvaluacion:
-            String(
-              panel.foro.tipoEvaluacion,
-            ),
+          tipoEvaluacion: String(panel.foro.tipoEvaluacion),
 
-          modalidadNota:
-            String(
-              panel.foro.modalidadNota,
-            ),
+          modalidadNota: String(panel.foro.modalidadNota),
         },
       },
       `calificaciones-foro-${foroId}-iusacademy`,
@@ -320,595 +222,413 @@ export class ForoReportesService {
   }
 
   private construirSeccionesPdf(
-    resumen:
-      FilaResumenForo,
+    resumen: FilaResumenForo,
 
-    filas:
-      FilaCalificacionCompleta[],
+    filas: FilaCalificacionCompleta[],
 
-    calificadas:
-      number,
+    calificadas: number,
 
-    pendientes:
-      number,
+    pendientes: number,
 
-    sinRespuesta:
-      number,
+    sinRespuesta: number,
   ): DefinicionReporte<FilaReporteForo>['secciones'] {
-    const detalle:
-      FilaCalificacionPdf[] =
-      filas.map(
-        (fila) => ({
-          estudiante:
-            fila.estudiante,
+    const detalle: FilaCalificacionPdf[] = filas.map((fila) => ({
+      estudiante: fila.estudiante,
 
-          participacion:
-            fila.participacion,
+      participacion: fila.participacion,
 
-          entrega:
-            fila.entrega,
+      entrega: fila.entrega,
 
-          notaBase:
-            fila.notaBase,
+      notaBase: fila.notaBase,
 
-          descuento:
-            fila.descuento,
+      descuento: fila.descuento,
 
-          descuentoComentarios:
-            fila.descuentoComentarios,
+      descuentoComentarios: fila.descuentoComentarios,
 
-          ajuste:
-            fila.ajuste,
+      ajuste: fila.ajuste,
 
-          notaFinal:
-            fila.notaFinal,
+      notaFinal: fila.notaFinal,
 
-          estado:
-            fila.estado,
-        }),
-      );
+      estado: fila.estado,
+    }));
 
-    const retroalimentaciones:
-      FilaRetroalimentacionPdf[] =
-      filas.map(
-        (fila) => ({
-          estudiante:
-            fila.estudiante,
+    const retroalimentaciones: FilaRetroalimentacionPdf[] = filas.map(
+      (fila) => ({
+        estudiante: fila.estudiante,
 
-          retroalimentacion:
-            fila.retroalimentacion,
-        }),
-      );
+        retroalimentacion: fila.retroalimentacion,
+      }),
+    );
 
     return [
       {
-        id:
-          'resumen',
+        id: 'resumen',
 
-        titulo:
-          'Resumen general',
+        titulo: 'Resumen general',
 
-        filas: [
-          resumen,
-        ],
+        filas: [resumen],
 
-        mostrarNumeroFila:
-          false,
+        mostrarNumeroFila: false,
 
         columnas: [
           {
-            clave:
-              'estudiantes',
+            clave: 'estudiantes',
 
-            etiqueta:
-              'Estudiantes',
+            etiqueta: 'Estudiantes',
 
-            tipo:
-              TipoDatoReporte.NUMERO,
+            tipo: TipoDatoReporte.NUMERO,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'calificadas',
+            clave: 'calificadas',
 
-            etiqueta:
-              'Calificados',
+            etiqueta: 'Calificados',
 
-            tipo:
-              TipoDatoReporte.NUMERO,
+            tipo: TipoDatoReporte.NUMERO,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'pendientes',
+            clave: 'pendientes',
 
-            etiqueta:
-              'Pendientes',
+            etiqueta: 'Pendientes',
 
-            tipo:
-              TipoDatoReporte.NUMERO,
+            tipo: TipoDatoReporte.NUMERO,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'sinRespuesta',
+            clave: 'sinRespuesta',
 
-            etiqueta:
-              'Sin respuesta',
+            etiqueta: 'Sin respuesta',
 
-            tipo:
-              TipoDatoReporte.NUMERO,
+            tipo: TipoDatoReporte.NUMERO,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'puntajeMaximo',
+            clave: 'puntajeMaximo',
 
-            etiqueta:
-              'Puntaje máximo',
+            etiqueta: 'Puntaje máximo',
 
-            tipo:
-              TipoDatoReporte.NUMERO,
+            tipo: TipoDatoReporte.NUMERO,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
         ],
       },
       {
-        id:
-          'calificaciones',
+        id: 'calificaciones',
 
-        titulo:
-          'Detalle de calificaciones',
+        titulo: 'Detalle de calificaciones',
 
-        descripcion:
-          `${calificadas} calificados · ${pendientes} pendientes · ${sinRespuesta} sin respuesta`,
+        descripcion: `${calificadas} calificados · ${pendientes} pendientes · ${sinRespuesta} sin respuesta`,
 
-        mostrarEncabezado:
-          true,
+        mostrarEncabezado: true,
 
-        mostrarNumeroFila:
-          true,
+        mostrarNumeroFila: true,
 
         columnas: [
           {
-            clave:
-              'estudiante',
+            clave: 'estudiante',
 
-            etiqueta:
-              'Estudiante',
+            etiqueta: 'Estudiante',
 
-            tipo:
-              TipoDatoReporte.TEXTO,
+            tipo: TipoDatoReporte.TEXTO,
 
-            ancho:
-              2.05,
+            ancho: 2.05,
           },
           {
-            clave:
-              'participacion',
+            clave: 'participacion',
 
-            etiqueta:
-              'Participación',
+            etiqueta: 'Participación',
 
-            tipo:
-              TipoDatoReporte.TEXTO,
+            tipo: TipoDatoReporte.TEXTO,
 
-            ancho:
-              1.2,
+            ancho: 1.2,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'entrega',
+            clave: 'entrega',
 
-            etiqueta:
-              'Entrega',
+            etiqueta: 'Entrega',
 
-            tipo:
-              TipoDatoReporte.TEXTO,
+            tipo: TipoDatoReporte.TEXTO,
 
-            ancho:
-              1.1,
+            ancho: 1.1,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'notaBase',
+            clave: 'notaBase',
 
-            etiqueta:
-              'Base',
+            etiqueta: 'Base',
 
-            tipo:
-              TipoDatoReporte.DECIMAL,
+            tipo: TipoDatoReporte.DECIMAL,
 
-            ancho:
-              .82,
+            ancho: 0.82,
 
-            alineacion:
-              AlineacionReporte.DERECHA,
+            alineacion: AlineacionReporte.DERECHA,
           },
           {
-            clave:
-              'descuento',
+            clave: 'descuento',
 
-            etiqueta:
-              'Desc.',
+            etiqueta: 'Desc.',
 
-            tipo:
-              TipoDatoReporte.DECIMAL,
+            tipo: TipoDatoReporte.DECIMAL,
 
-            ancho:
-              .82,
+            ancho: 0.82,
 
-            alineacion:
-              AlineacionReporte.DERECHA,
+            alineacion: AlineacionReporte.DERECHA,
           },
           {
-            clave:
-              'ajuste',
+            clave: 'ajuste',
 
-            etiqueta:
-              'Ajuste',
+            etiqueta: 'Ajuste',
 
-            tipo:
-              TipoDatoReporte.DECIMAL,
+            tipo: TipoDatoReporte.DECIMAL,
 
-            ancho:
-              .82,
+            ancho: 0.82,
 
-            alineacion:
-              AlineacionReporte.DERECHA,
+            alineacion: AlineacionReporte.DERECHA,
           },
           {
-            clave:
-              'notaFinal',
+            clave: 'notaFinal',
 
-            etiqueta:
-              'Final',
+            etiqueta: 'Final',
 
-            tipo:
-              TipoDatoReporte.DECIMAL,
+            tipo: TipoDatoReporte.DECIMAL,
 
-            ancho:
-              .9,
+            ancho: 0.9,
 
-            alineacion:
-              AlineacionReporte.DERECHA,
+            alineacion: AlineacionReporte.DERECHA,
           },
           {
-            clave:
-              'estado',
+            clave: 'estado',
 
-            etiqueta:
-              'Estado',
+            etiqueta: 'Estado',
 
-            tipo:
-              TipoDatoReporte.TEXTO,
+            tipo: TipoDatoReporte.TEXTO,
 
-            ancho:
-              1.1,
+            ancho: 1.1,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
         ],
 
-        filas:
-          detalle,
+        filas: detalle,
       },
       {
-        id:
-          'retroalimentacion',
+        id: 'retroalimentacion',
 
-        titulo:
-          'Retroalimentación',
+        titulo: 'Retroalimentación',
 
-        descripcion:
-          'Observaciones registradas para cada estudiante.',
+        descripcion: 'Observaciones registradas para cada estudiante.',
 
-        mostrarEncabezado:
-          true,
+        mostrarEncabezado: true,
 
-        mostrarNumeroFila:
-          true,
+        mostrarNumeroFila: true,
 
         columnas: [
           {
-            clave:
-              'estudiante',
+            clave: 'estudiante',
 
-            etiqueta:
-              'Estudiante',
+            etiqueta: 'Estudiante',
 
-            tipo:
-              TipoDatoReporte.TEXTO,
+            tipo: TipoDatoReporte.TEXTO,
 
-            ancho:
-              2.1,
+            ancho: 2.1,
           },
           {
-            clave:
-              'retroalimentacion',
+            clave: 'retroalimentacion',
 
-            etiqueta:
-              'Retroalimentación',
+            etiqueta: 'Retroalimentación',
 
-            tipo:
-              TipoDatoReporte.TEXTO,
+            tipo: TipoDatoReporte.TEXTO,
 
-            ancho:
-              5.9,
+            ancho: 5.9,
           },
         ],
 
-        filas:
-          retroalimentaciones,
+        filas: retroalimentaciones,
       },
     ];
   }
 
   private construirSeccionesDatos(
-    resumen:
-      FilaResumenForo,
+    resumen: FilaResumenForo,
 
-    filas:
-      FilaCalificacionCompleta[],
+    filas: FilaCalificacionCompleta[],
 
-    calificadas:
-      number,
+    calificadas: number,
 
-    pendientes:
-      number,
+    pendientes: number,
 
-    sinRespuesta:
-      number,
+    sinRespuesta: number,
   ): DefinicionReporte<FilaReporteForo>['secciones'] {
     return [
       {
-        id:
-          'resumen',
+        id: 'resumen',
 
-        titulo:
-          'Resumen general',
+        titulo: 'Resumen general',
 
-        filas: [
-          resumen,
-        ],
+        filas: [resumen],
 
-        mostrarNumeroFila:
-          false,
+        mostrarNumeroFila: false,
 
         columnas: [
           {
-            clave:
-              'estudiantes',
+            clave: 'estudiantes',
 
-            etiqueta:
-              'Estudiantes',
+            etiqueta: 'Estudiantes',
 
-            tipo:
-              TipoDatoReporte.NUMERO,
+            tipo: TipoDatoReporte.NUMERO,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'calificadas',
+            clave: 'calificadas',
 
-            etiqueta:
-              'Calificados',
+            etiqueta: 'Calificados',
 
-            tipo:
-              TipoDatoReporte.NUMERO,
+            tipo: TipoDatoReporte.NUMERO,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'pendientes',
+            clave: 'pendientes',
 
-            etiqueta:
-              'Pendientes',
+            etiqueta: 'Pendientes',
 
-            tipo:
-              TipoDatoReporte.NUMERO,
+            tipo: TipoDatoReporte.NUMERO,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'sinRespuesta',
+            clave: 'sinRespuesta',
 
-            etiqueta:
-              'Sin respuesta',
+            etiqueta: 'Sin respuesta',
 
-            tipo:
-              TipoDatoReporte.NUMERO,
+            tipo: TipoDatoReporte.NUMERO,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'puntajeMaximo',
+            clave: 'puntajeMaximo',
 
-            etiqueta:
-              'Puntaje máximo',
+            etiqueta: 'Puntaje máximo',
 
-            tipo:
-              TipoDatoReporte.NUMERO,
+            tipo: TipoDatoReporte.NUMERO,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
         ],
       },
       {
-        id:
-          'calificaciones',
+        id: 'calificaciones',
 
-        titulo:
-          'Detalle de calificaciones',
+        titulo: 'Detalle de calificaciones',
 
-        descripcion:
-          `${calificadas} calificados · ${pendientes} pendientes · ${sinRespuesta} sin respuesta`,
+        descripcion: `${calificadas} calificados · ${pendientes} pendientes · ${sinRespuesta} sin respuesta`,
 
-        mostrarEncabezado:
-          true,
+        mostrarEncabezado: true,
 
-        mostrarNumeroFila:
-          true,
+        mostrarNumeroFila: true,
 
         columnas: [
           {
-            clave:
-              'estudiante',
+            clave: 'estudiante',
 
-            etiqueta:
-              'Estudiante',
+            etiqueta: 'Estudiante',
 
-            ancho:
-              1.6,
+            ancho: 1.6,
           },
           {
-            clave:
-              'correo',
+            clave: 'correo',
 
-            etiqueta:
-              'Correo',
+            etiqueta: 'Correo',
 
-            ancho:
-              1.8,
+            ancho: 1.8,
           },
           {
-            clave:
-              'participacion',
+            clave: 'participacion',
 
-            etiqueta:
-              'Participación',
+            etiqueta: 'Participación',
 
-            ancho:
-              1.05,
+            ancho: 1.05,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'entrega',
+            clave: 'entrega',
 
-            etiqueta:
-              'Entrega',
+            etiqueta: 'Entrega',
 
-            ancho:
-              1,
+            ancho: 1,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'notaBase',
+            clave: 'notaBase',
 
-            etiqueta:
-              'Base',
+            etiqueta: 'Base',
 
-            tipo:
-              TipoDatoReporte.DECIMAL,
+            tipo: TipoDatoReporte.DECIMAL,
 
-            ancho:
-              .75,
+            ancho: 0.75,
 
-            alineacion:
-              AlineacionReporte.DERECHA,
+            alineacion: AlineacionReporte.DERECHA,
           },
           {
-            clave:
-              'descuento',
+            clave: 'descuento',
 
-            etiqueta:
-              'Desc.',
+            etiqueta: 'Desc.',
 
-            tipo:
-              TipoDatoReporte.DECIMAL,
+            tipo: TipoDatoReporte.DECIMAL,
 
-            ancho:
-              .75,
+            ancho: 0.75,
 
-            alineacion:
-              AlineacionReporte.DERECHA,
+            alineacion: AlineacionReporte.DERECHA,
           },
           {
-            clave:
-              'ajuste',
+            clave: 'ajuste',
 
-            etiqueta:
-              'Ajuste',
+            etiqueta: 'Ajuste',
 
-            tipo:
-              TipoDatoReporte.DECIMAL,
+            tipo: TipoDatoReporte.DECIMAL,
 
-            ancho:
-              .75,
+            ancho: 0.75,
 
-            alineacion:
-              AlineacionReporte.DERECHA,
+            alineacion: AlineacionReporte.DERECHA,
           },
           {
-            clave:
-              'notaFinal',
+            clave: 'notaFinal',
 
-            etiqueta:
-              'Final',
+            etiqueta: 'Final',
 
-            tipo:
-              TipoDatoReporte.DECIMAL,
+            tipo: TipoDatoReporte.DECIMAL,
 
-            ancho:
-              .8,
+            ancho: 0.8,
 
-            alineacion:
-              AlineacionReporte.DERECHA,
+            alineacion: AlineacionReporte.DERECHA,
           },
           {
-            clave:
-              'estado',
+            clave: 'estado',
 
-            etiqueta:
-              'Estado',
+            etiqueta: 'Estado',
 
-            ancho:
-              .9,
+            ancho: 0.9,
 
-            alineacion:
-              AlineacionReporte.CENTRO,
+            alineacion: AlineacionReporte.CENTRO,
           },
           {
-            clave:
-              'retroalimentacion',
+            clave: 'retroalimentacion',
 
-            etiqueta:
-              'Retroalimentación',
+            etiqueta: 'Retroalimentación',
 
-            ancho:
-              2,
+            ancho: 2,
           },
         ],
 
@@ -918,100 +638,54 @@ export class ForoReportesService {
   }
 
   private async obtenerNombreGenerador(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
   ): Promise<string> {
-    const datos =
-      await this.prisma.usuario.findUnique({
-        where: {
-          id:
-            usuario.id,
-        },
+    const datos = await this.prisma.usuario.findUnique({
+      where: {
+        id: usuario.id,
+      },
 
-        select: {
-          nombres:
-            true,
+      select: {
+        nombres: true,
 
-          apellidoPaterno:
-            true,
-        },
-      });
+        apellidoPaterno: true,
+      },
+    });
 
-    const nombre =
-      [
-        datos?.nombres,
-        datos?.apellidoPaterno,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .trim();
+    const nombre = [datos?.nombres, datos?.apellidoPaterno]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
 
-    return nombre ||
-      usuario.correo;
+    return nombre || usuario.correo;
   }
 
-  private numeroONull(
-    valor: unknown,
-  ): number | null {
-    if (
-      valor === null ||
-      valor === undefined
-    ) {
+  private numeroONull(valor: unknown): number | null {
+    if (valor === null || valor === undefined) {
       return null;
     }
 
-    const resultado =
-      Number(
-        valor,
-      );
+    const resultado = Number(valor);
 
-    return Number.isFinite(
-      resultado,
-    )
-      ? resultado
-      : null;
+    return Number.isFinite(resultado) ? resultado : null;
   }
 
-  private etiqueta(
-    valor: unknown,
-  ): string {
-    return String(
-      valor ??
-        '—',
-    )
-      .replaceAll(
-        '_',
-        ' ',
-      )
+  private etiqueta(valor: unknown): string {
+    return String(valor ?? '—')
+      .replaceAll('_', ' ')
       .toLowerCase()
-      .replace(
-        /^./,
-        (
-          caracter,
-        ) =>
-          caracter.toUpperCase(),
-      );
+      .replace(/^./, (caracter) => caracter.toUpperCase());
   }
 
-  private normalizarFormato(
-    formato:
-      string,
-  ): FormatoReporte {
-    const valor =
-      formato
-        .trim()
-        .toUpperCase();
+  private normalizarFormato(formato: string): FormatoReporte {
+    const valor = formato.trim().toUpperCase();
 
     if (
-      valor ===
-        FormatoReporte.PDF ||
-      valor ===
-        FormatoReporte.EXCEL ||
-      valor ===
-        FormatoReporte.CSV
+      valor === FormatoReporte.PDF ||
+      valor === FormatoReporte.EXCEL ||
+      valor === FormatoReporte.CSV
     ) {
-      return valor as
-        FormatoReporte;
+      return valor;
     }
 
     throw new BadRequestException(

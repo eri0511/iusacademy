@@ -1,14 +1,6 @@
-import {
-  IsBoolean,
-  IsIn,
-  IsOptional,
-} from 'class-validator';
-import {
-  DELIMITADORES_CSV_PERMITIDOS,
-} from '../constants/reportes.constants';
-import {
-  ExportarReporteBaseDto,
-} from './exportar-reporte-base.dto';
+import { IsBoolean, IsIn, IsOptional } from 'class-validator';
+import { DELIMITADORES_CSV_PERMITIDOS } from '../constants/reportes.constants';
+import { ExportarReporteBaseDto } from './exportar-reporte-base.dto';
 
 export class ExportarCsvDto extends ExportarReporteBaseDto {
   @IsOptional()

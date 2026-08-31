@@ -5,9 +5,7 @@ import {
   Length,
   Matches,
 } from 'class-validator';
-import {
-  ExportarReporteBaseDto,
-} from './exportar-reporte-base.dto';
+import { ExportarReporteBaseDto } from './exportar-reporte-base.dto';
 
 export class ExportarExcelDto extends ExportarReporteBaseDto {
   @IsOptional()

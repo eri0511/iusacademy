@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   IsBoolean,
@@ -106,7 +104,6 @@ export class ActualizarQuizDto {
   @Min(1)
   @Max(100)
   puntajeMaximo?: number;
-
 
   @IsOptional()
   @IsBoolean()

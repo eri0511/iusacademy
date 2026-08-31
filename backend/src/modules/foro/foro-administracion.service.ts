@@ -3,7 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
+} from '@nestjs/common';
 
 import {
   AccionHistorialCalificacion,
@@ -13,13 +13,13 @@ import {
   Prisma,
   Rol,
   TipoOrigenActividad,
-} from "../../generated/prisma/client";
+} from '../../generated/prisma/client';
 
-import { PrismaService } from "../../prisma/prisma.service";
+import { PrismaService } from '../../prisma/prisma.service';
 
-import { DuplicarForoDto } from "./dto/duplicar-foro.dto";
+import { DuplicarForoDto } from './dto/duplicar-foro.dto';
 
-import type { UsuarioAutenticado } from "./interfaces/usuario-autenticado.interface";
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
 @Injectable()
 export class ForoAdministracionService {
@@ -27,7 +27,7 @@ export class ForoAdministracionService {
 
   private validarDocente(usuario: UsuarioAutenticado) {
     if (usuario.rol !== Rol.DOCENTE) {
-      throw new ForbiddenException("Solo el docente puede administrar foros");
+      throw new ForbiddenException('Solo el docente puede administrar foros');
     }
   }
 
@@ -70,7 +70,7 @@ export class ForoAdministracionService {
 
     if (!foro) {
       throw new NotFoundException(
-        "El foro no existe o no pertenece al docente autenticado",
+        'El foro no existe o no pertenece al docente autenticado',
       );
     }
 
@@ -147,9 +147,9 @@ export class ForoAdministracionService {
 
           modalidadParticipacion: original.modalidadParticipacion,
 
-          origenGrupo: conservarGrupo ? original.origenGrupo : "NINGUNO",
+          origenGrupo: conservarGrupo ? original.origenGrupo : 'NINGUNO',
 
-          dinamicaGrupal: conservarGrupo ? original.dinamicaGrupal : "NINGUNA",
+          dinamicaGrupal: conservarGrupo ? original.dinamicaGrupal : 'NINGUNA',
 
           cantidadMinimaIntegrantes: original.cantidadMinimaIntegrantes,
 
@@ -172,11 +172,9 @@ export class ForoAdministracionService {
           penalizarIncumplimientoComentarios:
             original.penalizarIncumplimientoComentarios,
 
-          tipoPenalizacionComentarios:
-            original.tipoPenalizacionComentarios,
+          tipoPenalizacionComentarios: original.tipoPenalizacionComentarios,
 
-          valorPenalizacionComentarios:
-            original.valorPenalizacionComentarios,
+          valorPenalizacionComentarios: original.valorPenalizacionComentarios,
 
           palabrasMinimasRespuesta: original.palabrasMinimasRespuesta,
 
@@ -269,7 +267,7 @@ export class ForoAdministracionService {
 
           origen: TipoOrigenActividad.FORO,
 
-          componente: actividadOriginal?.componente ?? "CONTINUA",
+          componente: actividadOriginal?.componente ?? 'CONTINUA',
 
           titulo,
 
@@ -303,7 +301,7 @@ export class ForoAdministracionService {
           detalle: {
             foroOriginalId: original.id,
 
-            accion: "DUPLICADO",
+            accion: 'DUPLICADO',
 
             conservarFechas,
 
@@ -325,7 +323,7 @@ export class ForoAdministracionService {
 
             foroOriginalId: original.id,
 
-            accion: "DUPLICADO",
+            accion: 'DUPLICADO',
           },
         },
       });
@@ -338,12 +336,12 @@ export class ForoAdministracionService {
     });
 
     return {
-      mensaje: "Foro duplicado correctamente",
+      mensaje: 'Foro duplicado correctamente',
 
       ...resultado,
 
       advertencia:
-        "La copia no incluye respuestas, comentarios, equipos por afinidad, archivos ni calificaciones.",
+        'La copia no incluye respuestas, comentarios, equipos por afinidad, archivos ni calificaciones.',
     };
   }
 
@@ -356,7 +354,7 @@ export class ForoAdministracionService {
 
     if (foro.estado === EstadoForo.NOTAS_PUBLICADAS) {
       throw new BadRequestException(
-        "No puedes eliminar un foro con notas publicadas",
+        'No puedes eliminar un foro con notas publicadas',
       );
     }
 
@@ -413,7 +411,7 @@ export class ForoAdministracionService {
     });
 
     return {
-      mensaje: "Foro eliminado correctamente",
+      mensaje: 'Foro eliminado correctamente',
     };
   }
 
@@ -430,7 +428,7 @@ export class ForoAdministracionService {
       },
 
       orderBy: {
-        registradoEn: "desc",
+        registradoEn: 'desc',
       },
 
       include: {

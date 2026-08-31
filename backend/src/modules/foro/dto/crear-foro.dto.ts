@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   ArrayMaxSize,
@@ -34,176 +32,117 @@ import {
 } from '../../../generated/prisma/client';
 
 export class CrearForoDto {
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  hitoId!:
-    number;
+  hitoId!: number;
 
-  @ValidateIf(
-    (
-      objeto,
-    ) =>
-      objeto.esCalificable ===
-      true,
-  )
-  @IsEnum(
-    ComponenteEvaluacion,
-  )
-  componente?:
-    ComponenteEvaluacion;
+  @ValidateIf((objeto) => objeto.esCalificable === true)
+  @IsEnum(ComponenteEvaluacion)
+  componente?: ComponenteEvaluacion;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(180)
-  titulo!:
-    string;
+  titulo!: string;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(15000)
-  contenido!:
-    string;
+  contenido!: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(8000)
-  instrucciones?:
-    string;
+  instrucciones?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(4000)
-  objetivo?:
-    string;
+  objetivo?: string;
 
   @IsOptional()
   @IsBoolean()
-  esCalificable?:
-    boolean;
+  esCalificable?: boolean;
 
-  @IsEnum(
-    ModalidadParticipacionForo,
-  )
-  modalidadParticipacion!:
-    ModalidadParticipacionForo;
+  @IsEnum(ModalidadParticipacionForo)
+  modalidadParticipacion!: ModalidadParticipacionForo;
 
-  @IsEnum(
-    OrigenGrupoForo,
-  )
-  origenGrupo!:
-    OrigenGrupoForo;
+  @IsEnum(OrigenGrupoForo)
+  origenGrupo!: OrigenGrupoForo;
 
-  @IsEnum(
-    DinamicaGrupalForo,
-  )
-  dinamicaGrupal!:
-    DinamicaGrupalForo;
+  @IsEnum(DinamicaGrupalForo)
+  dinamicaGrupal!: DinamicaGrupalForo;
 
   @ValidateIf(
-    (
-      objeto,
-    ) =>
-      objeto.modalidadParticipacion ===
-        ModalidadParticipacionForo.GRUPAL &&
-      objeto.origenGrupo ===
-        OrigenGrupoForo.PLATAFORMA,
+    (objeto) =>
+      objeto.modalidadParticipacion === ModalidadParticipacionForo.GRUPAL &&
+      objeto.origenGrupo === OrigenGrupoForo.PLATAFORMA,
   )
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  conjuntoGrupoId?:
-    number;
+  conjuntoGrupoId?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(2)
   @Max(100)
-  cantidadMinimaIntegrantes?:
-    number;
+  cantidadMinimaIntegrantes?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(2)
   @Max(100)
-  cantidadMaximaIntegrantes?:
-    number;
+  cantidadMaximaIntegrantes?: number;
 
   @IsOptional()
   @IsBoolean()
-  requiereAprobacionEquipos?:
-    boolean;
+  requiereAprobacionEquipos?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  requiereRepresentante?:
-    boolean;
+  requiereRepresentante?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  bloquearEquipoAlResponder?:
-    boolean;
+  bloquearEquipoAlResponder?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirComentarios?:
-    boolean;
+  permitirComentarios?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirEditarRespuestas?:
-    boolean;
+  permitirEditarRespuestas?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirEliminarRespuestas?:
-    boolean;
+  permitirEliminarRespuestas?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirEditarComentarios?:
-    boolean;
+  permitirEditarComentarios?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirEliminarComentarios?:
-    boolean;
+  permitirEliminarComentarios?: boolean;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(100)
-  minimoComentariosPorEstudiante?:
-    number;
+  minimoComentariosPorEstudiante?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(100)
-  maximoComentariosPorEstudiante?:
-    number;
+  maximoComentariosPorEstudiante?: number;
 
   /**
    * Penalización individual por incumplir
@@ -226,165 +165,95 @@ export class CrearForoDto {
    */
   @IsOptional()
   @IsBoolean()
-  penalizarIncumplimientoComentarios?:
-    boolean;
+  penalizarIncumplimientoComentarios?: boolean;
+
+  @ValidateIf((objeto) => objeto.penalizarIncumplimientoComentarios === true)
+  @IsEnum(TipoPenalizacionComentarios)
+  tipoPenalizacionComentarios?: TipoPenalizacionComentarios;
 
   @ValidateIf(
-    (
-      objeto,
-    ) =>
-      objeto.penalizarIncumplimientoComentarios ===
-      true,
-  )
-  @IsEnum(
-    TipoPenalizacionComentarios,
-  )
-  tipoPenalizacionComentarios?:
-    TipoPenalizacionComentarios;
-
-  @ValidateIf(
-    (
-      objeto,
-    ) =>
-      objeto.penalizarIncumplimientoComentarios ===
-        true &&
+    (objeto) =>
+      objeto.penalizarIncumplimientoComentarios === true &&
       objeto.tipoPenalizacionComentarios !==
         TipoPenalizacionComentarios.NINGUNA,
   )
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0.01)
   @Max(100)
-  valorPenalizacionComentarios?:
-    number;
+  valorPenalizacionComentarios?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(50000)
-  palabrasMinimasRespuesta?:
-    number;
+  palabrasMinimasRespuesta?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(50000)
-  palabrasMaximasRespuesta?:
-    number;
+  palabrasMaximasRespuesta?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(10000)
-  palabrasMinimasComentario?:
-    number;
+  palabrasMinimasComentario?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(10000)
-  palabrasMaximasComentario?:
-    number;
+  palabrasMaximasComentario?: number;
 
-  @ValidateIf(
-    (
-      objeto,
-    ) =>
-      objeto.esCalificable ===
-      true,
-  )
-  @IsIn(
-    [
-      TipoEvaluacionForo.MANUAL,
-      TipoEvaluacionForo.AUTOMATICA,
-    ],
-    {
-      message:
-        'La evaluación por rúbrica estará disponible en una próxima versión. Selecciona MANUAL o AUTOMATICA.',
-    },
-  )
-  tipoEvaluacion?:
-    TipoEvaluacionForo;
+  @ValidateIf((objeto) => objeto.esCalificable === true)
+  @IsIn([TipoEvaluacionForo.MANUAL, TipoEvaluacionForo.AUTOMATICA], {
+    message:
+      'La evaluación por rúbrica estará disponible en una próxima versión. Selecciona MANUAL o AUTOMATICA.',
+  })
+  tipoEvaluacion?: TipoEvaluacionForo;
 
-  @ValidateIf(
-    (
-      objeto,
-    ) =>
-      objeto.esCalificable ===
-      true,
-  )
-  @IsEnum(
-    ModalidadNotaForo,
-  )
-  modalidadNota?:
-    ModalidadNotaForo;
+  @ValidateIf((objeto) => objeto.esCalificable === true)
+  @IsEnum(ModalidadNotaForo)
+  modalidadNota?: ModalidadNotaForo;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0)
   @Max(100)
-  porcentajeNotaGrupal?:
-    number;
+  porcentajeNotaGrupal?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0)
   @Max(100)
-  porcentajeNotaIndividual?:
-    number;
+  porcentajeNotaIndividual?: number;
 
   @IsOptional()
   @IsBoolean()
-  calificacionAutomaticaAlCumplir?:
-    boolean;
+  calificacionAutomaticaAlCumplir?: boolean;
 
   @IsDateString()
-  fechaApertura!:
-    string;
+  fechaApertura!: string;
 
   @IsDateString()
-  fechaLimite!:
-    string;
+  fechaLimite!: string;
 
   @IsDateString()
-  fechaCierre!:
-    string;
+  fechaCierre!: string;
 
   /*
    * true:
@@ -396,143 +265,95 @@ export class CrearForoDto {
    */
   @IsOptional()
   @IsBoolean()
-  visibleAntesDeApertura?:
-    boolean;
+  visibleAntesDeApertura?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirRetrasos?:
-    boolean;
+  permitirRetrasos?: boolean;
 
-  @ValidateIf(
-    (
-      objeto,
-    ) =>
-      objeto.permitirRetrasos ===
-      true,
-  )
+  @ValidateIf((objeto) => objeto.permitirRetrasos === true)
   @IsDateString()
-  fechaMaximaRetraso?:
-    string;
+  fechaMaximaRetraso?: string;
 
   @IsOptional()
-  @IsEnum(
-    TipoDescuentoRetraso,
-  )
-  tipoDescuentoRetraso?:
-    TipoDescuentoRetraso;
+  @IsEnum(TipoDescuentoRetraso)
+  tipoDescuentoRetraso?: TipoDescuentoRetraso;
 
   @ValidateIf(
-    (
-      objeto,
-    ) =>
-      objeto.permitirRetrasos ===
-        true &&
-      objeto.tipoDescuentoRetraso !==
-        TipoDescuentoRetraso.NINGUNO,
+    (objeto) =>
+      objeto.permitirRetrasos === true &&
+      objeto.tipoDescuentoRetraso !== TipoDescuentoRetraso.NINGUNO,
   )
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0)
   @Max(100)
-  valorDescuentoRetraso?:
-    number;
+  valorDescuentoRetraso?: number;
 
   @IsOptional()
-  @IsEnum(
-    VisibilidadRespuestasForo,
-  )
-  visibilidadRespuestas?:
-    VisibilidadRespuestasForo;
+  @IsEnum(VisibilidadRespuestasForo)
+  visibilidadRespuestas?: VisibilidadRespuestasForo;
 
   @IsOptional()
   @IsBoolean()
-  permitirAdjuntosTema?:
-    boolean;
+  permitirAdjuntosTema?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirAdjuntosRespuesta?:
-    boolean;
+  permitirAdjuntosRespuesta?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirAdjuntosComentario?:
-    boolean;
+  permitirAdjuntosComentario?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  exigirAdjuntoRespuesta?:
-    boolean;
+  exigirAdjuntoRespuesta?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirDescargaAdjuntos?:
-    boolean;
+  permitirDescargaAdjuntos?: boolean;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(20)
-  maximoArchivosTema?:
-    number;
+  maximoArchivosTema?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(20)
-  maximoArchivosRespuesta?:
-    number;
+  maximoArchivosRespuesta?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(10)
-  maximoArchivosComentario?:
-    number;
+  maximoArchivosComentario?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)
-  tamanioMaximoArchivoMb?:
-    number;
+  tamanioMaximoArchivoMb?: number;
 
   @IsOptional()
   @IsArray()
   @ArrayUnique()
   @ArrayMaxSize(12)
   @IsString({
-    each:
-      true,
+    each: true,
   })
-  extensionesPermitidas?:
-    string[];
+  extensionesPermitidas?: string[];
 
   @IsOptional()
   @IsBoolean()
-  participaEnPromedio?:
-    boolean;
-} 
+  participaEnPromedio?: boolean;
+}

@@ -1,6 +1,4 @@
-import {
-  BadRequestException,
-} from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 
 import {
   CapacidadTarea,
@@ -10,29 +8,19 @@ import {
   TipoTarea,
 } from '../../../generated/prisma/client';
 
-import type {
-  CrearComponenteTareaDto,
-} from '../dto/crear-componente-tarea.dto';
+import type { CrearComponenteTareaDto } from '../dto/crear-componente-tarea.dto';
 
 type ExperienciaTarea = {
-  capacidades:
-    CapacidadTarea[];
+  capacidades: CapacidadTarea[];
 
-  modoEdicion:
-    ModoEdicionTarea;
+  modoEdicion: ModoEdicionTarea;
 
-  componentes:
-    CrearComponenteTareaDto[];
+  componentes: CrearComponenteTareaDto[];
 };
 
-const capacidadesPorComponente:
-  Record<
-    TipoComponenteTarea,
-    CapacidadTarea[]
-  > = {
-    ARCHIVOS: [
-      CapacidadTarea.ARCHIVOS,
-    ],
+const capacidadesPorComponente: Record<TipoComponenteTarea, CapacidadTarea[]> =
+  {
+    ARCHIVOS: [CapacidadTarea.ARCHIVOS],
     TEXTO: [
       CapacidadTarea.EDITOR_TEXTO,
       CapacidadTarea.HISTORIAL_VERSIONES,
@@ -62,31 +50,17 @@ const capacidadesPorComponente:
       CapacidadTarea.HISTORIAL_VERSIONES,
       CapacidadTarea.EXPORTACION_PDF,
     ],
-    PRESENCIAL: [
-      CapacidadTarea.EVIDENCIA_DOCENTE,
-    ],
+    PRESENCIAL: [CapacidadTarea.EVIDENCIA_DOCENTE],
   };
 
-function unicas(
-  capacidades:
-    CapacidadTarea[],
-) {
-  return Array.from(
-    new Set(
-      capacidades,
-    ),
-  );
+function unicas(capacidades: CapacidadTarea[]) {
+  return Array.from(new Set(capacidades));
 }
 
-function capacidadesBase(
-  tipo:
-    TipoTarea,
-) {
+function capacidadesBase(tipo: TipoTarea) {
   switch (tipo) {
     case TipoTarea.ENTREGA_ARCHIVOS:
-      return [
-        CapacidadTarea.ARCHIVOS,
-      ];
+      return [CapacidadTarea.ARCHIVOS];
 
     case TipoTarea.RESPUESTA_ESCRITA:
       return [
@@ -128,9 +102,7 @@ function capacidadesBase(
       ];
 
     case TipoTarea.PRESENCIAL:
-      return [
-        CapacidadTarea.EVIDENCIA_DOCENTE,
-      ];
+      return [CapacidadTarea.EVIDENCIA_DOCENTE];
 
     case TipoTarea.MIXTA:
       return [];
@@ -138,46 +110,28 @@ function capacidadesBase(
 }
 
 export function resolverExperienciaTarea(
-  tipo:
-    TipoTarea,
-  modalidad:
-    ModalidadTarea,
-  capacidadesSolicitadas:
-    CapacidadTarea[] | undefined,
-  componentesSolicitados:
-    CrearComponenteTareaDto[] | undefined,
+  tipo: TipoTarea,
+  modalidad: ModalidadTarea,
+  capacidadesSolicitadas: CapacidadTarea[] | undefined,
+  componentesSolicitados: CrearComponenteTareaDto[] | undefined,
 ): ExperienciaTarea {
-  const componentes =
-    componentesSolicitados ??
-    [];
+  const componentes = componentesSolicitados ?? [];
 
-  if (
-    tipo ===
-      TipoTarea.MIXTA &&
-    componentes.length <
-      2
-  ) {
+  if (tipo === TipoTarea.MIXTA && componentes.length < 2) {
     throw new BadRequestException(
       'Una tarea mixta debe contener al menos dos componentes',
     );
   }
 
-  if (
-    tipo !==
-      TipoTarea.MIXTA &&
-    componentes.length >
-      0
-  ) {
+  if (tipo !== TipoTarea.MIXTA && componentes.length > 0) {
     throw new BadRequestException(
       'Los componentes múltiples solo se permiten en tareas de tipo MIXTA',
     );
   }
 
   if (
-    tipo ===
-      TipoTarea.DOCUMENTO_COLABORATIVO &&
-    modalidad !==
-      ModalidadTarea.GRUPAL
+    tipo === TipoTarea.DOCUMENTO_COLABORATIVO &&
+    modalidad !== ModalidadTarea.GRUPAL
   ) {
     throw new BadRequestException(
       'Un documento colaborativo debe utilizar modalidad grupal',
@@ -185,16 +139,11 @@ export function resolverExperienciaTarea(
   }
 
   if (
-    tipo ===
-      TipoTarea.MIXTA &&
-    modalidad !==
-      ModalidadTarea.GRUPAL &&
+    tipo === TipoTarea.MIXTA &&
+    modalidad !== ModalidadTarea.GRUPAL &&
     componentes.some(
-      (
-        componente,
-      ) =>
-        componente.tipo ===
-        TipoComponenteTarea.DOCUMENTO_COLABORATIVO,
+      (componente) =>
+        componente.tipo === TipoComponenteTarea.DOCUMENTO_COLABORATIVO,
     )
   ) {
     throw new BadRequestException(
@@ -203,53 +152,30 @@ export function resolverExperienciaTarea(
   }
 
   const capacidadesComponentes =
-    tipo ===
-    TipoTarea.MIXTA
+    tipo === TipoTarea.MIXTA
       ? componentes.flatMap(
-          (
-            componente,
-          ) =>
-            capacidadesPorComponente[
-              componente.tipo
-            ],
+          (componente) => capacidadesPorComponente[componente.tipo],
         )
       : [];
 
-  const base =
-    unicas([
-      ...capacidadesBase(
-        tipo,
-      ),
-      ...capacidadesComponentes,
-    ]);
+  const base = unicas([...capacidadesBase(tipo), ...capacidadesComponentes]);
 
-  const permitidas =
-    new Set<CapacidadTarea>([
-      ...base,
-      CapacidadTarea.ARCHIVOS,
-      ...(modalidad ===
-      ModalidadTarea.GRUPAL &&
-      base.includes(
-        CapacidadTarea.EDITOR_TEXTO,
-      )
-        ? [
-            CapacidadTarea.EDICION_COLABORATIVA,
-            CapacidadTarea.SEGUIMIENTO_AUTORIA,
-            CapacidadTarea.HISTORIAL_VERSIONES,
-          ]
-        : []),
-    ]);
+  const permitidas = new Set<CapacidadTarea>([
+    ...base,
+    CapacidadTarea.ARCHIVOS,
+    ...(modalidad === ModalidadTarea.GRUPAL &&
+    base.includes(CapacidadTarea.EDITOR_TEXTO)
+      ? [
+          CapacidadTarea.EDICION_COLABORATIVA,
+          CapacidadTarea.SEGUIMIENTO_AUTORIA,
+          CapacidadTarea.HISTORIAL_VERSIONES,
+        ]
+      : []),
+  ]);
 
-  const noPermitidas =
-    (capacidadesSolicitadas ??
-      []).filter(
-      (
-        capacidad,
-      ) =>
-        !permitidas.has(
-          capacidad,
-        ),
-    );
+  const noPermitidas = (capacidadesSolicitadas ?? []).filter(
+    (capacidad) => !permitidas.has(capacidad),
+  );
 
   if (noPermitidas.length) {
     throw new BadRequestException(
@@ -257,67 +183,39 @@ export function resolverExperienciaTarea(
     );
   }
 
-  let capacidades =
-    unicas([
-      ...base,
-      ...(capacidadesSolicitadas ??
-        []),
-    ]);
+  let capacidades = unicas([...base, ...(capacidadesSolicitadas ?? [])]);
 
-  const usaEditor =
-    capacidades.includes(
-      CapacidadTarea.EDITOR_TEXTO,
-    );
+  const usaEditor = capacidades.includes(CapacidadTarea.EDITOR_TEXTO);
 
   const necesitaColaboracion =
-    modalidad ===
-      ModalidadTarea.GRUPAL &&
+    modalidad === ModalidadTarea.GRUPAL &&
     usaEditor &&
-    (
-      tipo ===
-        TipoTarea.DOCUMENTO_COLABORATIVO ||
-      tipo ===
-        TipoTarea.REDACCION_JURIDICA ||
-      tipo ===
-        TipoTarea.RESPUESTA_ESCRITA ||
-      tipo ===
-        TipoTarea.CASO_PRACTICO ||
-      (
-        tipo ===
-          TipoTarea.MIXTA &&
-        componentes.some(
-          (
-            componente,
-          ) =>
-            [
-              TipoComponenteTarea.TEXTO,
-              TipoComponenteTarea.DOCUMENTO_COLABORATIVO,
-              TipoComponenteTarea.REDACCION_JURIDICA,
-              TipoComponenteTarea.CASO_PRACTICO,
-            ].includes(
-              componente.tipo,
-            )
-        )
-      )
-    );
+    (tipo === TipoTarea.DOCUMENTO_COLABORATIVO ||
+      tipo === TipoTarea.REDACCION_JURIDICA ||
+      tipo === TipoTarea.RESPUESTA_ESCRITA ||
+      tipo === TipoTarea.CASO_PRACTICO ||
+      (tipo === TipoTarea.MIXTA &&
+        componentes.some((componente) =>
+          [
+            TipoComponenteTarea.TEXTO,
+            TipoComponenteTarea.DOCUMENTO_COLABORATIVO,
+            TipoComponenteTarea.REDACCION_JURIDICA,
+            TipoComponenteTarea.CASO_PRACTICO,
+          ].includes(componente.tipo),
+        )));
 
   if (necesitaColaboracion) {
-    capacidades =
-      unicas([
-        ...capacidades,
-        CapacidadTarea.EDICION_COLABORATIVA,
-        CapacidadTarea.SEGUIMIENTO_AUTORIA,
-        CapacidadTarea.HISTORIAL_VERSIONES,
-      ]);
+    capacidades = unicas([
+      ...capacidades,
+      CapacidadTarea.EDICION_COLABORATIVA,
+      CapacidadTarea.SEGUIMIENTO_AUTORIA,
+      CapacidadTarea.HISTORIAL_VERSIONES,
+    ]);
   }
 
   if (
-    capacidades.includes(
-      CapacidadTarea.SEGUIMIENTO_AUTORIA,
-    ) &&
-    !capacidades.includes(
-      CapacidadTarea.EDICION_COLABORATIVA,
-    )
+    capacidades.includes(CapacidadTarea.SEGUIMIENTO_AUTORIA) &&
+    !capacidades.includes(CapacidadTarea.EDICION_COLABORATIVA)
   ) {
     throw new BadRequestException(
       'El seguimiento de autoría requiere edición colaborativa',
@@ -325,11 +223,8 @@ export function resolverExperienciaTarea(
   }
 
   if (
-    capacidades.includes(
-      CapacidadTarea.EDICION_COLABORATIVA,
-    ) &&
-    modalidad !==
-      ModalidadTarea.GRUPAL
+    capacidades.includes(CapacidadTarea.EDICION_COLABORATIVA) &&
+    modalidad !== ModalidadTarea.GRUPAL
   ) {
     throw new BadRequestException(
       'La edición colaborativa solo puede habilitarse en tareas grupales',
@@ -337,25 +232,19 @@ export function resolverExperienciaTarea(
   }
 
   if (
-    capacidades.includes(
-      CapacidadTarea.EDICION_COLABORATIVA,
-    ) &&
-    !capacidades.includes(
-      CapacidadTarea.EDITOR_TEXTO,
-    )
+    capacidades.includes(CapacidadTarea.EDICION_COLABORATIVA) &&
+    !capacidades.includes(CapacidadTarea.EDITOR_TEXTO)
   ) {
     throw new BadRequestException(
       'La edición colaborativa requiere editor interno',
     );
   }
 
-  const modoEdicion =
-    !usaEditor
-      ? ModoEdicionTarea.SIN_EDITOR
-      : modalidad ===
-          ModalidadTarea.GRUPAL
-        ? ModoEdicionTarea.COLABORATIVO
-        : ModoEdicionTarea.INDIVIDUAL;
+  const modoEdicion = !usaEditor
+    ? ModoEdicionTarea.SIN_EDITOR
+    : modalidad === ModalidadTarea.GRUPAL
+      ? ModoEdicionTarea.COLABORATIVO
+      : ModoEdicionTarea.INDIVIDUAL;
 
   return {
     capacidades,

@@ -73,6 +73,74 @@ function mensajeError(
   return fallback;
 }
 
+export interface ExtensionPlazoFrontend {
+  id:
+    number;
+
+  activo:
+    boolean;
+
+  motivo:
+    string | null;
+
+  fechaAperturaExtendida:
+    string | null;
+
+  fechaLimiteExtendida:
+    string | null;
+
+  fechaMaximaRetrasoExtendida:
+    string | null;
+
+  creadoEn:
+    string;
+
+  autorizadoPor: {
+    id:
+      number;
+
+    nombres:
+      string;
+
+    apellidoPaterno:
+      string;
+  };
+
+  beneficiarios:
+    Array<{
+      estudiante: {
+        id:
+          number;
+
+        nombres:
+          string;
+
+        apellidoPaterno:
+          string;
+
+        apellidoMaterno:
+          string | null;
+      };
+    }>;
+}
+
+export interface CrearExtensionPlazoFrontend {
+  estudianteIds:
+    number[];
+
+  fechaAperturaExtendida?:
+    string;
+
+  fechaLimiteExtendida?:
+    string;
+
+  fechaMaximaRetrasoExtendida?:
+    string;
+
+  motivo?:
+    string;
+}
+
 export default function useSeguimientoTareaDocente(
   cursoId:
     number,
@@ -98,6 +166,14 @@ export default function useSeguimientoTareaDocente(
   ] =
     useState<RespuestaHistorialTarea | null>(
       null,
+    );
+
+  const [
+    extensiones,
+    setExtensiones,
+  ] =
+    useState<ExtensionPlazoFrontend[]>(
+      [],
     );
 
   const [
@@ -425,6 +501,204 @@ export default function useSeguimientoTareaDocente(
       ],
     );
 
+  const cargarExtensiones =
+    useCallback(
+      async () => {
+        validar();
+
+        const respuesta =
+          await fetch(
+            `${API_URL}/tareas/docente/cursos/${cursoId}/${tareaId}/extensiones`,
+            {
+              cache:
+                'no-store',
+
+              headers: {
+                Authorization:
+                  `Bearer ${accessToken}`,
+              },
+            },
+          );
+
+        const cuerpo =
+          await leerJson(
+            respuesta,
+          );
+
+        if (
+          !respuesta.ok
+        ) {
+          throw new Error(
+            mensajeError(
+              cuerpo,
+              'No fue posible cargar las extensiones de plazo.',
+            ),
+          );
+        }
+
+        setExtensiones(
+          (
+            cuerpo as {
+              extensiones:
+                ExtensionPlazoFrontend[];
+            }
+          ).extensiones,
+        );
+      },
+      [
+        accessToken,
+        cursoId,
+        tareaId,
+        validar,
+      ],
+    );
+
+  const extenderPlazo =
+    useCallback(
+      async (
+        datos:
+          CrearExtensionPlazoFrontend,
+      ) => {
+        validar();
+
+        setProcesando(
+          true,
+        );
+
+        try {
+          const respuesta =
+            await fetch(
+              `${API_URL}/tareas/docente/cursos/${cursoId}/${tareaId}/extensiones`,
+              {
+                method:
+                  'POST',
+
+                headers: {
+                  Authorization:
+                    `Bearer ${accessToken}`,
+
+                  'Content-Type':
+                    'application/json',
+                },
+
+                body:
+                  JSON.stringify(
+                    datos,
+                  ),
+              },
+            );
+
+          const cuerpo =
+            await leerJson(
+              respuesta,
+            );
+
+          if (
+            !respuesta.ok
+          ) {
+            throw new Error(
+              mensajeError(
+                cuerpo,
+                'No fue posible ampliar el plazo.',
+              ),
+            );
+          }
+
+          await Promise.all([
+            cargarExtensiones(),
+            cargarPanel(
+              false,
+            ),
+            cargarHistorial(),
+          ]);
+
+          return cuerpo;
+        } finally {
+          setProcesando(
+            false,
+          );
+        }
+      },
+      [
+        accessToken,
+        cargarExtensiones,
+        cargarHistorial,
+        cargarPanel,
+        cursoId,
+        tareaId,
+        validar,
+      ],
+    );
+
+  const revocarExtension =
+    useCallback(
+      async (
+        extensionId:
+          number,
+      ) => {
+        validar();
+
+        setProcesando(
+          true,
+        );
+
+        try {
+          const respuesta =
+            await fetch(
+              `${API_URL}/tareas/docente/cursos/${cursoId}/${tareaId}/extensiones/${extensionId}`,
+              {
+                method:
+                  'DELETE',
+
+                headers: {
+                  Authorization:
+                    `Bearer ${accessToken}`,
+                },
+              },
+            );
+
+          const cuerpo =
+            await leerJson(
+              respuesta,
+            );
+
+          if (
+            !respuesta.ok
+          ) {
+            throw new Error(
+              mensajeError(
+                cuerpo,
+                'No fue posible revocar la extensión.',
+              ),
+            );
+          }
+
+          await Promise.all([
+            cargarExtensiones(),
+            cargarPanel(
+              false,
+            ),
+            cargarHistorial(),
+          ]);
+
+          return cuerpo;
+        } finally {
+          setProcesando(
+            false,
+          );
+        }
+      },
+      [
+        accessToken,
+        cargarExtensiones,
+        cargarHistorial,
+        cargarPanel,
+        cursoId,
+        tareaId,
+        validar,
+      ],
+    );
+
   useEffect(
     () => {
       void cargarPanel(
@@ -436,9 +710,16 @@ export default function useSeguimientoTareaDocente(
           () =>
             undefined,
         );
+
+      void cargarExtensiones()
+        .catch(
+          () =>
+            undefined,
+        );
     },
     [
       cargarHistorial,
+      cargarExtensiones,
       cargarPanel,
     ],
   );
@@ -446,11 +727,15 @@ export default function useSeguimientoTareaDocente(
   return {
     panel,
     historial,
+    extensiones,
     cargando,
     procesando,
     error,
     cargarPanel,
     cargarHistorial,
+    cargarExtensiones,
+    extenderPlazo,
+    revocarExtension,
     calificar,
     publicar,
   };

@@ -3,7 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
+} from '@nestjs/common';
 
 import {
   AccionHistorialCalificacion,
@@ -13,15 +13,15 @@ import {
   EstadoForo,
   EstadoInscripcion,
   Rol,
-} from "../../generated/prisma/client";
+} from '../../generated/prisma/client';
 
-import { PrismaService } from "../../prisma/prisma.service";
+import { PrismaService } from '../../prisma/prisma.service';
 
-import { PublicarNotasForoDto } from "./dto/publicar-notas-foro.dto";
+import { PublicarNotasForoDto } from './dto/publicar-notas-foro.dto';
 
-import { ReabrirNotasForoDto } from "./dto/reabrir-notas-foro.dto";
+import { ReabrirNotasForoDto } from './dto/reabrir-notas-foro.dto';
 
-import type { UsuarioAutenticado } from "./interfaces/usuario-autenticado.interface";
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
 @Injectable()
 export class ForoPublicacionNotasService {
@@ -30,7 +30,7 @@ export class ForoPublicacionNotasService {
   private validarDocente(usuario: UsuarioAutenticado) {
     if (usuario.rol !== Rol.DOCENTE) {
       throw new ForbiddenException(
-        "Solo el docente puede publicar las notas del foro",
+        'Solo el docente puede publicar las notas del foro',
       );
     }
   }
@@ -62,13 +62,13 @@ export class ForoPublicacionNotasService {
 
     if (!foro) {
       throw new NotFoundException(
-        "El foro no existe o no pertenece al docente autenticado",
+        'El foro no existe o no pertenece al docente autenticado',
       );
     }
 
     if (!foro.actividadCalificable) {
       throw new BadRequestException(
-        "El foro no tiene una actividad calificable asociada",
+        'El foro no tiene una actividad calificable asociada',
       );
     }
 
@@ -181,7 +181,7 @@ export class ForoPublicacionNotasService {
 
       advertencias: [
         ...(resumen.totalCalificadas === 0
-          ? ["Todavía no existen calificaciones listas para publicar."]
+          ? ['Todavía no existen calificaciones listas para publicar.']
           : []),
 
         ...(resumen.pendientes > 0
@@ -191,238 +191,178 @@ export class ForoPublicacionNotasService {
           : []),
 
         ...(foro.estado === EstadoForo.ANULADO
-          ? ["El foro está anulado y no puede publicar notas."]
+          ? ['El foro está anulado y no puede publicar notas.']
           : []),
       ],
     };
   }
 
   private async publicarInternamente(
-    foroId:
-      number,
+    foroId: number,
 
-    actividadId:
-      number,
+    actividadId: number,
 
-    actorId:
-      number,
+    actorId: number,
 
-    pendientes:
-      number,
+    pendientes: number,
 
-    permitirPendientes:
-      boolean,
+    permitirPendientes: boolean,
   ) {
-    const fecha =
-      new Date();
+    const fecha = new Date();
 
-    const resultado =
-      await this.prisma.$transaction(
-        async (
-          tx,
-        ) => {
-          const actualizadas =
-            await tx.calificacionEstudiante.updateMany({
-              where: {
-                actividadId,
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      const actualizadas = await tx.calificacionEstudiante.updateMany({
+        where: {
+          actividadId,
 
-                estado: {
-                  in: [
-                    EstadoCalificacion.CALIFICADA,
-                    EstadoCalificacion.BORRADOR,
-                  ],
-                },
-              },
-
-              data: {
-                estado:
-                  EstadoCalificacion.PUBLICADA,
-
-                publicadaEn:
-                  fecha,
-
-                anuladaEn:
-                  null,
-              },
-            });
-
-          await tx.temaForoCurso.update({
-            where: {
-              id:
-                foroId,
-            },
-
-            data: {
-              estado:
-                EstadoForo.NOTAS_PUBLICADAS,
-
-              estaCerrado:
-                true,
-
-              notasPublicadasEn:
-                fecha,
-
-              editadoEn:
-                fecha,
-            },
-          });
-
-          await tx.actividadCalificable.update({
-            where: {
-              id:
-                actividadId,
-            },
-
-            data: {
-              estado:
-                EstadoActividadCalificable.PUBLICADA,
-
-              visibleParaEstudiantes:
-                true,
-
-              publicadaEn:
-                fecha,
-
-              cerradaEn:
-                fecha,
-            },
-          });
-
-          await tx.historialForoCurso.create({
-            data: {
-              temaId:
-                foroId,
-
-              actorId,
-
-              accion:
-                AccionHistorialForo.NOTAS_PUBLICADAS,
-
-              detalle: {
-                totalPublicadas:
-                  actualizadas.count,
-
-                pendientesAlPublicar:
-                  pendientes,
-
-                permitirPendientes,
-
-                publicadaEn:
-                  fecha.toISOString(),
-              },
-            },
-          });
-
-          await tx.historialCalificacion.create({
-            data: {
-              actividadId,
-
-              actorId,
-
-              accion:
-                AccionHistorialCalificacion.CALIFICACIONES_PUBLICADAS,
-
-              detalle: {
-                foroId,
-
-                totalPublicadas:
-                  actualizadas.count,
-
-                pendientesAlPublicar:
-                  pendientes,
-
-                publicadaEn:
-                  fecha.toISOString(),
-              },
-            },
-          });
-
-          return actualizadas;
+          estado: {
+            in: [EstadoCalificacion.CALIFICADA, EstadoCalificacion.BORRADOR],
+          },
         },
-      );
+
+        data: {
+          estado: EstadoCalificacion.PUBLICADA,
+
+          publicadaEn: fecha,
+
+          anuladaEn: null,
+        },
+      });
+
+      await tx.temaForoCurso.update({
+        where: {
+          id: foroId,
+        },
+
+        data: {
+          estado: EstadoForo.NOTAS_PUBLICADAS,
+
+          estaCerrado: true,
+
+          notasPublicadasEn: fecha,
+
+          editadoEn: fecha,
+        },
+      });
+
+      await tx.actividadCalificable.update({
+        where: {
+          id: actividadId,
+        },
+
+        data: {
+          estado: EstadoActividadCalificable.PUBLICADA,
+
+          visibleParaEstudiantes: true,
+
+          publicadaEn: fecha,
+
+          cerradaEn: fecha,
+        },
+      });
+
+      await tx.historialForoCurso.create({
+        data: {
+          temaId: foroId,
+
+          actorId,
+
+          accion: AccionHistorialForo.NOTAS_PUBLICADAS,
+
+          detalle: {
+            totalPublicadas: actualizadas.count,
+
+            pendientesAlPublicar: pendientes,
+
+            permitirPendientes,
+
+            publicadaEn: fecha.toISOString(),
+          },
+        },
+      });
+
+      await tx.historialCalificacion.create({
+        data: {
+          actividadId,
+
+          actorId,
+
+          accion: AccionHistorialCalificacion.CALIFICACIONES_PUBLICADAS,
+
+          detalle: {
+            foroId,
+
+            totalPublicadas: actualizadas.count,
+
+            pendientesAlPublicar: pendientes,
+
+            publicadaEn: fecha.toISOString(),
+          },
+        },
+      });
+
+      return actualizadas;
+    });
 
     return {
       fecha,
-      actualizadas:
-        resultado.count,
+      actualizadas: resultado.count,
     };
   }
 
-  async publicarAutomaticamenteSiCompleto(
-    foroId:
-      number,
-  ) {
-    const foro =
-      await this.prisma.temaForoCurso.findUnique({
-        where: {
-          id:
-            foroId,
-        },
+  async publicarAutomaticamenteSiCompleto(foroId: number) {
+    const foro = await this.prisma.temaForoCurso.findUnique({
+      where: {
+        id: foroId,
+      },
 
-        include: {
-          actividadCalificable:
-            true,
+      include: {
+        actividadCalificable: true,
 
-          curso:
-            true,
-        },
-      });
+        curso: true,
+      },
+    });
 
     if (
       !foro ||
       !foro.estaActivo ||
       !foro.esCalificable ||
       !foro.actividadCalificable ||
-      foro.estado ===
-        EstadoForo.ANULADO ||
-      foro.estado ===
-        EstadoForo.NOTAS_PUBLICADAS
+      foro.estado === EstadoForo.ANULADO ||
+      foro.estado === EstadoForo.NOTAS_PUBLICADAS
     ) {
       return {
-        publicado:
-          false,
+        publicado: false,
       };
     }
 
-    const resumen =
-      await this.obtenerResumenPublicacion(
-        foro.cursoId,
-        foro.actividadCalificable.id,
-      );
+    const resumen = await this.obtenerResumenPublicacion(
+      foro.cursoId,
+      foro.actividadCalificable.id,
+    );
 
-    if (
-      resumen.totalCalificadas ===
-        0 ||
-      resumen.pendientes >
-        0
-    ) {
+    if (resumen.totalCalificadas === 0 || resumen.pendientes > 0) {
       return {
-        publicado:
-          false,
+        publicado: false,
 
-        pendientes:
-          resumen.pendientes,
+        pendientes: resumen.pendientes,
       };
     }
 
-    const resultado =
-      await this.publicarInternamente(
-        foro.id,
-        foro.actividadCalificable.id,
-        foro.autorId,
-        resumen.pendientes,
-        false,
-      );
+    const resultado = await this.publicarInternamente(
+      foro.id,
+      foro.actividadCalificable.id,
+      foro.autorId,
+      resumen.pendientes,
+      false,
+    );
 
     return {
-      publicado:
-        true,
+      publicado: true,
 
-      totalPublicadas:
-        resultado.actualizadas,
+      totalPublicadas: resultado.actualizadas,
 
-      notasPublicadasEn:
-        resultado.fecha,
+      notasPublicadasEn: resultado.fecha,
     };
   }
 
@@ -444,7 +384,7 @@ export class ForoPublicacionNotasService {
 
     if (!estadosPermitidos.includes(foro.estado)) {
       throw new BadRequestException(
-        "El foro debe estar cerrado o en proceso de calificación para publicar notas",
+        'El foro debe estar cerrado o en proceso de calificación para publicar notas',
       );
     }
 
@@ -452,7 +392,7 @@ export class ForoPublicacionNotasService {
 
     if (resumen.totalCalificadas === 0) {
       throw new BadRequestException(
-        "No existen calificaciones listas para publicar",
+        'No existen calificaciones listas para publicar',
       );
     }
 
@@ -464,31 +404,27 @@ export class ForoPublicacionNotasService {
       );
     }
 
-    const resultado =
-      await this.publicarInternamente(
-        foro.id,
-        actividad.id,
-        usuario.id,
-        resumen.pendientes,
-        permitirPendientes,
-      );
+    const resultado = await this.publicarInternamente(
+      foro.id,
+      actividad.id,
+      usuario.id,
+      resumen.pendientes,
+      permitirPendientes,
+    );
 
     return {
-      mensaje: "Notas del foro publicadas correctamente",
+      mensaje: 'Notas del foro publicadas correctamente',
 
-      totalPublicadas:
-        resultado.actualizadas,
+      totalPublicadas: resultado.actualizadas,
 
-      pendientes:
-        resumen.pendientes,
+      pendientes: resumen.pendientes,
 
       foro: {
         id: foro.id,
 
         estado: EstadoForo.NOTAS_PUBLICADAS,
 
-        notasPublicadasEn:
-          resultado.fecha,
+        notasPublicadasEn: resultado.fecha,
       },
 
       actividad: {
@@ -513,14 +449,14 @@ export class ForoPublicacionNotasService {
 
     if (foro.estado !== EstadoForo.NOTAS_PUBLICADAS) {
       throw new BadRequestException(
-        "Solo puedes reabrir notas que ya fueron publicadas",
+        'Solo puedes reabrir notas que ya fueron publicadas',
       );
     }
 
     const motivo = datos.motivo.trim();
 
     if (!motivo) {
-      throw new BadRequestException("Debes indicar el motivo de la reapertura");
+      throw new BadRequestException('Debes indicar el motivo de la reapertura');
     }
 
     const fecha = new Date();
@@ -577,7 +513,7 @@ export class ForoPublicacionNotasService {
           accion: AccionHistorialForo.FORO_ACTUALIZADO,
 
           detalle: {
-            accion: "REAPERTURA_DE_NOTAS",
+            accion: 'REAPERTURA_DE_NOTAS',
 
             motivo,
 
@@ -599,7 +535,7 @@ export class ForoPublicacionNotasService {
           detalle: {
             foroId: foro.id,
 
-            accion: "REAPERTURA_DE_NOTAS",
+            accion: 'REAPERTURA_DE_NOTAS',
 
             motivo,
 
@@ -614,7 +550,7 @@ export class ForoPublicacionNotasService {
     });
 
     return {
-      mensaje: "Notas reabiertas correctamente",
+      mensaje: 'Notas reabiertas correctamente',
 
       totalReabiertas: resultado.count,
 
@@ -640,7 +576,7 @@ export class ForoPublicacionNotasService {
     foroId: number,
   ) {
     if (usuario.rol !== Rol.ESTUDIANTE) {
-      throw new ForbiddenException("Esta consulta corresponde al estudiante");
+      throw new ForbiddenException('Esta consulta corresponde al estudiante');
     }
 
     const inscripcion = await this.prisma.inscripcionCurso.findFirst({
@@ -659,7 +595,7 @@ export class ForoPublicacionNotasService {
 
     if (!inscripcion) {
       throw new ForbiddenException(
-        "No tienes una inscripción activa en este curso",
+        'No tienes una inscripción activa en este curso',
       );
     }
 
@@ -685,7 +621,7 @@ export class ForoPublicacionNotasService {
       !foro.actividadCalificable.visibleParaEstudiantes
     ) {
       throw new NotFoundException(
-        "Las notas del foro todavía no están disponibles",
+        'Las notas del foro todavía no están disponibles',
       );
     }
 
@@ -719,7 +655,7 @@ export class ForoPublicacionNotasService {
 
     if (!calificacion) {
       throw new NotFoundException(
-        "No tienes una nota publicada para este foro",
+        'No tienes una nota publicada para este foro',
       );
     }
 

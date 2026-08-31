@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 import {
   AlineacionReporte,
@@ -14,18 +11,11 @@ import {
   ValorCeldaReporte,
 } from '../reportes';
 
-import {
-  ForoCalificacionService,
-} from './foro-calificacion.service';
+import { ForoCalificacionService } from './foro-calificacion.service';
 
-import type {
-  UsuarioAutenticado,
-} from './interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
-type FilaResumenForo = Record<
-  string,
-  ValorCeldaReporte
-> & {
+type FilaResumenForo = Record<string, ValorCeldaReporte> & {
   estudiantes: number;
   calificadas: number;
   pendientes: number;
@@ -33,10 +23,7 @@ type FilaResumenForo = Record<
   puntajeMaximo: number;
 };
 
-type FilaCalificacionesForo = Record<
-  string,
-  ValorCeldaReporte
-> & {
+type FilaCalificacionesForo = Record<string, ValorCeldaReporte> & {
   estudiante: string;
   correo: string;
   participacion: string;
@@ -53,11 +40,9 @@ type FilaCalificacionesForo = Record<
 @Injectable()
 export class ForoReportesService {
   constructor(
-    private readonly calificacionService:
-      ForoCalificacionService,
+    private readonly calificacionService: ForoCalificacionService,
 
-    private readonly reportesVerificacionService:
-      ReportesVerificacionService,
+    private readonly reportesVerificacionService: ReportesVerificacionService,
   ) {}
 
   async generarCalificaciones(
@@ -66,532 +51,343 @@ export class ForoReportesService {
     foroId: number,
     formatoSolicitado: string,
   ): Promise<ArchivoReporteGenerado> {
-    const formato =
-      this.normalizarFormato(
-        formatoSolicitado,
-      );
+    const formato = this.normalizarFormato(formatoSolicitado);
 
-    const panel =
-      await this.calificacionService.obtenerPanel(
-        usuario,
-        cursoId,
-        foroId,
-      );
+    const panel = await this.calificacionService.obtenerPanel(
+      usuario,
+      cursoId,
+      foroId,
+    );
 
-    const puntajeMaximo =
-      Number(
-        panel.actividad.puntajeMaximo ??
-          100,
-      );
+    const puntajeMaximo = Number(panel.actividad.puntajeMaximo ?? 100);
 
-    const filas:
-      FilaCalificacionesForo[] =
-      panel.estudiantes.map(
-        (item) => {
-          const calificacion =
-            item.calificacion;
+    const filas: FilaCalificacionesForo[] = panel.estudiantes.map((item) => {
+      const calificacion = item.calificacion;
 
-          return {
-            estudiante: [
-              item.estudiante.nombres,
-              item.estudiante.apellidoPaterno,
-              item.estudiante.apellidoMaterno,
-            ]
-              .filter(Boolean)
-              .join(' '),
+      return {
+        estudiante: [
+          item.estudiante.nombres,
+          item.estudiante.apellidoPaterno,
+          item.estudiante.apellidoMaterno,
+        ]
+          .filter(Boolean)
+          .join(' '),
 
-            correo:
-              item.estudiante.correo ??
-              '—',
+        correo: item.estudiante.correo ?? '—',
 
-            participacion:
-              item.tieneRespuesta
-                ? 'Participó'
-                : 'Sin respuesta',
+        participacion: item.tieneRespuesta ? 'Participó' : 'Sin respuesta',
 
-            entrega:
-              !item.tieneRespuesta
-                ? '—'
-                : item.entregadaTarde
-                  ? 'Fuera de plazo'
-                  : 'A tiempo',
+        entrega: !item.tieneRespuesta
+          ? '—'
+          : item.entregadaTarde
+            ? 'Fuera de plazo'
+            : 'A tiempo',
 
-            notaBase:
-              this.numeroONull(
-                calificacion?.notaBase,
-              ),
+        notaBase: this.numeroONull(calificacion?.notaBase),
 
-            descuento:
-              this.numeroONull(
-                calificacion?.descuentoRetraso,
-              ),
+        descuento: this.numeroONull(calificacion?.descuentoRetraso),
 
-            descuentoComentarios:
-              this.numeroONull(
-                calificacion?.descuentoComentarios,
-              ),
+        descuentoComentarios: this.numeroONull(
+          calificacion?.descuentoComentarios,
+        ),
 
-            ajuste:
-              this.numeroONull(
-                calificacion?.ajusteIndividual,
-              ),
+        ajuste: this.numeroONull(calificacion?.ajusteIndividual),
 
-            notaFinal:
-              this.numeroONull(
-                calificacion?.notaFinal,
-              ),
+        notaFinal: this.numeroONull(calificacion?.notaFinal),
 
-            estado:
-              this.etiqueta(
-                item.estado,
-              ),
+        estado: this.etiqueta(item.estado),
 
-            retroalimentacion:
-              calificacion?.retroalimentacion?.trim() ||
-              '—',
-          };
-        },
-      );
-
-    const resumen:
-      FilaResumenForo = {
-        estudiantes:
-          panel.resumen.totalEstudiantes,
-
-        calificadas:
-          panel.resumen.calificadas,
-
-        pendientes:
-          panel.resumen.pendientes,
-
-        sinRespuesta:
-          panel.resumen.sinRespuesta,
-
-        puntajeMaximo,
+        retroalimentacion: calificacion?.retroalimentacion?.trim() || '—',
       };
+    });
 
-    const generadoPor =
-      usuario.correo;
+    const resumen: FilaResumenForo = {
+      estudiantes: panel.resumen.totalEstudiantes,
 
-    const definicion:
-      DefinicionReporte<
-        FilaResumenForo |
-        FilaCalificacionesForo
-      > = {
-        metadatos: {
-          titulo:
-            'Calificaciones del foro',
+      calificadas: panel.resumen.calificadas,
 
-          subtitulo:
-            panel.foro.titulo,
+      pendientes: panel.resumen.pendientes,
 
-          descripcion:
-            `Reporte académico del foro · ${this.etiqueta(
-              panel.actividad.componente,
-            )} · Puntaje máximo: ${puntajeMaximo}`,
+      sinRespuesta: panel.resumen.sinRespuesta,
 
-          generadoPor,
+      puntajeMaximo,
+    };
 
-          filtros: {
-            Curso:
-              String(
-                cursoId,
-              ),
+    const generadoPor = usuario.correo;
 
-            Foro:
-              String(
-                foroId,
-              ),
+    const definicion: DefinicionReporte<
+      FilaResumenForo | FilaCalificacionesForo
+    > = {
+      metadatos: {
+        titulo: 'Calificaciones del foro',
 
-            Estado:
-              this.etiqueta(
-                panel.foro.estado,
-              ),
+        subtitulo: panel.foro.titulo,
 
-            Evaluación:
-              this.etiqueta(
-                panel.foro.tipoEvaluacion,
-              ),
+        descripcion: `Reporte académico del foro · ${this.etiqueta(
+          panel.actividad.componente,
+        )} · Puntaje máximo: ${puntajeMaximo}`,
 
-            'Modalidad de nota':
-              this.etiqueta(
-                panel.foro.modalidadNota,
-              ),
-          },
+        generadoPor,
 
-          textoPie:
-            'IusAcademy · Formación jurídica por competencias · UNIFRANZ',
+        filtros: {
+          Curso: String(cursoId),
+
+          Foro: String(foroId),
+
+          Estado: this.etiqueta(panel.foro.estado),
+
+          Evaluación: this.etiqueta(panel.foro.tipoEvaluacion),
+
+          'Modalidad de nota': this.etiqueta(panel.foro.modalidadNota),
         },
 
-        opciones: {
-          orientacion:
-            OrientacionReporte.HORIZONTAL,
+        textoPie: 'IusAcademy · Formación jurídica por competencias · UNIFRANZ',
+      },
 
-          incluirQr:
-            true,
+      opciones: {
+        orientacion: OrientacionReporte.HORIZONTAL,
 
-          incluirFiltros:
-            true,
+        incluirQr: true,
 
-          incluirFechaHora:
-            true,
+        incluirFiltros: true,
 
-          nombreHojaExcel:
-            'Calificaciones',
+        incluirFechaHora: true,
 
-          incluirBomCsv:
-            true,
+        nombreHojaExcel: 'Calificaciones',
+
+        incluirBomCsv: true,
+      },
+
+      secciones: [
+        {
+          id: 'resumen',
+
+          titulo: 'Resumen general',
+
+          filas: [resumen],
+
+          mostrarNumeroFila: false,
+
+          columnas: [
+            {
+              clave: 'estudiantes',
+
+              etiqueta: 'Estudiantes',
+
+              tipo: TipoDatoReporte.NUMERO,
+
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'calificadas',
+
+              etiqueta: 'Calificados',
+
+              tipo: TipoDatoReporte.NUMERO,
+
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'pendientes',
+
+              etiqueta: 'Pendientes',
+
+              tipo: TipoDatoReporte.NUMERO,
+
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'sinRespuesta',
+
+              etiqueta: 'Sin respuesta',
+
+              tipo: TipoDatoReporte.NUMERO,
+
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'puntajeMaximo',
+
+              etiqueta: 'Puntaje máximo',
+
+              tipo: TipoDatoReporte.NUMERO,
+
+              alineacion: AlineacionReporte.CENTRO,
+            },
+          ],
         },
+        {
+          id: 'calificaciones',
 
-        secciones: [
-          {
-            id:
-              'resumen',
+          titulo: 'Detalle de calificaciones',
 
-            titulo:
-              'Resumen general',
+          descripcion: `${panel.resumen.calificadas} calificados · ${panel.resumen.pendientes} pendientes · ${panel.resumen.sinRespuesta} sin respuesta`,
 
-            filas: [
-              resumen,
-            ],
+          mostrarEncabezado: true,
 
-            mostrarNumeroFila:
-              false,
+          mostrarNumeroFila: true,
 
-            columnas: [
-              {
-                clave:
-                  'estudiantes',
+          columnas: [
+            {
+              clave: 'estudiante',
 
-                etiqueta:
-                  'Estudiantes',
+              etiqueta: 'Estudiante',
 
-                tipo:
-                  TipoDatoReporte.NUMERO,
+              tipo: TipoDatoReporte.TEXTO,
 
-                alineacion:
-                  AlineacionReporte.CENTRO,
-              },
-              {
-                clave:
-                  'calificadas',
+              ancho: 1.55,
+            },
+            {
+              clave: 'correo',
 
-                etiqueta:
-                  'Calificados',
+              etiqueta: 'Correo',
 
-                tipo:
-                  TipoDatoReporte.NUMERO,
+              tipo: TipoDatoReporte.TEXTO,
 
-                alineacion:
-                  AlineacionReporte.CENTRO,
-              },
-              {
-                clave:
-                  'pendientes',
+              ancho: 1.65,
+            },
+            {
+              clave: 'participacion',
 
-                etiqueta:
-                  'Pendientes',
+              etiqueta: 'Participación',
 
-                tipo:
-                  TipoDatoReporte.NUMERO,
+              tipo: TipoDatoReporte.TEXTO,
 
-                alineacion:
-                  AlineacionReporte.CENTRO,
-              },
-              {
-                clave:
-                  'sinRespuesta',
+              ancho: 1,
 
-                etiqueta:
-                  'Sin respuesta',
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'entrega',
 
-                tipo:
-                  TipoDatoReporte.NUMERO,
+              etiqueta: 'Entrega',
 
-                alineacion:
-                  AlineacionReporte.CENTRO,
-              },
-              {
-                clave:
-                  'puntajeMaximo',
+              tipo: TipoDatoReporte.TEXTO,
 
-                etiqueta:
-                  'Puntaje máximo',
+              ancho: 1,
 
-                tipo:
-                  TipoDatoReporte.NUMERO,
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'notaBase',
 
-                alineacion:
-                  AlineacionReporte.CENTRO,
-              },
-            ],
-          },
-          {
-            id:
-              'calificaciones',
+              etiqueta: 'Base',
 
-            titulo:
-              'Detalle de calificaciones',
+              tipo: TipoDatoReporte.DECIMAL,
 
-            descripcion:
-              `${panel.resumen.calificadas} calificados · ${panel.resumen.pendientes} pendientes · ${panel.resumen.sinRespuesta} sin respuesta`,
+              ancho: 0.7,
 
-            mostrarEncabezado:
-              true,
+              alineacion: AlineacionReporte.DERECHA,
+            },
+            {
+              clave: 'descuento',
 
-            mostrarNumeroFila:
-              true,
+              etiqueta: 'Desc.',
 
-            columnas: [
-              {
-                clave:
-                  'estudiante',
+              tipo: TipoDatoReporte.DECIMAL,
 
-                etiqueta:
-                  'Estudiante',
+              ancho: 0.7,
 
-                tipo:
-                  TipoDatoReporte.TEXTO,
+              alineacion: AlineacionReporte.DERECHA,
+            },
+            {
+              clave: 'ajuste',
 
-                ancho:
-                  1.55,
-              },
-              {
-                clave:
-                  'correo',
+              etiqueta: 'Ajuste',
 
-                etiqueta:
-                  'Correo',
+              tipo: TipoDatoReporte.DECIMAL,
 
-                tipo:
-                  TipoDatoReporte.TEXTO,
+              ancho: 0.7,
 
-                ancho:
-                  1.65,
-              },
-              {
-                clave:
-                  'participacion',
+              alineacion: AlineacionReporte.DERECHA,
+            },
+            {
+              clave: 'notaFinal',
 
-                etiqueta:
-                  'Participación',
+              etiqueta: 'Final',
 
-                tipo:
-                  TipoDatoReporte.TEXTO,
+              tipo: TipoDatoReporte.DECIMAL,
 
-                ancho:
-                  1,
+              ancho: 0.75,
 
-                alineacion:
-                  AlineacionReporte.CENTRO,
-              },
-              {
-                clave:
-                  'entrega',
+              alineacion: AlineacionReporte.DERECHA,
+            },
+            {
+              clave: 'estado',
 
-                etiqueta:
-                  'Entrega',
+              etiqueta: 'Estado',
 
-                tipo:
-                  TipoDatoReporte.TEXTO,
+              tipo: TipoDatoReporte.TEXTO,
 
-                ancho:
-                  1,
+              ancho: 0.9,
 
-                alineacion:
-                  AlineacionReporte.CENTRO,
-              },
-              {
-                clave:
-                  'notaBase',
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'retroalimentacion',
 
-                etiqueta:
-                  'Base',
+              etiqueta: 'Retroalimentación',
 
-                tipo:
-                  TipoDatoReporte.DECIMAL,
+              tipo: TipoDatoReporte.TEXTO,
 
-                ancho:
-                  .7,
+              ancho: 1.9,
+            },
+          ],
 
-                alineacion:
-                  AlineacionReporte.DERECHA,
-              },
-              {
-                clave:
-                  'descuento',
-
-                etiqueta:
-                  'Desc.',
-
-                tipo:
-                  TipoDatoReporte.DECIMAL,
-
-                ancho:
-                  .7,
-
-                alineacion:
-                  AlineacionReporte.DERECHA,
-              },
-              {
-                clave:
-                  'ajuste',
-
-                etiqueta:
-                  'Ajuste',
-
-                tipo:
-                  TipoDatoReporte.DECIMAL,
-
-                ancho:
-                  .7,
-
-                alineacion:
-                  AlineacionReporte.DERECHA,
-              },
-              {
-                clave:
-                  'notaFinal',
-
-                etiqueta:
-                  'Final',
-
-                tipo:
-                  TipoDatoReporte.DECIMAL,
-
-                ancho:
-                  .75,
-
-                alineacion:
-                  AlineacionReporte.DERECHA,
-              },
-              {
-                clave:
-                  'estado',
-
-                etiqueta:
-                  'Estado',
-
-                tipo:
-                  TipoDatoReporte.TEXTO,
-
-                ancho:
-                  .9,
-
-                alineacion:
-                  AlineacionReporte.CENTRO,
-              },
-              {
-                clave:
-                  'retroalimentacion',
-
-                etiqueta:
-                  'Retroalimentación',
-
-                tipo:
-                  TipoDatoReporte.TEXTO,
-
-                ancho:
-                  1.9,
-              },
-            ],
-
-            filas,
-          },
-        ],
-      };
+          filas,
+        },
+      ],
+    };
 
     return this.reportesVerificacionService.generarVerificable(
       formato,
       definicion,
       {
-        tipo:
-          'FORO_CALIFICACIONES',
+        tipo: 'FORO_CALIFICACIONES',
 
-        generadoPorId:
-          usuario.id,
+        generadoPorId: usuario.id,
 
         filtros: {
           cursoId,
           foroId,
 
-          estado:
-            String(
-              panel.foro.estado,
-            ),
+          estado: String(panel.foro.estado),
 
-          tipoEvaluacion:
-            String(
-              panel.foro.tipoEvaluacion,
-            ),
+          tipoEvaluacion: String(panel.foro.tipoEvaluacion),
 
-          modalidadNota:
-            String(
-              panel.foro.modalidadNota,
-            ),
+          modalidadNota: String(panel.foro.modalidadNota),
         },
       },
       `calificaciones-foro-${foroId}-iusacademy`,
     );
   }
 
-  private numeroONull(
-    valor: unknown,
-  ): number | null {
-    if (
-      valor === null ||
-      valor === undefined
-    ) {
+  private numeroONull(valor: unknown): number | null {
+    if (valor === null || valor === undefined) {
       return null;
     }
 
-    const resultado =
-      Number(
-        valor,
-      );
+    const resultado = Number(valor);
 
-    return Number.isFinite(
-      resultado,
-    )
-      ? resultado
-      : null;
+    return Number.isFinite(resultado) ? resultado : null;
   }
 
-  private etiqueta(
-    valor: unknown,
-  ): string {
-    return String(
-      valor ??
-        '—',
-    )
-      .replaceAll(
-        '_',
-        ' ',
-      )
+  private etiqueta(valor: unknown): string {
+    return String(valor ?? '—')
+      .replaceAll('_', ' ')
       .toLowerCase()
-      .replace(
-        /^./,
-        (
-          caracter,
-        ) =>
-          caracter.toUpperCase(),
-      );
+      .replace(/^./, (caracter) => caracter.toUpperCase());
   }
 
-  private normalizarFormato(
-    formato: string,
-  ): FormatoReporte {
-    const valor =
-      formato
-        .trim()
-        .toUpperCase();
+  private normalizarFormato(formato: string): FormatoReporte {
+    const valor = formato.trim().toUpperCase();
 
     if (
       valor === FormatoReporte.PDF ||
       valor === FormatoReporte.EXCEL ||
       valor === FormatoReporte.CSV
     ) {
-      return valor as FormatoReporte;
+      return valor;
     }
 
     throw new BadRequestException(

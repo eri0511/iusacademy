@@ -8,53 +8,32 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  IsNotEmpty,
-  IsString,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
-import type {
-  Request,
-} from 'express';
+import type { Request } from 'express';
 
-import {
-  Rol,
-} from '../../generated/prisma/client';
+import { Rol } from '../../generated/prisma/client';
 
-import {
-  Roles,
-} from '../auth/decorators/roles.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-import {
-  JwtAuthGuard,
-} from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-import {
-  RolesGuard,
-} from '../auth/guards/roles.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
-import {
-  ReportesVerificacionService,
-} from './reportes-verificacion.service';
+import { ReportesVerificacionService } from './reportes-verificacion.service';
 
 class AnularReporteDto {
   @IsString({
-    message:
-      'El motivo debe ser un texto.',
+    message: 'El motivo debe ser un texto.',
   })
   @IsNotEmpty({
-    message:
-      'El motivo de anulación es obligatorio.',
+    message: 'El motivo de anulación es obligatorio.',
   })
   @MinLength(5, {
-    message:
-      'El motivo debe tener al menos 5 caracteres.',
+    message: 'El motivo debe tener al menos 5 caracteres.',
   })
   @MaxLength(500, {
-    message:
-      'El motivo no puede superar los 500 caracteres.',
+    message: 'El motivo no puede superar los 500 caracteres.',
   })
   motivo!: string;
 }
@@ -65,16 +44,14 @@ interface UsuarioAutenticado {
   rol: Rol;
 }
 
-type RequestAutenticado =
-  Request & {
-    user: UsuarioAutenticado;
-  };
+type RequestAutenticado = Request & {
+  user: UsuarioAutenticado;
+};
 
 @Controller('reportes')
 export class ReportesVerificacionController {
   constructor(
-    private readonly reportesVerificacionService:
-      ReportesVerificacionService,
+    private readonly reportesVerificacionService: ReportesVerificacionService,
   ) {}
 
   /**
@@ -83,10 +60,7 @@ export class ReportesVerificacionController {
    * GET /reportes/historial
    */
   @Get('historial')
-  @UseGuards(
-    JwtAuthGuard,
-    RolesGuard,
-  )
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Rol.ADMINISTRADOR)
   listar() {
     return this.reportesVerificacionService.listar();
@@ -98,12 +72,8 @@ export class ReportesVerificacionController {
    * GET /reportes/verificar/:codigo
    */
   @Get('verificar/:codigo')
-  verificar(
-    @Param('codigo') codigo: string,
-  ) {
-    return this.reportesVerificacionService.verificar(
-      codigo,
-    );
+  verificar(@Param('codigo') codigo: string) {
+    return this.reportesVerificacionService.verificar(codigo);
   }
 
   /**
@@ -112,10 +82,7 @@ export class ReportesVerificacionController {
    * PATCH /reportes/:codigo/anular
    */
   @Patch(':codigo/anular')
-  @UseGuards(
-    JwtAuthGuard,
-    RolesGuard,
-  )
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Rol.ADMINISTRADOR)
   anular(
     @Param('codigo') codigo: string,

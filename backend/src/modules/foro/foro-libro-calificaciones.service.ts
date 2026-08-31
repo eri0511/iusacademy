@@ -13,199 +13,114 @@ import {
   Rol,
 } from '../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-import type {
-  UsuarioAutenticado,
-} from './interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
 type ActividadLibro = {
-  id:
-    number;
+  id: number;
 
-  titulo:
-    string;
+  titulo: string;
 
-  origen:
-    string;
+  origen: string;
 
-  componente:
-    ComponenteEvaluacion;
+  componente: ComponenteEvaluacion;
 
-  participaEnPromedio:
-    boolean;
+  participaEnPromedio: boolean;
 
-  estado:
-    EstadoActividadCalificable;
+  estado: EstadoActividadCalificable;
 
   hito: {
-    id:
-      number;
+    id: number;
 
-    numero:
-      number;
+    numero: number;
 
-    codigo:
-      string;
+    codigo: string;
 
-    nombre:
-      string;
+    nombre: string;
 
-    puntajeContinua:
-      number;
+    puntajeContinua: number;
 
-    puntajeProcesual:
-      number;
+    puntajeProcesual: number;
   } | null;
 
   calificaciones: Array<{
-    estudianteId:
-      number;
+    estudianteId: number;
 
-    notaFinal:
-      Prisma.Decimal;
+    notaFinal: Prisma.Decimal;
 
-    estado:
-      EstadoCalificacion;
+    estado: EstadoCalificacion;
   }>;
 };
 
 @Injectable()
 export class ForoLibroCalificacionesService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  private redondear(
-    valor:
-      number,
-  ) {
-    return Math.round(
-      valor,
-    );
+  private redondear(valor: number) {
+    return Math.round(valor);
   }
 
-  private promedio(
-    valores:
-      number[],
-  ) {
-    if (
-      valores.length ===
-      0
-    ) {
+  private promedio(valores: number[]) {
+    if (valores.length === 0) {
       return 0;
     }
 
-    return valores.reduce(
-      (
-        suma,
-        valor,
-      ) =>
-        suma +
-        valor,
-      0,
-    ) /
-      valores.length;
+    return valores.reduce((suma, valor) => suma + valor, 0) / valores.length;
   }
 
-  private convertir(
-    promedioSobre100:
-      number,
-    maximo:
-      number,
-  ) {
-    const exacta =
-      (
-        promedioSobre100 *
-        maximo
-      ) /
-      100;
+  private convertir(promedioSobre100: number, maximo: number) {
+    const exacta = (promedioSobre100 * maximo) / 100;
 
     return {
-      promedioSobre100:
-        Number(
-          promedioSobre100.toFixed(
-            4,
-          ),
-        ),
+      promedioSobre100: Number(promedioSobre100.toFixed(4)),
 
-      notaExacta:
-        Number(
-          exacta.toFixed(
-            4,
-          ),
-        ),
+      notaExacta: Number(exacta.toFixed(4)),
 
-      notaRedondeada:
-        this.redondear(
-          exacta,
-        ),
+      notaRedondeada: this.redondear(exacta),
 
       maximo,
     };
   }
 
   private async validarAccesoCurso(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
   ) {
-    const curso =
-      await this.prisma.curso.findUnique({
-        where: {
-          id:
-            cursoId,
-        },
+    const curso = await this.prisma.curso.findUnique({
+      where: {
+        id: cursoId,
+      },
 
-        select: {
-          id:
-            true,
+      select: {
+        id: true,
 
-          docenteId:
-            true,
+        docenteId: true,
 
-          materia: {
-            select: {
-              id:
-                true,
+        materia: {
+          select: {
+            id: true,
 
-              nombre:
-                true,
+            nombre: true,
 
-              codigo:
-                true,
-            },
+            codigo: true,
           },
-
-          gestion:
-            true,
-
-          paralelo:
-            true,
-
-          semestre:
-            true,
         },
-      });
+
+        gestion: true,
+
+        paralelo: true,
+
+        semestre: true,
+      },
+    });
 
     if (!curso) {
-      throw new NotFoundException(
-        'El curso no existe',
-      );
+      throw new NotFoundException('El curso no existe');
     }
 
-    if (
-      usuario.rol ===
-      Rol.DOCENTE
-    ) {
-      if (
-        curso.docenteId !==
-        usuario.id
-      ) {
+    if (usuario.rol === Rol.DOCENTE) {
+      if (curso.docenteId !== usuario.id) {
         throw new ForbiddenException(
           'El curso no pertenece al docente autenticado',
         );
@@ -214,27 +129,20 @@ export class ForoLibroCalificacionesService {
       return curso;
     }
 
-    if (
-      usuario.rol ===
-      Rol.ESTUDIANTE
-    ) {
-      const inscripcion =
-        await this.prisma.inscripcionCurso.findFirst({
-          where: {
-            cursoId,
+    if (usuario.rol === Rol.ESTUDIANTE) {
+      const inscripcion = await this.prisma.inscripcionCurso.findFirst({
+        where: {
+          cursoId,
 
-            estudianteId:
-              usuario.id,
+          estudianteId: usuario.id,
 
-            estado:
-              EstadoInscripcion.ACTIVA,
-          },
+          estado: EstadoInscripcion.ACTIVA,
+        },
 
-          select: {
-            id:
-              true,
-          },
-        });
+        select: {
+          id: true,
+        },
+      });
 
       if (!inscripcion) {
         throw new ForbiddenException(
@@ -251,264 +159,156 @@ export class ForoLibroCalificacionesService {
   }
 
   private construirResumenEstudiante(
-    actividades:
-      ActividadLibro[],
-    estudianteId:
-      number,
+    actividades: ActividadLibro[],
+    estudianteId: number,
   ) {
-    const mapa =
-      new Map<
-        number,
-        {
-          hito: NonNullable<
-            ActividadLibro['hito']
-          >;
+    const mapa = new Map<
+      number,
+      {
+        hito: NonNullable<ActividadLibro['hito']>;
 
-          continua: Array<{
-            actividadId:
-              number;
+        continua: Array<{
+          actividadId: number;
 
-            titulo:
-              string;
+          titulo: string;
 
-            origen:
-              string;
+          origen: string;
 
-            notaSobre100:
-              number;
-          }>;
+          notaSobre100: number;
+        }>;
 
-          procesual: Array<{
-            actividadId:
-              number;
+        procesual: Array<{
+          actividadId: number;
 
-            titulo:
-              string;
+          titulo: string;
 
-            origen:
-              string;
+          origen: string;
 
-            notaSobre100:
-              number;
-          }>;
-        }
-      >();
+          notaSobre100: number;
+        }>;
+      }
+    >();
 
-    for (
-      const actividad of
-      actividades
-    ) {
+    for (const actividad of actividades) {
       if (
         !actividad.hito ||
         !actividad.participaEnPromedio ||
-        actividad.estado !==
-          EstadoActividadCalificable.PUBLICADA
+        actividad.estado !== EstadoActividadCalificable.PUBLICADA
       ) {
         continue;
       }
 
-      const calificacion =
-        actividad.calificaciones.find(
-          (
-            item,
-          ) =>
-            item.estudianteId ===
-              estudianteId &&
-            item.estado ===
-              EstadoCalificacion.PUBLICADA,
-        );
+      const calificacion = actividad.calificaciones.find(
+        (item) =>
+          item.estudianteId === estudianteId &&
+          item.estado === EstadoCalificacion.PUBLICADA,
+      );
 
       if (!calificacion) {
         continue;
       }
 
-      const actual =
-        mapa.get(
-          actividad.hito.id,
-        ) ?? {
-          hito:
-            actividad.hito,
+      const actual = mapa.get(actividad.hito.id) ?? {
+        hito: actividad.hito,
 
-          continua:
-            [],
+        continua: [],
 
-          procesual:
-            [],
-        };
-
-      const detalle = {
-        actividadId:
-          actividad.id,
-
-        titulo:
-          actividad.titulo,
-
-        origen:
-          actividad.origen,
-
-        notaSobre100:
-          Number(
-            calificacion.notaFinal,
-          ),
+        procesual: [],
       };
 
-      if (
-        actividad.componente ===
-        ComponenteEvaluacion.CONTINUA
-      ) {
-        actual.continua.push(
-          detalle,
-        );
+      const detalle = {
+        actividadId: actividad.id,
+
+        titulo: actividad.titulo,
+
+        origen: actividad.origen,
+
+        notaSobre100: Number(calificacion.notaFinal),
+      };
+
+      if (actividad.componente === ComponenteEvaluacion.CONTINUA) {
+        actual.continua.push(detalle);
       } else {
-        actual.procesual.push(
-          detalle,
-        );
+        actual.procesual.push(detalle);
       }
 
-      mapa.set(
-        actividad.hito.id,
-        actual,
-      );
+      mapa.set(actividad.hito.id, actual);
     }
 
-    const hitos =
-      [
-        ...mapa.values(),
-      ]
-        .sort(
-          (
-            a,
-            b,
-          ) =>
-            a.hito.numero -
-            b.hito.numero,
-        )
-        .map(
-          (
-            item,
-          ) => {
-            const promedioContinua =
-              this.promedio(
-                item.continua.map(
-                  (
-                    actividad,
-                  ) =>
-                    actividad.notaSobre100,
-                ),
-              );
-
-            const promedioProcesual =
-              this.promedio(
-                item.procesual.map(
-                  (
-                    actividad,
-                  ) =>
-                    actividad.notaSobre100,
-                ),
-              );
-
-            const continua =
-              this.convertir(
-                promedioContinua,
-                item.hito.puntajeContinua,
-              );
-
-            const procesual =
-              this.convertir(
-                promedioProcesual,
-                item.hito.puntajeProcesual,
-              );
-
-            return {
-              hito: {
-                id:
-                  item.hito.id,
-
-                numero:
-                  item.hito.numero,
-
-                codigo:
-                  item.hito.codigo,
-
-                nombre:
-                  item.hito.nombre,
-              },
-
-              continua: {
-                actividades:
-                  item.continua,
-
-                cantidadActividades:
-                  item.continua.length,
-
-                ...continua,
-              },
-
-              procesual: {
-                actividades:
-                  item.procesual,
-
-                cantidadActividades:
-                  item.procesual.length,
-
-                ...procesual,
-              },
-
-              totalHito: {
-                notaExacta:
-                  Number(
-                    (
-                      continua.notaExacta +
-                      procesual.notaExacta
-                    ).toFixed(
-                      4,
-                    ),
-                  ),
-
-                notaRedondeada:
-                  continua.notaRedondeada +
-                  procesual.notaRedondeada,
-
-                maximo:
-                  continua.maximo +
-                  procesual.maximo,
-              },
-            };
-          },
+    const hitos = [...mapa.values()]
+      .sort((a, b) => a.hito.numero - b.hito.numero)
+      .map((item) => {
+        const promedioContinua = this.promedio(
+          item.continua.map((actividad) => actividad.notaSobre100),
         );
 
-    const totalExacto =
-      hitos.reduce(
-        (
-          suma,
-          hito,
-        ) =>
-          suma +
-          hito.totalHito.notaExacta,
-        0,
-      );
+        const promedioProcesual = this.promedio(
+          item.procesual.map((actividad) => actividad.notaSobre100),
+        );
 
-    const totalRedondeado =
-      hitos.reduce(
-        (
-          suma,
-          hito,
-        ) =>
-          suma +
-          hito.totalHito.notaRedondeada,
-        0,
-      );
+        const continua = this.convertir(
+          promedioContinua,
+          item.hito.puntajeContinua,
+        );
 
-    const maximoTotal =
-      hitos.reduce(
-        (
-          suma,
-          hito,
-        ) =>
-          suma +
-          hito.totalHito.maximo,
-        0,
-      );
+        const procesual = this.convertir(
+          promedioProcesual,
+          item.hito.puntajeProcesual,
+        );
+
+        return {
+          hito: {
+            id: item.hito.id,
+
+            numero: item.hito.numero,
+
+            codigo: item.hito.codigo,
+
+            nombre: item.hito.nombre,
+          },
+
+          continua: {
+            actividades: item.continua,
+
+            cantidadActividades: item.continua.length,
+
+            ...continua,
+          },
+
+          procesual: {
+            actividades: item.procesual,
+
+            cantidadActividades: item.procesual.length,
+
+            ...procesual,
+          },
+
+          totalHito: {
+            notaExacta: Number(
+              (continua.notaExacta + procesual.notaExacta).toFixed(4),
+            ),
+
+            notaRedondeada: continua.notaRedondeada + procesual.notaRedondeada,
+
+            maximo: continua.maximo + procesual.maximo,
+          },
+        };
+      });
+
+    const totalExacto = hitos.reduce(
+      (suma, hito) => suma + hito.totalHito.notaExacta,
+      0,
+    );
+
+    const totalRedondeado = hitos.reduce(
+      (suma, hito) => suma + hito.totalHito.notaRedondeada,
+      0,
+    );
+
+    const maximoTotal = hitos.reduce(
+      (suma, hito) => suma + hito.totalHito.maximo,
+      0,
+    );
 
     return {
       estudianteId,
@@ -516,367 +316,232 @@ export class ForoLibroCalificacionesService {
       hitos,
 
       resumenFinal: {
-        notaExacta:
-          Number(
-            totalExacto.toFixed(
-              4,
-            ),
-          ),
+        notaExacta: Number(totalExacto.toFixed(4)),
 
-        notaRedondeada:
-          totalRedondeado,
+        notaRedondeada: totalRedondeado,
 
-        maximo:
-          maximoTotal,
+        maximo: maximoTotal,
       },
     };
   }
 
-  private async obtenerActividadesPublicadas(
-    cursoId:
-      number,
-  ) {
+  private async obtenerActividadesPublicadas(cursoId: number) {
     return this.prisma.actividadCalificable.findMany({
       where: {
         cursoId,
 
-        participaEnPromedio:
-          true,
+        participaEnPromedio: true,
 
-        estado:
-          EstadoActividadCalificable.PUBLICADA,
+        estado: EstadoActividadCalificable.PUBLICADA,
       },
 
       orderBy: [
         {
           hito: {
-            numero:
-              'asc',
+            numero: 'asc',
           },
         },
         {
-          componente:
-            'asc',
+          componente: 'asc',
         },
         {
-          orden:
-            'asc',
+          orden: 'asc',
         },
       ],
 
       include: {
         hito: {
           select: {
-            id:
-              true,
+            id: true,
 
-            numero:
-              true,
+            numero: true,
 
-            codigo:
-              true,
+            codigo: true,
 
-            nombre:
-              true,
+            nombre: true,
 
-            puntajeContinua:
-              true,
+            puntajeContinua: true,
 
-            puntajeProcesual:
-              true,
+            puntajeProcesual: true,
           },
         },
 
         calificaciones: {
           where: {
-            estado:
-              EstadoCalificacion.PUBLICADA,
+            estado: EstadoCalificacion.PUBLICADA,
           },
 
           select: {
-            estudianteId:
-              true,
+            estudianteId: true,
 
-            notaFinal:
-              true,
+            notaFinal: true,
 
-            estado:
-              true,
+            estado: true,
           },
         },
       },
     });
   }
 
-  async obtenerMiLibro(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-  ) {
-    const curso =
-      await this.validarAccesoCurso(
-        usuario,
-        cursoId,
-      );
+  async obtenerMiLibro(usuario: UsuarioAutenticado, cursoId: number) {
+    const curso = await this.validarAccesoCurso(usuario, cursoId);
 
-    if (
-      usuario.rol !==
-      Rol.ESTUDIANTE
-    ) {
-      throw new ForbiddenException(
-        'Esta consulta corresponde al estudiante',
-      );
+    if (usuario.rol !== Rol.ESTUDIANTE) {
+      throw new ForbiddenException('Esta consulta corresponde al estudiante');
     }
 
-    const actividades =
-      await this.obtenerActividadesPublicadas(
-        cursoId,
-      );
+    const actividades = await this.obtenerActividadesPublicadas(cursoId);
 
     return {
       curso,
 
-      libro:
-        this.construirResumenEstudiante(
-          actividades,
-          usuario.id,
-        ),
+      libro: this.construirResumenEstudiante(actividades, usuario.id),
     };
   }
 
   async obtenerLibroEstudianteDocente(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    estudianteId:
-      number,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    estudianteId: number,
   ) {
-    const curso =
-      await this.validarAccesoCurso(
-        usuario,
-        cursoId,
-      );
+    const curso = await this.validarAccesoCurso(usuario, cursoId);
 
-    if (
-      usuario.rol !==
-      Rol.DOCENTE
-    ) {
-      throw new ForbiddenException(
-        'Esta consulta corresponde al docente',
-      );
+    if (usuario.rol !== Rol.DOCENTE) {
+      throw new ForbiddenException('Esta consulta corresponde al docente');
     }
 
-    const estudiante =
-      await this.prisma.usuario.findFirst({
-        where: {
-          id:
-            estudianteId,
+    const estudiante = await this.prisma.usuario.findFirst({
+      where: {
+        id: estudianteId,
 
-          rol:
-            Rol.ESTUDIANTE,
+        rol: Rol.ESTUDIANTE,
 
-          inscripcionesComoEstudiante: {
-            some: {
-              cursoId,
+        inscripcionesComoEstudiante: {
+          some: {
+            cursoId,
 
-              estado:
-                EstadoInscripcion.ACTIVA,
-            },
+            estado: EstadoInscripcion.ACTIVA,
           },
         },
+      },
 
-        select: {
-          id:
-            true,
+      select: {
+        id: true,
 
-          nombres:
-            true,
+        nombres: true,
 
-          apellidoPaterno:
-            true,
+        apellidoPaterno: true,
 
-          apellidoMaterno:
-            true,
+        apellidoMaterno: true,
 
-          correo:
-            true,
+        correo: true,
 
-          fotoPerfilUrl:
-            true,
-        },
-      });
+        fotoPerfilUrl: true,
+      },
+    });
 
     if (!estudiante) {
-      throw new NotFoundException(
-        'El estudiante no pertenece al curso',
-      );
+      throw new NotFoundException('El estudiante no pertenece al curso');
     }
 
-    const actividades =
-      await this.obtenerActividadesPublicadas(
-        cursoId,
-      );
+    const actividades = await this.obtenerActividadesPublicadas(cursoId);
 
     return {
       curso,
 
       estudiante,
 
-      libro:
-        this.construirResumenEstudiante(
-          actividades,
-          estudiante.id,
-        ),
+      libro: this.construirResumenEstudiante(actividades, estudiante.id),
     };
   }
 
   async obtenerLibroCompletoDocente(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
   ) {
-    const curso =
-      await this.validarAccesoCurso(
-        usuario,
-        cursoId,
-      );
+    const curso = await this.validarAccesoCurso(usuario, cursoId);
 
-    if (
-      usuario.rol !==
-      Rol.DOCENTE
-    ) {
-      throw new ForbiddenException(
-        'Esta consulta corresponde al docente',
-      );
+    if (usuario.rol !== Rol.DOCENTE) {
+      throw new ForbiddenException('Esta consulta corresponde al docente');
     }
 
-    const estudiantes =
-      await this.prisma.inscripcionCurso.findMany({
-        where: {
-          cursoId,
-
-          estado:
-            EstadoInscripcion.ACTIVA,
-
-          estudiante: {
-            estaActivo:
-              true,
-
-            rol:
-              Rol.ESTUDIANTE,
-          },
-        },
-
-        orderBy: [
-          {
-            estudiante: {
-              apellidoPaterno:
-                'asc',
-            },
-          },
-          {
-            estudiante: {
-              nombres:
-                'asc',
-            },
-          },
-        ],
-
-        include: {
-          estudiante: {
-            select: {
-              id:
-                true,
-
-              nombres:
-                true,
-
-              apellidoPaterno:
-                true,
-
-              apellidoMaterno:
-                true,
-
-              correo:
-                true,
-
-              fotoPerfilUrl:
-                true,
-            },
-          },
-        },
-      });
-
-    const actividades =
-      await this.obtenerActividadesPublicadas(
+    const estudiantes = await this.prisma.inscripcionCurso.findMany({
+      where: {
         cursoId,
-      );
 
-    const filas =
-      estudiantes.map(
-        (
-          registro,
-        ) => ({
-          estudiante:
-            registro.estudiante,
+        estado: EstadoInscripcion.ACTIVA,
 
-          libro:
-            this.construirResumenEstudiante(
-              actividades,
-              registro.estudiante.id,
-            ),
-        }),
-      );
+        estudiante: {
+          estaActivo: true,
 
-    const notasFinales =
-      filas.map(
-        (
-          fila,
-        ) =>
-          fila.libro.resumenFinal.notaRedondeada,
-      );
+          rol: Rol.ESTUDIANTE,
+        },
+      },
+
+      orderBy: [
+        {
+          estudiante: {
+            apellidoPaterno: 'asc',
+          },
+        },
+        {
+          estudiante: {
+            nombres: 'asc',
+          },
+        },
+      ],
+
+      include: {
+        estudiante: {
+          select: {
+            id: true,
+
+            nombres: true,
+
+            apellidoPaterno: true,
+
+            apellidoMaterno: true,
+
+            correo: true,
+
+            fotoPerfilUrl: true,
+          },
+        },
+      },
+    });
+
+    const actividades = await this.obtenerActividadesPublicadas(cursoId);
+
+    const filas = estudiantes.map((registro) => ({
+      estudiante: registro.estudiante,
+
+      libro: this.construirResumenEstudiante(
+        actividades,
+        registro.estudiante.id,
+      ),
+    }));
+
+    const notasFinales = filas.map(
+      (fila) => fila.libro.resumenFinal.notaRedondeada,
+    );
 
     return {
       curso,
 
       resumen: {
-        totalEstudiantes:
-          filas.length,
+        totalEstudiantes: filas.length,
 
         promedioCurso:
-          notasFinales.length >
-          0
-            ? Number(
-                this.promedio(
-                  notasFinales,
-                ).toFixed(
-                  2,
-                ),
-              )
+          notasFinales.length > 0
+            ? Number(this.promedio(notasFinales).toFixed(2))
             : 0,
 
-        notaMayor:
-          notasFinales.length >
-          0
-            ? Math.max(
-                ...notasFinales,
-              )
-            : 0,
+        notaMayor: notasFinales.length > 0 ? Math.max(...notasFinales) : 0,
 
-        notaMenor:
-          notasFinales.length >
-          0
-            ? Math.min(
-                ...notasFinales,
-              )
-            : 0,
+        notaMenor: notasFinales.length > 0 ? Math.min(...notasFinales) : 0,
       },
 
-      estudiantes:
-        filas,
+      estudiantes: filas,
     };
   }
 }

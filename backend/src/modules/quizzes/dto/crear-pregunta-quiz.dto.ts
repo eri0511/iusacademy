@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   ArrayMinSize,
@@ -80,13 +78,9 @@ export class CrearPreguntaQuizDto {
   orden!: number;
 
   @ValidateNested({
-    each:
-      true,
+    each: true,
   })
-  @Type(
-    () =>
-      CrearOpcionPreguntaQuizDto,
-  )
+  @Type(() => CrearOpcionPreguntaQuizDto)
   @ArrayMinSize(2)
   opciones!: CrearOpcionPreguntaQuizDto[];
 }

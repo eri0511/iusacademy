@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   ArrayMinSize,
@@ -50,12 +48,8 @@ export class SeleccionarFragmentosQuizDto {
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({
-    each:
-      true,
+    each: true,
   })
-  @Type(
-    () =>
-      FragmentoSeleccionadoQuizDto,
-  )
+  @Type(() => FragmentoSeleccionadoQuizDto)
   fragmentos!: FragmentoSeleccionadoQuizDto[];
 }

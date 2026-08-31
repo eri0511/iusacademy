@@ -29,7 +29,8 @@ export class CrearUsuarioDto {
   @IsEmail()
   @IsNotEmpty()
   @Matches(/^[A-Za-z0-9._%+-]+@unifranz\.edu\.bo$/, {
-    message: 'El correo debe pertenecer al dominio institucional @unifranz.edu.bo',
+    message:
+      'El correo debe pertenecer al dominio institucional @unifranz.edu.bo',
   })
   correo!: string;
 

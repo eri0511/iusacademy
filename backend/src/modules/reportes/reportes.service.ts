@@ -1,25 +1,13 @@
-import {
-  BadRequestException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
-import {
-  CsvService,
-} from './csv/csv.service';
-import {
-  ExcelService,
-} from './excel/excel.service';
+import { CsvService } from './csv/csv.service';
+import { ExcelService } from './excel/excel.service';
 import type {
   ArchivoReporteGenerado,
   DefinicionReporte,
 } from './interfaces/reporte.interface';
-import {
-  PdfService,
-} from './pdf/pdf.service';
-import {
-  FilaReporte,
-  FormatoReporte,
-} from './tipos/reportes.types';
+import { PdfService } from './pdf/pdf.service';
+import { FilaReporte, FormatoReporte } from './tipos/reportes.types';
 
 @Injectable()
 export class ReportesService {

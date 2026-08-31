@@ -7,28 +7,14 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import type {
-  Request,
-} from 'express';
+import type { Request } from 'express';
 
-import {
-  Rol,
-} from '../../generated/prisma/client';
-import {
-  Roles,
-} from '../auth/decorators/roles.decorator';
-import {
-  JwtAuthGuard,
-} from '../auth/guards/jwt-auth.guard';
-import {
-  RolesGuard,
-} from '../auth/guards/roles.guard';
-import {
-  AnularReporteDto,
-} from './dto/anular-reporte.dto';
-import {
-  ReportesVerificacionService,
-} from './reportes-verificacion.service';
+import { Rol } from '../../generated/prisma/client';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { AnularReporteDto } from './dto/anular-reporte.dto';
+import { ReportesVerificacionService } from './reportes-verificacion.service';
 
 type SolicitudAdministrador = Request & {
   user: { id: number; rol: Rol };

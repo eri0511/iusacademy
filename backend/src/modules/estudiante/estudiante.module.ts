@@ -1,34 +1,18 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import {
-  AuthModule,
-} from '../auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
-import {
-  EstudianteInscripcionesController,
-} from './inscripciones/estudiante-inscripciones.controller';
+import { EstudianteInscripcionesController } from './inscripciones/estudiante-inscripciones.controller';
 
-import {
-  EstudianteInscripcionesService,
-} from './inscripciones/estudiante-inscripciones.service';
+import { EstudianteInscripcionesService } from './inscripciones/estudiante-inscripciones.service';
 
 @Module({
-  imports: [
-    AuthModule,
-  ],
+  imports: [AuthModule],
 
-  controllers: [
-    EstudianteInscripcionesController,
-  ],
+  controllers: [EstudianteInscripcionesController],
 
-  providers: [
-    EstudianteInscripcionesService,
-  ],
+  providers: [EstudianteInscripcionesService],
 
-  exports: [
-    EstudianteInscripcionesService,
-  ],
+  exports: [EstudianteInscripcionesService],
 })
 export class EstudianteModule {}

@@ -11,9 +11,7 @@ import type { Request } from 'express';
 
 import { Rol } from '../../../generated/prisma/client';
 
-import {
-  ROLES_KEY,
-} from '../decorators/roles.decorator';
+import { ROLES_KEY } from '../decorators/roles.decorator';
 
 type UsuarioAutenticado = {
   id: number;
@@ -26,44 +24,26 @@ type RequestConUsuario = Request & {
 };
 
 @Injectable()
-export class RolesGuard
-  implements CanActivate
-{
-  constructor(
-    private readonly reflector:
-      Reflector,
-  ) {}
+export class RolesGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
 
-  canActivate(
-    context: ExecutionContext,
-  ): boolean {
-    const rolesPermitidos =
-      this.reflector.getAllAndOverride<Rol[]>(
-        ROLES_KEY,
-        [
-          context.getHandler(),
-          context.getClass(),
-        ],
-      );
+  canActivate(context: ExecutionContext): boolean {
+    const rolesPermitidos = this.reflector.getAllAndOverride<Rol[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     /*
      * Si la ruta no tiene @Roles(),
      * el guard no aplica restricciones de rol.
      */
-    if (
-      !rolesPermitidos ||
-      rolesPermitidos.length === 0
-    ) {
+    if (!rolesPermitidos || rolesPermitidos.length === 0) {
       return true;
     }
 
-    const request =
-      context
-        .switchToHttp()
-        .getRequest<RequestConUsuario>();
+    const request = context.switchToHttp().getRequest<RequestConUsuario>();
 
-    const usuario =
-      request.user;
+    const usuario = request.user;
 
     if (!usuario) {
       throw new ForbiddenException(
@@ -71,10 +51,7 @@ export class RolesGuard
       );
     }
 
-    const tienePermiso =
-      rolesPermitidos.includes(
-        usuario.rol,
-      );
+    const tienePermiso = rolesPermitidos.includes(usuario.rol);
 
     if (!tienePermiso) {
       throw new ForbiddenException(

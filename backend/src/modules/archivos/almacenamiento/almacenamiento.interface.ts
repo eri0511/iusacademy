@@ -1,47 +1,27 @@
 export type ArchivoParaGuardar = {
-  buffer:
-    Buffer;
+  buffer: Buffer;
 
-  nombreOriginal:
-    string;
+  nombreOriginal: string;
 
-  extension:
-    string;
+  extension: string;
 
-  carpeta:
-    string;
+  carpeta: string;
 };
 
 export type ArchivoGuardado = {
-  nombreAlmacenado:
-    string;
+  nombreAlmacenado: string;
 
-  rutaAbsoluta:
-    string;
+  rutaAbsoluta: string;
 
-  rutaRelativa:
-    string;
+  rutaRelativa: string;
 
-  urlPublica:
-    string;
+  urlPublica: string;
 };
 
 export abstract class AlmacenamientoArchivos {
-  abstract guardar(
-    archivo:
-      ArchivoParaGuardar,
-  ):
-    Promise<ArchivoGuardado>;
+  abstract guardar(archivo: ArchivoParaGuardar): Promise<ArchivoGuardado>;
 
-  abstract eliminar(
-    rutaRelativa:
-      string,
-  ):
-    Promise<void>;
+  abstract eliminar(rutaRelativa: string): Promise<void>;
 
-  abstract leer(
-    rutaRelativa:
-      string,
-  ):
-    Promise<Buffer>;
+  abstract leer(rutaRelativa: string): Promise<Buffer>;
 }

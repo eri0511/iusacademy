@@ -1,104 +1,57 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import {
-  ConfigModule,
-} from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 
-import {
-  AppController,
-} from './app.controller';
+import { AppController } from './app.controller';
 
-import {
-  AppService,
-} from './app.service';
+import { AppService } from './app.service';
 
-import {
-  PrismaModule,
-} from './prisma/prisma.module';
+import { PrismaModule } from './prisma/prisma.module';
 
-import {
-  AuthModule,
-} from './modules/auth/auth.module';
+import { AuthModule } from './modules/auth/auth.module';
 
-import {
-  CorreoModule,
-} from './modules/correo/correo.module';
+import { CorreoModule } from './modules/correo/correo.module';
 
-import {
-  PerfilModule,
-} from './modules/perfil/perfil.module';
+import { PerfilModule } from './modules/perfil/perfil.module';
 
-import {
-  UsuariosModule,
-} from './modules/usuarios/usuarios.module';
+import { UsuariosModule } from './modules/usuarios/usuarios.module';
 
-import {
-  MateriasModule,
-} from './modules/materias/materias.module';
+import { MateriasModule } from './modules/materias/materias.module';
 
-import {
-  CursosModule,
-} from './modules/cursos/cursos.module';
+import { CursosModule } from './modules/cursos/cursos.module';
 
-import {
-  DashboardModule,
-} from './modules/dashboard/dashboard.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
-import {
-  HitosAcademicosModule,
-} from './modules/hitos-academicos/hitos-academicos.module';
+import { HitosAcademicosModule } from './modules/hitos-academicos/hitos-academicos.module';
 
-import {
-  DocenteModule,
-} from './modules/docente/docente.module';
+import { DocenteModule } from './modules/docente/docente.module';
 
-import {
-  EstudianteModule,
-} from './modules/estudiante/estudiante.module';
+import { EstudianteModule } from './modules/estudiante/estudiante.module';
 
-import {
-  AulaCursoModule,
-} from './modules/aula-curso/aula-curso.module';
+import { AulaCursoModule } from './modules/aula-curso/aula-curso.module';
 
-import {
-  ComunicacionCursoModule,
-} from './modules/comunicacion-curso/comunicacion-curso.module';
+import { ComunicacionCursoModule } from './modules/comunicacion-curso/comunicacion-curso.module';
 
-import {
-  GruposModule,
-} from './modules/grupos/grupos.module';
+import { GruposModule } from './modules/grupos/grupos.module';
 
-import {
-  CalificacionesModule,
-} from './modules/calificaciones/calificaciones.module';
+import { CalificacionesModule } from './modules/calificaciones/calificaciones.module';
 
-import {
-  ForoModule,
-} from './modules/foro/foro.module';
+import { ForoModule } from './modules/foro/foro.module';
 
-import {
-  ArchivosModule,
-} from './modules/archivos/archivos.module';
+import { ArchivosModule } from './modules/archivos/archivos.module';
 
-import {
-  RecursosModule,
-} from './modules/recursos/recursos.module';
+import { RecursosModule } from './modules/recursos/recursos.module';
 
-import {
-  TareasModule,
-} from './modules/tareas/tareas.module';
+import { TareasModule } from './modules/tareas/tareas.module';
 
-import {
-  QuizzesModule,
-} from './modules/quizzes/quizzes.module';
+import { QuizzesModule } from './modules/quizzes/quizzes.module';
+
+import { NotificacionesModule } from './modules/notificaciones/notificaciones.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal:
-        true,
+      isGlobal: true,
     }),
 
     PrismaModule,
@@ -140,14 +93,12 @@ import {
     TareasModule,
 
     QuizzesModule,
+
+    NotificacionesModule,
   ],
 
-  controllers: [
-    AppController,
-  ],
+  controllers: [AppController],
 
-  providers: [
-    AppService,
-  ],
+  providers: [AppService],
 })
 export class AppModule {}

@@ -1,12 +1,6 @@
-import {
-  EXTENSION_REPORTE,
-} from '../constants/reportes.constants';
-import {
-  FormatoReporte,
-} from '../tipos/reportes.types';
-import {
-  formatearFechaArchivo,
-} from './fechas.helper';
+import { EXTENSION_REPORTE } from '../constants/reportes.constants';
+import { FormatoReporte } from '../tipos/reportes.types';
+import { formatearFechaArchivo } from './fechas.helper';
 
 const NOMBRE_RESERVADO_WINDOWS = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
 
@@ -24,9 +18,7 @@ export function limpiarNombreArchivo(nombre: string): string {
     return 'reporte';
   }
 
-  return NOMBRE_RESERVADO_WINDOWS.test(limpio)
-    ? `reporte-${limpio}`
-    : limpio;
+  return NOMBRE_RESERVADO_WINDOWS.test(limpio) ? `reporte-${limpio}` : limpio;
 }
 
 export function obtenerExtensionReporte(formato: FormatoReporte): string {

@@ -1,21 +1,11 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
-import {
-  IsInt,
-  IsOptional,
-  Min,
-} from 'class-validator';
+import { IsInt, IsOptional, Min } from 'class-validator';
 
 export class ListarTareasDto {
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  hitoId?:
-    number;
+  hitoId?: number;
 }

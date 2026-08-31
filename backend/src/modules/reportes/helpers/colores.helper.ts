@@ -12,8 +12,7 @@ export function normalizarColorHex(color: string): string {
   const corto = HEX_CORTO.exec(valor);
 
   if (corto) {
-    return `#${corto[1]}${corto[1]}${corto[2]}${corto[2]}${corto[3]}${corto[3]}`
-      .toUpperCase();
+    return `#${corto[1]}${corto[1]}${corto[2]}${corto[2]}${corto[3]}${corto[3]}`.toUpperCase();
   }
 
   const largo = HEX_LARGO.exec(valor);
@@ -39,7 +38,9 @@ export function convertirHexAArgb(color: string, alfa = 'FF'): string {
   const alfaNormalizado = alfa.trim().toUpperCase();
 
   if (!/^[\dA-F]{2}$/.test(alfaNormalizado)) {
-    throw new TypeError('El canal alfa debe tener dos caracteres hexadecimales');
+    throw new TypeError(
+      'El canal alfa debe tener dos caracteres hexadecimales',
+    );
   }
 
   return `${alfaNormalizado}${normalizarColorHex(color).slice(1)}`;

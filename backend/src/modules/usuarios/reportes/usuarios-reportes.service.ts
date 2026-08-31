@@ -1,14 +1,8 @@
-import {
-  Injectable,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import {
-  Rol,
-} from '../../../generated/prisma/client';
+import { Rol } from '../../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 import {
   AlineacionReporte,
@@ -27,9 +21,7 @@ import {
   ExportarUsuariosDto,
 } from '../dto/exportar-usuarios.dto';
 
-import type {
-  UsuarioAutenticado,
-} from '../interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from '../interfaces/usuario-autenticado.interface';
 
 type UsuarioConsultado = {
   id: number;
@@ -77,11 +69,7 @@ export class UsuariosReportesService {
     generadoPor: UsuarioAutenticado,
   ): Promise<ArchivoReporteGenerado> {
     const usuarios = await this.consultarUsuarios(filtros);
-    const definicion = this.construirDefinicion(
-      usuarios,
-      filtros,
-      generadoPor,
-    );
+    const definicion = this.construirDefinicion(usuarios, filtros, generadoPor);
 
     return this.reportesVerificacionService.generarVerificable(
       formato,
@@ -114,11 +102,7 @@ export class UsuariosReportesService {
               ? false
               : undefined,
       },
-      orderBy: [
-        { rol: 'asc' },
-        { apellidoPaterno: 'asc' },
-        { nombres: 'asc' },
-      ],
+      orderBy: [{ rol: 'asc' }, { apellidoPaterno: 'asc' }, { nombres: 'asc' }],
       select: {
         id: true,
         nombres: true,
@@ -141,9 +125,13 @@ export class UsuariosReportesService {
   ): DefinicionReporte<FilaResumenUsuarios | FilaUsuario> {
     const resumen: FilaResumenUsuarios = {
       total: usuarios.length,
-      estudiantes: usuarios.filter((usuario) => usuario.rol === Rol.ESTUDIANTE).length,
-      docentes: usuarios.filter((usuario) => usuario.rol === Rol.DOCENTE).length,
-      administradores: usuarios.filter((usuario) => usuario.rol === Rol.ADMINISTRADOR).length,
+      estudiantes: usuarios.filter((usuario) => usuario.rol === Rol.ESTUDIANTE)
+        .length,
+      docentes: usuarios.filter((usuario) => usuario.rol === Rol.DOCENTE)
+        .length,
+      administradores: usuarios.filter(
+        (usuario) => usuario.rol === Rol.ADMINISTRADOR,
+      ).length,
       activos: usuarios.filter((usuario) => usuario.estaActivo).length,
       pendientes: usuarios.filter((usuario) => !usuario.cuentaActivada).length,
     };
@@ -154,7 +142,9 @@ export class UsuariosReportesService {
         usuario.nombres,
         usuario.apellidoPaterno,
         usuario.apellidoMaterno,
-      ].filter(Boolean).join(' '),
+      ]
+        .filter(Boolean)
+        .join(' '),
       correo: usuario.correo,
       rol: this.etiquetaRol(usuario.rol),
       estado: usuario.estaActivo ? 'Activo' : 'Inactivo',
@@ -169,10 +159,9 @@ export class UsuariosReportesService {
         subtitulo: 'Gestión administrativa de cuentas de IusAcademy',
         descripcion:
           'Resumen institucional de usuarios registrados, roles, estado de acceso y activación de cuentas.',
-        generadoPor: [
-          generadoPor.nombres,
-          generadoPor.apellidoPaterno,
-        ].filter(Boolean).join(' '),
+        generadoPor: [generadoPor.nombres, generadoPor.apellidoPaterno]
+          .filter(Boolean)
+          .join(' '),
         filtros: this.etiquetasFiltros(filtros),
         textoPie: 'IusAcademy · Formación jurídica por competencias · UNIFRANZ',
       },
@@ -191,12 +180,42 @@ export class UsuariosReportesService {
           filas: [resumen],
           mostrarNumeroFila: false,
           columnas: [
-            { clave: 'total', etiqueta: 'Total', tipo: TipoDatoReporte.NUMERO, alineacion: AlineacionReporte.CENTRO },
-            { clave: 'estudiantes', etiqueta: 'Estudiantes', tipo: TipoDatoReporte.NUMERO, alineacion: AlineacionReporte.CENTRO },
-            { clave: 'docentes', etiqueta: 'Docentes', tipo: TipoDatoReporte.NUMERO, alineacion: AlineacionReporte.CENTRO },
-            { clave: 'administradores', etiqueta: 'Administradores', tipo: TipoDatoReporte.NUMERO, alineacion: AlineacionReporte.CENTRO },
-            { clave: 'activos', etiqueta: 'Activos', tipo: TipoDatoReporte.NUMERO, alineacion: AlineacionReporte.CENTRO },
-            { clave: 'pendientes', etiqueta: 'Pendientes', tipo: TipoDatoReporte.NUMERO, alineacion: AlineacionReporte.CENTRO },
+            {
+              clave: 'total',
+              etiqueta: 'Total',
+              tipo: TipoDatoReporte.NUMERO,
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'estudiantes',
+              etiqueta: 'Estudiantes',
+              tipo: TipoDatoReporte.NUMERO,
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'docentes',
+              etiqueta: 'Docentes',
+              tipo: TipoDatoReporte.NUMERO,
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'administradores',
+              etiqueta: 'Administradores',
+              tipo: TipoDatoReporte.NUMERO,
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'activos',
+              etiqueta: 'Activos',
+              tipo: TipoDatoReporte.NUMERO,
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'pendientes',
+              etiqueta: 'Pendientes',
+              tipo: TipoDatoReporte.NUMERO,
+              alineacion: AlineacionReporte.CENTRO,
+            },
           ],
         },
         {
@@ -206,13 +225,42 @@ export class UsuariosReportesService {
           filas,
           mostrarNumeroFila: true,
           columnas: [
-            { clave: 'nombreCompleto', etiqueta: 'Nombre completo', ancho: 1.7 },
+            {
+              clave: 'nombreCompleto',
+              etiqueta: 'Nombre completo',
+              ancho: 1.7,
+            },
             { clave: 'correo', etiqueta: 'Correo', ancho: 1.8 },
-            { clave: 'rol', etiqueta: 'Rol', ancho: 0.9, alineacion: AlineacionReporte.CENTRO },
-            { clave: 'estado', etiqueta: 'Estado', ancho: 0.8, alineacion: AlineacionReporte.CENTRO },
-            { clave: 'activacion', etiqueta: 'Activación', ancho: 0.9, alineacion: AlineacionReporte.CENTRO },
-            { clave: 'accesoEnviadoEn', etiqueta: 'Acceso enviado', tipo: TipoDatoReporte.FECHA_HORA, ancho: 1.15 },
-            { clave: 'creadoEn', etiqueta: 'Registro', tipo: TipoDatoReporte.FECHA_HORA, ancho: 1.15 },
+            {
+              clave: 'rol',
+              etiqueta: 'Rol',
+              ancho: 0.9,
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'estado',
+              etiqueta: 'Estado',
+              ancho: 0.8,
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'activacion',
+              etiqueta: 'Activación',
+              ancho: 0.9,
+              alineacion: AlineacionReporte.CENTRO,
+            },
+            {
+              clave: 'accesoEnviadoEn',
+              etiqueta: 'Acceso enviado',
+              tipo: TipoDatoReporte.FECHA_HORA,
+              ancho: 1.15,
+            },
+            {
+              clave: 'creadoEn',
+              etiqueta: 'Registro',
+              tipo: TipoDatoReporte.FECHA_HORA,
+              ancho: 1.15,
+            },
           ],
         },
       ],
@@ -250,4 +298,3 @@ export class UsuariosReportesService {
     }
   }
 }
-

@@ -1,18 +1,11 @@
-import {
-  Global,
-  Module,
-} from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 
 import { CorreoService } from './correo.service';
 
 @Global()
 @Module({
-  providers: [
-    CorreoService,
-  ],
+  providers: [CorreoService],
 
-  exports: [
-    CorreoService,
-  ],
+  exports: [CorreoService],
 })
 export class CorreoModule {}

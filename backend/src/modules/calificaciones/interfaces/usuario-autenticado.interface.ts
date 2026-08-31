@@ -1,14 +1,9 @@
-import {
-  Rol,
-} from '../../../generated/prisma/client';
+import { Rol } from '../../../generated/prisma/client';
 
 export type UsuarioAutenticado = {
-  id:
-    number;
+  id: number;
 
-  correo:
-    string;
+  correo: string;
 
-  rol:
-    Rol;
+  rol: Rol;
 };

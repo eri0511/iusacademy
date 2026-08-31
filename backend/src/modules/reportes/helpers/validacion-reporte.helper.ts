@@ -1,15 +1,7 @@
-import {
-  LIMITES_REPORTE,
-} from '../constants/reportes.constants';
-import {
-  ColumnaReporte,
-} from '../interfaces/columna-reporte.interface';
-import {
-  DefinicionReporte,
-} from '../interfaces/reporte.interface';
-import {
-  FilaReporte,
-} from '../tipos/reportes.types';
+import { LIMITES_REPORTE } from '../constants/reportes.constants';
+import { ColumnaReporte } from '../interfaces/columna-reporte.interface';
+import { DefinicionReporte } from '../interfaces/reporte.interface';
+import { FilaReporte } from '../tipos/reportes.types';
 
 export class DefinicionReporteInvalidaError extends Error {
   constructor(public readonly errores: string[]) {
@@ -36,7 +28,9 @@ function validarColumnas<TFila extends FilaReporte>(
     if (!columna.clave.trim()) {
       errores.push(`La ${referencia} no tiene clave`);
     } else if (claves.has(columna.clave)) {
-      errores.push(`La clave "${columna.clave}" está repetida en la sección ${indiceSeccion + 1}`);
+      errores.push(
+        `La clave "${columna.clave}" está repetida en la sección ${indiceSeccion + 1}`,
+      );
     } else {
       claves.add(columna.clave);
     }
@@ -46,10 +40,15 @@ function validarColumnas<TFila extends FilaReporte>(
     }
 
     if (columna.etiqueta.length > LIMITES_REPORTE.etiquetaColumna) {
-      errores.push(`La etiqueta de la ${referencia} supera el límite permitido`);
+      errores.push(
+        `La etiqueta de la ${referencia} supera el límite permitido`,
+      );
     }
 
-    if (columna.ancho !== undefined && (!Number.isFinite(columna.ancho) || columna.ancho <= 0)) {
+    if (
+      columna.ancho !== undefined &&
+      (!Number.isFinite(columna.ancho) || columna.ancho <= 0)
+    ) {
       errores.push(`El ancho de la ${referencia} debe ser mayor que cero`);
     }
   });
@@ -72,15 +71,23 @@ export function obtenerErroresDefinicionReporte<TFila extends FilaReporte>(
     errores.push('El título del reporte supera el límite permitido');
   }
 
-  if ((definicion.metadatos?.subtitulo?.length ?? 0) > LIMITES_REPORTE.subtitulo) {
+  if (
+    (definicion.metadatos?.subtitulo?.length ?? 0) > LIMITES_REPORTE.subtitulo
+  ) {
     errores.push('El subtítulo del reporte supera el límite permitido');
   }
 
-  if ((definicion.metadatos?.descripcion?.length ?? 0) > LIMITES_REPORTE.descripcion) {
+  if (
+    (definicion.metadatos?.descripcion?.length ?? 0) >
+    LIMITES_REPORTE.descripcion
+  ) {
     errores.push('La descripción del reporte supera el límite permitido');
   }
 
-  if (!Array.isArray(definicion.secciones) || definicion.secciones.length === 0) {
+  if (
+    !Array.isArray(definicion.secciones) ||
+    definicion.secciones.length === 0
+  ) {
     errores.push('El reporte debe contener al menos una sección');
     return errores;
   }
@@ -97,7 +104,9 @@ export function obtenerErroresDefinicionReporte<TFila extends FilaReporte>(
     }
 
     if (!Array.isArray(seccion.filas)) {
-      errores.push(`Las filas de la sección ${indiceSeccion + 1} no son válidas`);
+      errores.push(
+        `Las filas de la sección ${indiceSeccion + 1} no son válidas`,
+      );
     }
 
     errores.push(...validarColumnas(seccion.columnas ?? [], indiceSeccion));

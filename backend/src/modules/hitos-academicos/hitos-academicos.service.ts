@@ -5,17 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-import {
-  ActualizarPlanificacionDto,
-} from './dto/actualizar-planificacion.dto';
+import { ActualizarPlanificacionDto } from './dto/actualizar-planificacion.dto';
 
-import {
-  CambiarEstadoPlanificacionDto,
-} from './dto/cambiar-estado-planificacion.dto';
+import { CambiarEstadoPlanificacionDto } from './dto/cambiar-estado-planificacion.dto';
 
 import {
   CrearPlanificacionDto,
@@ -55,154 +49,110 @@ type DatosHitoPersistencia = {
 
 @Injectable()
 export class HitosAcademicosService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  private readonly definicionesHitos:
-    DefinicionHito[] = [
-      {
-        numero:
-          1,
+  private readonly definicionesHitos: DefinicionHito[] = [
+    {
+      numero: 1,
 
-        codigo:
-          'H1',
+      codigo: 'H1',
 
-        nombre:
-          'Retroalimentación',
+      nombre: 'Retroalimentación',
 
-        descripcion:
-          'Periodo inicial de diagnóstico, nivelación y retroalimentación. No genera calificación.',
+      descripcion:
+        'Periodo inicial de diagnóstico, nivelación y retroalimentación. No genera calificación.',
 
-        puntajeTotal:
-          0,
+      puntajeTotal: 0,
 
-        puntajeContinua:
-          0,
+      puntajeContinua: 0,
 
-        puntajeProcesual:
-          0,
+      puntajeProcesual: 0,
 
-        duracionMinimaDias:
-          7,
+      duracionMinimaDias: 7,
 
-        duracionMaximaDias:
-          14,
-      },
-      {
-        numero:
-          2,
+      duracionMaximaDias: 14,
+    },
+    {
+      numero: 2,
 
-        codigo:
-          'H2',
+      codigo: 'H2',
 
-        nombre:
-          'Primer parcial',
+      nombre: 'Primer parcial',
 
-        descripcion:
-          'Primer periodo evaluativo: 15 puntos de evaluación continua y 10 puntos de evaluación procesual.',
+      descripcion:
+        'Primer periodo evaluativo: 15 puntos de evaluación continua y 10 puntos de evaluación procesual.',
 
-        puntajeTotal:
-          25,
+      puntajeTotal: 25,
 
-        puntajeContinua:
-          15,
+      puntajeContinua: 15,
 
-        puntajeProcesual:
-          10,
+      puntajeProcesual: 10,
 
-        duracionMinimaDias:
-          30,
+      duracionMinimaDias: 30,
 
-        duracionMaximaDias:
-          40,
-      },
-      {
-        numero:
-          3,
+      duracionMaximaDias: 40,
+    },
+    {
+      numero: 3,
 
-        codigo:
-          'H3',
+      codigo: 'H3',
 
-        nombre:
-          'Segundo parcial',
+      nombre: 'Segundo parcial',
 
-        descripcion:
-          'Segundo periodo evaluativo: 15 puntos de evaluación continua y 10 puntos de evaluación procesual.',
+      descripcion:
+        'Segundo periodo evaluativo: 15 puntos de evaluación continua y 10 puntos de evaluación procesual.',
 
-        puntajeTotal:
-          25,
+      puntajeTotal: 25,
 
-        puntajeContinua:
-          15,
+      puntajeContinua: 15,
 
-        puntajeProcesual:
-          10,
+      puntajeProcesual: 10,
 
-        duracionMinimaDias:
-          30,
+      duracionMinimaDias: 30,
 
-        duracionMaximaDias:
-          40,
-      },
-      {
-        numero:
-          4,
+      duracionMaximaDias: 40,
+    },
+    {
+      numero: 4,
 
-        codigo:
-          'H4',
+      codigo: 'H4',
 
-        nombre:
-          'Tercer parcial',
+      nombre: 'Tercer parcial',
 
-        descripcion:
-          'Tercer periodo evaluativo: 15 puntos de evaluación continua y 10 puntos de evaluación procesual.',
+      descripcion:
+        'Tercer periodo evaluativo: 15 puntos de evaluación continua y 10 puntos de evaluación procesual.',
 
-        puntajeTotal:
-          25,
+      puntajeTotal: 25,
 
-        puntajeContinua:
-          15,
+      puntajeContinua: 15,
 
-        puntajeProcesual:
-          10,
+      puntajeProcesual: 10,
 
-        duracionMinimaDias:
-          30,
+      duracionMinimaDias: 30,
 
-        duracionMaximaDias:
-          40,
-      },
-      {
-        numero:
-          5,
+      duracionMaximaDias: 40,
+    },
+    {
+      numero: 5,
 
-        codigo:
-          'H5',
+      codigo: 'H5',
 
-        nombre:
-          'Evaluación final',
+      nombre: 'Evaluación final',
 
-        descripcion:
-          'Periodo final: 15 puntos de evaluación continua y 10 puntos de evaluación procesual.',
+      descripcion:
+        'Periodo final: 15 puntos de evaluación continua y 10 puntos de evaluación procesual.',
 
-        puntajeTotal:
-          25,
+      puntajeTotal: 25,
 
-        puntajeContinua:
-          15,
+      puntajeContinua: 15,
 
-        puntajeProcesual:
-          10,
+      puntajeProcesual: 10,
 
-        duracionMinimaDias:
-          10,
+      duracionMinimaDias: 10,
 
-        duracionMaximaDias:
-          18,
-      },
-    ];
+      duracionMaximaDias: 18,
+    },
+  ];
 
   private readonly seleccionPlanificacion = {
     id: true,
@@ -214,8 +164,7 @@ export class HitosAcademicosService {
 
     hitos: {
       orderBy: {
-        numero:
-          'asc' as const,
+        numero: 'asc' as const,
       },
 
       select: {
@@ -237,207 +186,110 @@ export class HitosAcademicosService {
 
     _count: {
       select: {
-        cursos:
-          true,
+        cursos: true,
       },
     },
   } as const;
 
   private calcularDuracionDias(
-    fechaInicio:
-      Date,
+    fechaInicio: Date,
 
-    fechaFin:
-      Date,
+    fechaFin: Date,
   ): number {
-    const milisegundosPorDia =
-      1000 *
-      60 *
-      60 *
-      24;
+    const milisegundosPorDia = 1000 * 60 * 60 * 24;
 
     return (
       Math.floor(
-        (
-          fechaFin.getTime() -
-          fechaInicio.getTime()
-        ) /
-          milisegundosPorDia,
-      ) +
-      1
+        (fechaFin.getTime() - fechaInicio.getTime()) / milisegundosPorDia,
+      ) + 1
     );
   }
 
-  private validarHitos(
-    hitos:
-      FechaHitoDto[],
-  ): {
-    hitosOrdenados:
-      HitoValidado[];
+  private validarHitos(hitos: FechaHitoDto[]): {
+    hitosOrdenados: HitoValidado[];
 
-    advertencias:
-      string[];
+    advertencias: string[];
   } {
-    if (
-      hitos.length !==
-      5
-    ) {
+    if (hitos.length !== 5) {
       throw new BadRequestException(
         'Debes registrar exactamente los cinco hitos académicos',
       );
     }
 
-    const numerosUnicos =
-      new Set(
-        hitos.map(
-          (
-            hito,
-          ) =>
-            hito.numero,
-        ),
-      );
+    const numerosUnicos = new Set(hitos.map((hito) => hito.numero));
 
-    const numerosEsperados = [
-      1,
-      2,
-      3,
-      4,
-      5,
-    ];
+    const numerosEsperados = [1, 2, 3, 4, 5];
 
     if (
-      numerosUnicos.size !==
-        5 ||
-      !numerosEsperados.every(
-        (
-          numero,
-        ) =>
-          numerosUnicos.has(
-            numero,
-          ),
-      )
+      numerosUnicos.size !== 5 ||
+      !numerosEsperados.every((numero) => numerosUnicos.has(numero))
     ) {
       throw new BadRequestException(
         'Los hitos deben corresponder exactamente a H1, H2, H3, H4 y H5',
       );
     }
 
-    const hitosOrdenados:
-      HitoValidado[] =
-      [...hitos]
-        .sort(
-          (
-            a,
-            b,
-          ) =>
-            a.numero -
-            b.numero,
-        )
-        .map(
-          (
-            hito,
-          ) => {
-            const fechaInicioDate =
-              new Date(
-                hito.fechaInicio,
-              );
+    const hitosOrdenados: HitoValidado[] = [...hitos]
+      .sort((a, b) => a.numero - b.numero)
+      .map((hito) => {
+        const fechaInicioDate = new Date(hito.fechaInicio);
 
-            const fechaFinDate =
-              new Date(
-                hito.fechaFin,
-              );
+        const fechaFinDate = new Date(hito.fechaFin);
 
-            if (
-              Number.isNaN(
-                fechaInicioDate.getTime(),
-              ) ||
-              Number.isNaN(
-                fechaFinDate.getTime(),
-              )
-            ) {
-              throw new BadRequestException(
-                `Las fechas de H${hito.numero} no son válidas`,
-              );
-            }
+        if (
+          Number.isNaN(fechaInicioDate.getTime()) ||
+          Number.isNaN(fechaFinDate.getTime())
+        ) {
+          throw new BadRequestException(
+            `Las fechas de H${hito.numero} no son válidas`,
+          );
+        }
 
-            if (
-              fechaInicioDate >=
-              fechaFinDate
-            ) {
-              throw new BadRequestException(
-                `La fecha final de H${hito.numero} debe ser posterior a su fecha inicial`,
-              );
-            }
+        if (fechaInicioDate >= fechaFinDate) {
+          throw new BadRequestException(
+            `La fecha final de H${hito.numero} debe ser posterior a su fecha inicial`,
+          );
+        }
 
-            return {
-              numero:
-                hito.numero,
+        return {
+          numero: hito.numero,
 
-              fechaInicioDate,
-              fechaFinDate,
+          fechaInicioDate,
+          fechaFinDate,
 
-              duracionDias:
-                this.calcularDuracionDias(
-                  fechaInicioDate,
-                  fechaFinDate,
-                ),
-            };
-          },
-        );
+          duracionDias: this.calcularDuracionDias(
+            fechaInicioDate,
+            fechaFinDate,
+          ),
+        };
+      });
 
-    for (
-      let indice = 1;
-      indice <
-      hitosOrdenados.length;
-      indice +=
-        1
-    ) {
-      const anterior =
-        hitosOrdenados[
-          indice -
-          1
-        ];
+    for (let indice = 1; indice < hitosOrdenados.length; indice += 1) {
+      const anterior = hitosOrdenados[indice - 1];
 
-      const actual =
-        hitosOrdenados[
-          indice
-        ];
+      const actual = hitosOrdenados[indice];
 
-      if (
-        actual.fechaInicioDate <=
-        anterior.fechaFinDate
-      ) {
+      if (actual.fechaInicioDate <= anterior.fechaFinDate) {
         throw new BadRequestException(
           `Las fechas de H${actual.numero} se cruzan con las fechas de H${anterior.numero}`,
         );
       }
     }
 
-    const advertencias:
-      string[] = [];
+    const advertencias: string[] = [];
 
-    for (
-      const hito of
-      hitosOrdenados
-    ) {
-      const definicion =
-        this.definicionesHitos.find(
-          (
-            elemento,
-          ) =>
-            elemento.numero ===
-            hito.numero,
-        );
+    for (const hito of hitosOrdenados) {
+      const definicion = this.definicionesHitos.find(
+        (elemento) => elemento.numero === hito.numero,
+      );
 
       if (!definicion) {
         continue;
       }
 
       if (
-        hito.duracionDias <
-          definicion.duracionMinimaDias ||
-        hito.duracionDias >
-          definicion.duracionMaximaDias
+        hito.duracionDias < definicion.duracionMinimaDias ||
+        hito.duracionDias > definicion.duracionMaximaDias
       ) {
         advertencias.push(
           `${definicion.codigo} tiene una duración de ${hito.duracionDias} días. La duración recomendada es de ${definicion.duracionMinimaDias} a ${definicion.duracionMaximaDias} días.`,
@@ -451,59 +303,38 @@ export class HitosAcademicosService {
     };
   }
 
-  private construirDatosHitos(
-    hitos:
-      HitoValidado[],
-  ): DatosHitoPersistencia[] {
-    return hitos.map(
-      (
-        hito,
-      ) => {
-        const definicion =
-          this.definicionesHitos.find(
-            (
-              elemento,
-            ) =>
-              elemento.numero ===
-              hito.numero,
-          );
+  private construirDatosHitos(hitos: HitoValidado[]): DatosHitoPersistencia[] {
+    return hitos.map((hito) => {
+      const definicion = this.definicionesHitos.find(
+        (elemento) => elemento.numero === hito.numero,
+      );
 
-        if (!definicion) {
-          throw new BadRequestException(
-            `No existe una configuración para H${hito.numero}`,
-          );
-        }
+      if (!definicion) {
+        throw new BadRequestException(
+          `No existe una configuración para H${hito.numero}`,
+        );
+      }
 
-        return {
-          numero:
-            definicion.numero,
+      return {
+        numero: definicion.numero,
 
-          codigo:
-            definicion.codigo,
+        codigo: definicion.codigo,
 
-          nombre:
-            definicion.nombre,
+        nombre: definicion.nombre,
 
-          descripcion:
-            definicion.descripcion,
+        descripcion: definicion.descripcion,
 
-          fechaInicio:
-            hito.fechaInicioDate,
+        fechaInicio: hito.fechaInicioDate,
 
-          fechaFin:
-            hito.fechaFinDate,
+        fechaFin: hito.fechaFinDate,
 
-          puntajeTotal:
-            definicion.puntajeTotal,
+        puntajeTotal: definicion.puntajeTotal,
 
-          puntajeContinua:
-            definicion.puntajeContinua,
+        puntajeContinua: definicion.puntajeContinua,
 
-          puntajeProcesual:
-            definicion.puntajeProcesual,
-        };
-      },
-    );
+        puntajeProcesual: definicion.puntajeProcesual,
+      };
+    });
   }
 
   private transformarPlanificacion<
@@ -516,100 +347,61 @@ export class HitosAcademicosService {
         cursos: number;
       };
     },
-  >(
-    planificacion:
-      T,
-  ) {
-    const {
-      _count,
-      ...resto
-    } =
-      planificacion;
+  >(planificacion: T) {
+    const { _count, ...resto } = planificacion;
 
     return {
       ...resto,
 
-      totalCursos:
-        _count.cursos,
+      totalCursos: _count.cursos,
 
-      puntajeMateria:
-        planificacion.hitos.reduce(
-          (
-            total,
-            hito,
-          ) =>
-            total +
-            hito.puntajeTotal,
-          0,
-        ),
+      puntajeMateria: planificacion.hitos.reduce(
+        (total, hito) => total + hito.puntajeTotal,
+        0,
+      ),
     };
   }
 
-  private async obtenerPlanificacionPorId(
-    planificacionId:
-      number,
-  ) {
-    const planificacion =
-      await this.prisma.planificacionAcademica.findUnique({
-        where: {
-          id:
-            planificacionId,
-        },
+  private async obtenerPlanificacionPorId(planificacionId: number) {
+    const planificacion = await this.prisma.planificacionAcademica.findUnique({
+      where: {
+        id: planificacionId,
+      },
 
-        select:
-          this.seleccionPlanificacion,
-      });
+      select: this.seleccionPlanificacion,
+    });
 
     if (!planificacion) {
-      throw new NotFoundException(
-        'La planificación académica no existe',
-      );
+      throw new NotFoundException('La planificación académica no existe');
     }
 
     return planificacion;
   }
 
   async obtenerTodas() {
-    const planificaciones =
-      await this.prisma.planificacionAcademica.findMany({
-        select:
-          this.seleccionPlanificacion,
+    const planificaciones = await this.prisma.planificacionAcademica.findMany({
+      select: this.seleccionPlanificacion,
 
-        orderBy: {
-          gestion:
-            'desc',
-        },
-      });
+      orderBy: {
+        gestion: 'desc',
+      },
+    });
 
-    return planificaciones.map(
-      (
-        planificacion,
-      ) =>
-        this.transformarPlanificacion(
-          planificacion,
-        ),
+    return planificaciones.map((planificacion) =>
+      this.transformarPlanificacion(planificacion),
     );
   }
 
-  async obtenerPorGestion(
-    gestion:
-      string,
-  ) {
-    const gestionNormalizada =
-      gestion
-        .trim()
-        .toUpperCase();
+  async obtenerPorGestion(gestion: string) {
+    const gestionNormalizada = gestion.trim().toUpperCase();
 
-    const planificacion =
-      await this.prisma.planificacionAcademica.findUnique({
-        where: {
-          gestion:
-            gestionNormalizada,
-        },
+    const planificacion = await this.prisma.planificacionAcademica.findUnique({
+      where: {
+        gestion: gestionNormalizada,
+      },
 
-        select:
-          this.seleccionPlanificacion,
-      });
+      select: this.seleccionPlanificacion,
+    });
 
     if (!planificacion) {
       throw new NotFoundException(
@@ -617,27 +409,19 @@ export class HitosAcademicosService {
       );
     }
 
-    return this.transformarPlanificacion(
-      planificacion,
-    );
+    return this.transformarPlanificacion(planificacion);
   }
 
-  async crear(
-    datos:
-      CrearPlanificacionDto,
-  ) {
-    const existente =
-      await this.prisma.planificacionAcademica.findUnique({
-        where: {
-          gestion:
-            datos.gestion,
-        },
+  async crear(datos: CrearPlanificacionDto) {
+    const existente = await this.prisma.planificacionAcademica.findUnique({
+      where: {
+        gestion: datos.gestion,
+      },
 
-        select: {
-          id:
-            true,
-        },
-      });
+      select: {
+        id: true,
+      },
+    });
 
     if (existente) {
       throw new ConflictException(
@@ -645,289 +429,186 @@ export class HitosAcademicosService {
       );
     }
 
-    const {
-      hitosOrdenados,
-      advertencias,
-    } =
-      this.validarHitos(
-        datos.hitos,
-      );
+    const { hitosOrdenados, advertencias } = this.validarHitos(datos.hitos);
 
-    const datosHitos =
-      this.construirDatosHitos(
-        hitosOrdenados,
-      );
+    const datosHitos = this.construirDatosHitos(hitosOrdenados);
 
-    const planificacion =
-      await this.prisma.$transaction(
-        async (
-          transaccion,
-        ) => {
-          const creada =
-            await transaccion.planificacionAcademica.create({
-              data: {
-                gestion:
-                  datos.gestion,
+    const planificacion = await this.prisma.$transaction(
+      async (transaccion) => {
+        const creada = await transaccion.planificacionAcademica.create({
+          data: {
+            gestion: datos.gestion,
 
-                descripcion:
-                  datos.descripcion ||
-                  null,
+            descripcion: datos.descripcion || null,
 
-                estaActiva:
-                  true,
+            estaActiva: true,
 
-                hitos: {
-                  create:
-                    datosHitos,
-                },
-              },
-
-              select:
-                this.seleccionPlanificacion,
-            });
-
-          await transaccion.curso.updateMany({
-            where: {
-              gestion:
-                datos.gestion,
-
-              planificacionId:
-                null,
+            hitos: {
+              create: datosHitos,
             },
+          },
 
-            data: {
-              planificacionId:
-                creada.id,
-            },
-          });
+          select: this.seleccionPlanificacion,
+        });
 
-          return creada;
-        },
-      );
+        await transaccion.curso.updateMany({
+          where: {
+            gestion: datos.gestion,
 
-    const planificacionActualizada =
-      await this.obtenerPlanificacionPorId(
-        planificacion.id,
-      );
+            planificacionId: null,
+          },
+
+          data: {
+            planificacionId: creada.id,
+          },
+        });
+
+        return creada;
+      },
+    );
+
+    const planificacionActualizada = await this.obtenerPlanificacionPorId(
+      planificacion.id,
+    );
 
     return {
-      mensaje:
-        'Planificación académica creada correctamente',
+      mensaje: 'Planificación académica creada correctamente',
 
       advertencias,
 
-      planificacion:
-        this.transformarPlanificacion(
-          planificacionActualizada,
-        ),
+      planificacion: this.transformarPlanificacion(planificacionActualizada),
     };
   }
 
   async actualizar(
-    planificacionId:
-      number,
+    planificacionId: number,
 
-    datos:
-      ActualizarPlanificacionDto,
+    datos: ActualizarPlanificacionDto,
   ) {
-    const actual =
-      await this.obtenerPlanificacionPorId(
-        planificacionId,
-      );
+    const actual = await this.obtenerPlanificacionPorId(planificacionId);
 
-    if (
-      datos.descripcion ===
-        undefined &&
-      datos.hitos ===
-        undefined
-    ) {
+    if (datos.descripcion === undefined && datos.hitos === undefined) {
       throw new BadRequestException(
         'Debes enviar una descripción o las fechas de los hitos',
       );
     }
 
-    let advertencias:
-      string[] = [];
+    let advertencias: string[] = [];
 
-    let datosHitos:
-      DatosHitoPersistencia[] |
-      null =
-      null;
+    let datosHitos: DatosHitoPersistencia[] | null = null;
 
-    if (
-      datos.hitos
-    ) {
-      const validacion =
-        this.validarHitos(
-          datos.hitos,
-        );
+    if (datos.hitos) {
+      const validacion = this.validarHitos(datos.hitos);
 
-      advertencias =
-        validacion.advertencias;
+      advertencias = validacion.advertencias;
 
-      datosHitos =
-        this.construirDatosHitos(
-          validacion.hitosOrdenados,
-        );
+      datosHitos = this.construirDatosHitos(validacion.hitosOrdenados);
     }
 
-    await this.prisma.$transaction(
-      async (
-        transaccion,
-      ) => {
-        if (
-          datos.descripcion !==
-          undefined
-        ) {
-          await transaccion.planificacionAcademica.update({
-            where: {
-              id:
-                planificacionId,
-            },
-
-            data: {
-              descripcion:
-                datos.descripcion ||
-                null,
-            },
-          });
-        }
-
-        if (
-          datosHitos
-        ) {
-          for (
-            const hito of
-            datosHitos
-          ) {
-            await transaccion.hitoAcademico.update({
-              where: {
-                planificacionId_numero: {
-                  planificacionId,
-
-                  numero:
-                    hito.numero,
-                },
-              },
-
-              data: {
-                codigo:
-                  hito.codigo,
-
-                nombre:
-                  hito.nombre,
-
-                descripcion:
-                  hito.descripcion,
-
-                fechaInicio:
-                  hito.fechaInicio,
-
-                fechaFin:
-                  hito.fechaFin,
-
-                puntajeTotal:
-                  hito.puntajeTotal,
-
-                puntajeContinua:
-                  hito.puntajeContinua,
-
-                puntajeProcesual:
-                  hito.puntajeProcesual,
-              },
-            });
-          }
-        }
-
-        await transaccion.curso.updateMany({
+    await this.prisma.$transaction(async (transaccion) => {
+      if (datos.descripcion !== undefined) {
+        await transaccion.planificacionAcademica.update({
           where: {
-            gestion:
-              actual.gestion,
-
-            planificacionId:
-              null,
+            id: planificacionId,
           },
 
           data: {
-            planificacionId,
+            descripcion: datos.descripcion || null,
           },
         });
-      },
-    );
+      }
 
-    const planificacion =
-      await this.obtenerPlanificacionPorId(
-        planificacionId,
-      );
+      if (datosHitos) {
+        for (const hito of datosHitos) {
+          await transaccion.hitoAcademico.update({
+            where: {
+              planificacionId_numero: {
+                planificacionId,
+
+                numero: hito.numero,
+              },
+            },
+
+            data: {
+              codigo: hito.codigo,
+
+              nombre: hito.nombre,
+
+              descripcion: hito.descripcion,
+
+              fechaInicio: hito.fechaInicio,
+
+              fechaFin: hito.fechaFin,
+
+              puntajeTotal: hito.puntajeTotal,
+
+              puntajeContinua: hito.puntajeContinua,
+
+              puntajeProcesual: hito.puntajeProcesual,
+            },
+          });
+        }
+      }
+
+      await transaccion.curso.updateMany({
+        where: {
+          gestion: actual.gestion,
+
+          planificacionId: null,
+        },
+
+        data: {
+          planificacionId,
+        },
+      });
+    });
+
+    const planificacion = await this.obtenerPlanificacionPorId(planificacionId);
 
     return {
-      mensaje:
-        'Planificación académica actualizada correctamente',
+      mensaje: 'Planificación académica actualizada correctamente',
 
       advertencias,
 
-      planificacion:
-        this.transformarPlanificacion(
-          planificacion,
-        ),
+      planificacion: this.transformarPlanificacion(planificacion),
     };
   }
 
   async cambiarEstado(
-    planificacionId:
-      number,
+    planificacionId: number,
 
-    datos:
-      CambiarEstadoPlanificacionDto,
+    datos: CambiarEstadoPlanificacionDto,
   ) {
-    const actual =
-      await this.obtenerPlanificacionPorId(
-        planificacionId,
-      );
+    const actual = await this.obtenerPlanificacionPorId(planificacionId);
 
-    if (
-      actual.estaActiva ===
-      datos.estaActiva
-    ) {
+    if (actual.estaActiva === datos.estaActiva) {
       return {
-        mensaje:
-          datos.estaActiva
-            ? 'La planificación ya se encuentra activa'
-            : 'La planificación ya se encuentra inactiva',
+        mensaje: datos.estaActiva
+          ? 'La planificación ya se encuentra activa'
+          : 'La planificación ya se encuentra inactiva',
 
-        planificacion:
-          this.transformarPlanificacion(
-            actual,
-          ),
+        planificacion: this.transformarPlanificacion(actual),
       };
     }
 
-    const planificacion =
-      await this.prisma.planificacionAcademica.update({
-        where: {
-          id:
-            planificacionId,
-        },
+    const planificacion = await this.prisma.planificacionAcademica.update({
+      where: {
+        id: planificacionId,
+      },
 
-        data: {
-          estaActiva:
-            datos.estaActiva,
-        },
+      data: {
+        estaActiva: datos.estaActiva,
+      },
 
-        select:
-          this.seleccionPlanificacion,
-      });
+      select: this.seleccionPlanificacion,
+    });
 
     return {
-      mensaje:
-        datos.estaActiva
-          ? 'Planificación activada correctamente'
-          : 'Planificación desactivada correctamente',
+      mensaje: datos.estaActiva
+        ? 'Planificación activada correctamente'
+        : 'Planificación desactivada correctamente',
 
-      planificacion:
-        this.transformarPlanificacion(
-          planificacion,
-        ),
+      planificacion: this.transformarPlanificacion(planificacion),
     };
   }
 }

@@ -188,6 +188,8 @@ export default function Login() {
       } catch (error) {
         setEstado('error');
 
+        setPassword('');
+
         setMensajeError(
           error instanceof Error
             ? error.message

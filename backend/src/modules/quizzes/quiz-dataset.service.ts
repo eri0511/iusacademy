@@ -14,300 +14,166 @@ import {
   UsoRecursoCurso,
 } from '../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-import {
-  ArchivosService,
-} from '../archivos/archivos.service';
+import { ArchivosService } from '../archivos/archivos.service';
 
-import type {
-  UsuarioAutenticado,
-} from '../archivos/interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from '../archivos/interfaces/usuario-autenticado.interface';
 
 import type {
   BuscarDatasetQuizDto,
   TipoBusquedaDatasetQuiz,
 } from './dto/buscar-dataset-quiz.dto';
 
-import {
-  SeleccionarFragmentosQuizDto,
-} from './dto/seleccionar-fragmentos-quiz.dto';
+import { SeleccionarFragmentosQuizDto } from './dto/seleccionar-fragmentos-quiz.dto';
 
 type BloqueDocumento = {
-  indice:
-    number;
+  indice: number;
 
-  tipo:
-    string;
+  tipo: string;
 
-  titulo:
-    string;
+  titulo: string;
 
-  texto:
-    string;
+  texto: string;
 
-  inicio:
-    number;
+  inicio: number;
 
-  fin:
-    number;
+  fin: number;
 };
 
 @Injectable()
 export class QuizDatasetService {
   constructor(
-    private readonly prisma:
-      PrismaService,
+    private readonly prisma: PrismaService,
 
-    private readonly archivosService:
-      ArchivosService,
+    private readonly archivosService: ArchivosService,
   ) {}
 
   private async validarCursoDocente(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
   ) {
-    if (
-      usuario.rol !==
-      Rol.DOCENTE
-    ) {
+    if (usuario.rol !== Rol.DOCENTE) {
       throw new ForbiddenException(
         'Solo el docente puede administrar datasets de Quizzes',
       );
     }
 
-    const curso =
-      await this.prisma.curso.findFirst({
-        where: {
-          id:
-            cursoId,
+    const curso = await this.prisma.curso.findFirst({
+      where: {
+        id: cursoId,
 
-          docenteId:
-            usuario.id,
-        },
+        docenteId: usuario.id,
+      },
 
-        select: {
-          id:
-            true,
-        },
-      });
+      select: {
+        id: true,
+      },
+    });
 
-    if (
-      !curso
-    ) {
+    if (!curso) {
       throw new NotFoundException(
         'El curso no existe o no pertenece al docente',
       );
     }
   }
 
-  private normalizar(
-    valor:
-      string,
-  ) {
+  private normalizar(valor: string) {
     return valor
-      .normalize(
-        'NFD',
-      )
-      .replace(
-        /[\u0300-\u036f]/g,
-        '',
-      )
-      .toLocaleLowerCase(
-        'es',
-      )
-      .replace(
-        /\s+/g,
-        ' ',
-      )
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('es')
+      .replace(/\s+/g, ' ')
       .trim();
   }
 
-  private limpiarTexto(
-    texto:
-      string,
-  ) {
+  private limpiarTexto(texto: string) {
     return texto
-      .replace(
-        /\r/g,
-        '',
-      )
-      .replace(
-        /[ \t]+/g,
-        ' ',
-      )
-      .replace(
-        /\n{3,}/g,
-        '\n\n',
-      )
+      .replace(/\r/g, '')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
       .trim();
   }
 
-  private detectarTipoLinea(
-    linea:
-      string,
-  ) {
-    const limpia =
-      linea.trim();
+  private detectarTipoLinea(linea: string) {
+    const limpia = linea.trim();
 
-    if (
-      /^(ART[IÍ]CULO|ART\.)\s*(N[°º.]?\s*)?\d+/i.test(
-        limpia,
-      )
-    ) {
+    if (/^(ART[IÍ]CULO|ART\.)\s*(N[°º.]?\s*)?\d+/i.test(limpia)) {
       return 'ARTICULO';
     }
 
-    if (
-      /^T[IÍ]TULO\b/i.test(
-        limpia,
-      )
-    ) {
+    if (/^T[IÍ]TULO\b/i.test(limpia)) {
       return 'TITULO';
     }
 
-    if (
-      /^CAP[IÍ]TULO\b/i.test(
-        limpia,
-      )
-    ) {
+    if (/^CAP[IÍ]TULO\b/i.test(limpia)) {
       return 'CAPITULO';
     }
 
-    if (
-      /^SECCI[ÓO]N\b/i.test(
-        limpia,
-      )
-    ) {
+    if (/^SECCI[ÓO]N\b/i.test(limpia)) {
       return 'SECCION';
     }
 
-    if (
-      /^LIBRO\b/i.test(
-        limpia,
-      )
-    ) {
+    if (/^LIBRO\b/i.test(limpia)) {
       return 'LIBRO';
     }
 
-    if (
-      /^PARTE\b/i.test(
-        limpia,
-      )
-    ) {
+    if (/^PARTE\b/i.test(limpia)) {
       return 'PARTE';
     }
 
     return null;
   }
 
-  private construirBloques(
-    texto:
-      string,
-  ) {
-    const limpio =
-      this.limpiarTexto(
-        texto,
-      );
+  private construirBloques(texto: string) {
+    const limpio = this.limpiarTexto(texto);
 
-    const lineas =
-      limpio.split(
-        '\n',
-      );
+    const lineas = limpio.split('\n');
 
-    const encabezados:
-      Array<{
-        linea:
-          number;
+    const encabezados: Array<{
+      linea: number;
 
-        tipo:
-          string;
+      tipo: string;
 
-        titulo:
-          string;
-      }> =
-      [];
+      titulo: string;
+    }> = [];
 
-    lineas.forEach(
-      (
-        linea,
-        indice,
-      ) => {
-        const tipo =
-          this.detectarTipoLinea(
-            linea,
-          );
+    lineas.forEach((linea, indice) => {
+      const tipo = this.detectarTipoLinea(linea);
 
-        if (
-          tipo
-        ) {
-          encabezados.push({
-            linea:
-              indice,
+      if (tipo) {
+        encabezados.push({
+          linea: indice,
 
-            tipo,
+          tipo,
 
-            titulo:
-              linea.trim(),
-          });
-        }
-      },
-    );
+          titulo: linea.trim(),
+        });
+      }
+    });
 
-    if (
-      encabezados.length ===
-      0
-    ) {
-      const tamanioBloque =
-        1800;
+    if (encabezados.length === 0) {
+      const tamanioBloque = 1800;
 
-      const bloques:
-        BloqueDocumento[] =
-        [];
+      const bloques: BloqueDocumento[] = [];
 
-      for (
-        let inicio =
-          0;
-        inicio <
-        limpio.length;
-        inicio +=
-        tamanioBloque
-      ) {
-        const textoBloque =
-          limpio
-            .slice(
-              inicio,
-              inicio +
-                tamanioBloque,
-            )
-            .trim();
+      for (let inicio = 0; inicio < limpio.length; inicio += tamanioBloque) {
+        const textoBloque = limpio.slice(inicio, inicio + tamanioBloque).trim();
 
-        if (
-          textoBloque
-        ) {
+        if (textoBloque) {
           bloques.push({
-            indice:
-              bloques.length,
+            indice: bloques.length,
 
-            tipo:
-              'FRAGMENTO',
+            tipo: 'FRAGMENTO',
 
-            titulo:
-              `Fragmento ${bloques.length + 1}`,
+            titulo: `Fragmento ${bloques.length + 1}`,
 
-            texto:
-              textoBloque,
+            texto: textoBloque,
 
             inicio,
 
-            fin:
-              inicio +
-              textoBloque.length,
+            fin: inicio + textoBloque.length,
           });
         }
       }
@@ -315,160 +181,75 @@ export class QuizDatasetService {
       return bloques;
     }
 
-    const bloques:
-      BloqueDocumento[] =
-      [];
+    const bloques: BloqueDocumento[] = [];
 
-    encabezados.forEach(
-      (
-        encabezado,
-        indice,
-      ) => {
-        const siguiente =
-          encabezados[
-            indice +
-              1
-          ];
+    encabezados.forEach((encabezado, indice) => {
+      const siguiente = encabezados[indice + 1];
 
-        const inicioLinea =
-          encabezado.linea;
+      const inicioLinea = encabezado.linea;
 
-        const finLinea =
-          siguiente
-            ? siguiente.linea
-            : lineas.length;
+      const finLinea = siguiente ? siguiente.linea : lineas.length;
 
-        const textoBloque =
-          lineas
-            .slice(
-              inicioLinea,
-              finLinea,
-            )
-            .join(
-              '\n',
-            )
-            .trim();
+      const textoBloque = lineas.slice(inicioLinea, finLinea).join('\n').trim();
 
-        if (
-          textoBloque
-        ) {
-          bloques.push({
-            indice:
-              bloques.length,
+      if (textoBloque) {
+        bloques.push({
+          indice: bloques.length,
 
-            tipo:
-              encabezado.tipo,
+          tipo: encabezado.tipo,
 
-            titulo:
-              encabezado.titulo,
+          titulo: encabezado.titulo,
 
-            texto:
-              textoBloque,
+          texto: textoBloque,
 
-            inicio:
-              inicioLinea,
+          inicio: inicioLinea,
 
-            fin:
-              finLinea -
-              1,
-          });
-        }
-      },
-    );
+          fin: finLinea - 1,
+        });
+      }
+    });
 
     return bloques;
   }
 
   private puntuarBloque(
-    bloque:
-      BloqueDocumento,
+    bloque: BloqueDocumento,
 
-    consulta:
-      string,
+    consulta: string,
   ) {
-    const q =
-      this.normalizar(
-        consulta,
-      );
+    const q = this.normalizar(consulta);
 
-    if (
-      !q
-    ) {
+    if (!q) {
       return 1;
     }
 
-    const titulo =
-      this.normalizar(
-        bloque.titulo,
-      );
+    const titulo = this.normalizar(bloque.titulo);
 
-    const texto =
-      this.normalizar(
-        bloque.texto,
-      );
+    const texto = this.normalizar(bloque.texto);
 
-    let puntaje =
-      0;
+    let puntaje = 0;
 
-    if (
-      titulo ===
-      q
-    ) {
-      puntaje +=
-        100;
+    if (titulo === q) {
+      puntaje += 100;
     }
 
-    if (
-      titulo.includes(
-        q,
-      )
-    ) {
-      puntaje +=
-        55;
+    if (titulo.includes(q)) {
+      puntaje += 55;
     }
 
-    if (
-      texto.includes(
-        q,
-      )
-    ) {
-      puntaje +=
-        30;
+    if (texto.includes(q)) {
+      puntaje += 30;
     }
 
-    const tokens =
-      q
-        .split(
-          ' ',
-        )
-        .filter(
-          (
-            token,
-          ) =>
-            token.length >=
-            2,
-        );
+    const tokens = q.split(' ').filter((token) => token.length >= 2);
 
-    for (
-      const token
-      of tokens
-    ) {
-      if (
-        titulo.includes(
-          token,
-        )
-      ) {
-        puntaje +=
-          9;
+    for (const token of tokens) {
+      if (titulo.includes(token)) {
+        puntaje += 9;
       }
 
-      if (
-        texto.includes(
-          token,
-        )
-      ) {
-        puntaje +=
-          3;
+      if (texto.includes(token)) {
+        puntaje += 3;
       }
     }
 
@@ -476,186 +257,136 @@ export class QuizDatasetService {
   }
 
   private coincideTipo(
-    bloque:
-      BloqueDocumento,
+    bloque: BloqueDocumento,
 
-    tipo:
-      TipoBusquedaDatasetQuiz,
+    tipo: TipoBusquedaDatasetQuiz,
   ) {
-    if (
-      tipo ===
-        'AUTO' ||
-      tipo ===
-        'PALABRA_CLAVE'
-    ) {
+    if (tipo === 'AUTO' || tipo === 'PALABRA_CLAVE') {
       return true;
     }
 
-    return bloque.tipo ===
-      tipo;
+    return bloque.tipo === tipo;
   }
 
   private async obtenerVersionDataset(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    versionId:
-      number,
+    versionId: number,
   ) {
-    await this.validarCursoDocente(
-      usuario,
-      cursoId,
-    );
+    await this.validarCursoDocente(usuario, cursoId);
 
-    const version =
-      await this.prisma.recursoContenidoVersion.findFirst({
-        where: {
-          id:
-            versionId,
+    const version = await this.prisma.recursoContenidoVersion.findFirst({
+      where: {
+        id: versionId,
 
-          estado:
-            EstadoVersionRecurso.VIGENTE,
+        estado: EstadoVersionRecurso.VIGENTE,
 
-          esVigente:
-            true,
+        esVigente: true,
 
-          contenido: {
-            estaActivo:
-              true,
+        contenido: {
+          estaActivo: true,
 
-            tipo:
-              TipoContenidoRecurso.ARCHIVO,
+          tipo: TipoContenidoRecurso.ARCHIVO,
 
-            disponibleParaQuiz:
-              true,
+          disponibleParaQuiz: true,
 
+          recurso: {
+            cursoId,
+
+            estado: EstadoRecursoCurso.ACTIVO,
+
+            estaActivo: true,
+
+            uso: {
+              in: [
+                UsoRecursoCurso.AULA_Y_QUIZZES,
+                UsoRecursoCurso.SOLO_QUIZZES,
+              ],
+            },
+          },
+        },
+
+        archivo: {
+          extension: {
+            equals: 'pdf',
+
+            mode: 'insensitive',
+          },
+        },
+      },
+
+      include: {
+        archivo: {
+          select: {
+            id: true,
+
+            nombreOriginal: true,
+
+            extension: true,
+
+            tamanioBytes: true,
+
+            textoExtraido: true,
+
+            esAnalizadoIA: true,
+          },
+        },
+
+        contenido: {
+          include: {
             recurso: {
-              cursoId,
-
-              estado:
-                EstadoRecursoCurso.ACTIVO,
-
-              estaActivo:
-                true,
-
-              uso: {
-                in: [
-                  UsoRecursoCurso.AULA_Y_QUIZZES,
-                  UsoRecursoCurso.SOLO_QUIZZES,
-                ],
-              },
-            },
-          },
-
-          archivo: {
-            extension: {
-              equals:
-                'pdf',
-
-              mode:
-                'insensitive',
-            },
-          },
-        },
-
-        include: {
-          archivo: {
-            select: {
-              id:
-                true,
-
-              nombreOriginal:
-                true,
-
-              extension:
-                true,
-
-              tamanioBytes:
-                true,
-
-              textoExtraido:
-                true,
-
-              esAnalizadoIA:
-                true,
-            },
-          },
-
-          contenido: {
-            include: {
-              recurso: {
-                include: {
-                  hito:
-                    true,
-                },
+              include: {
+                hito: true,
               },
             },
           },
         },
-      });
+      },
+    });
 
-    if (
-      !version
-    ) {
+    if (!version) {
       throw new NotFoundException(
         'El PDF no está disponible como dataset para Quizzes',
       );
     }
 
-    const ultimaVersion =
-      await this.prisma.recursoContenidoVersion.findFirst({
-        where: {
-          contenidoId:
-            version.contenidoId,
+    const ultimaVersion = await this.prisma.recursoContenidoVersion.findFirst({
+      where: {
+        contenidoId: version.contenidoId,
 
-          estado:
-            EstadoVersionRecurso.VIGENTE,
+        estado: EstadoVersionRecurso.VIGENTE,
 
-          esVigente:
-            true,
-        },
+        esVigente: true,
+      },
 
-        orderBy: {
-          numeroVersion:
-            'desc',
-        },
+      orderBy: {
+        numeroVersion: 'desc',
+      },
 
-        select: {
-          id:
-            true,
+      select: {
+        id: true,
 
-          numeroVersion:
-            true,
-        },
-      });
+        numeroVersion: true,
+      },
+    });
 
-    if (
-      !ultimaVersion ||
-      ultimaVersion.id !==
-        version.id
-    ) {
+    if (!ultimaVersion || ultimaVersion.id !== version.id) {
       throw new BadRequestException(
         'La versión seleccionada ya no es la versión vigente del recurso. Actualiza la lista de datasets y selecciona la versión más reciente.',
       );
     }
 
-    const textoExtraido =
-      version.archivo.textoExtraido?.trim() ||
-      null;
+    const textoExtraido = version.archivo.textoExtraido?.trim() || null;
 
     if (
-      version.estadoDataset !==
-        EstadoProcesamientoDataset.LISTO ||
+      version.estadoDataset !== EstadoProcesamientoDataset.LISTO ||
       !textoExtraido
     ) {
       throw new BadRequestException(
-        version.estadoDataset ===
-          EstadoProcesamientoDataset.ERROR
-          ? version.errorDataset ??
-            'No fue posible preparar este dataset.'
+        version.estadoDataset === EstadoProcesamientoDataset.ERROR
+          ? (version.errorDataset ?? 'No fue posible preparar este dataset.')
           : 'Este dataset todavía se está preparando. Intenta nuevamente en unos instantes.',
       );
     }
@@ -672,448 +403,242 @@ export class QuizDatasetService {
   }
 
   async analizar(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    versionId:
-      number,
+    versionId: number,
   ) {
-    const version =
-      await this.obtenerVersionDataset(
-        usuario,
-        cursoId,
-        versionId,
-      );
+    const version = await this.obtenerVersionDataset(
+      usuario,
+      cursoId,
+      versionId,
+    );
 
-    const texto =
-      this.limpiarTexto(
-        version.archivo.textoExtraido!,
-      );
+    const texto = this.limpiarTexto(version.archivo.textoExtraido);
 
-    const bloques =
-      this.construirBloques(
-        texto,
-      );
+    const bloques = this.construirBloques(texto);
 
-    const conteo =
-      bloques.reduce<
-        Record<
-          string,
-          number
-        >
-      >(
-        (
-          acumulado,
-          bloque,
-        ) => {
-          acumulado[
-            bloque.tipo
-          ] =
-            (
-              acumulado[
-                bloque.tipo
-              ] ??
-              0
-            ) +
-            1;
+    const conteo = bloques.reduce<Record<string, number>>(
+      (acumulado, bloque) => {
+        acumulado[bloque.tipo] = (acumulado[bloque.tipo] ?? 0) + 1;
 
-          return acumulado;
-        },
-        {},
-      );
+        return acumulado;
+      },
+      {},
+    );
 
     return {
-      versionId:
-        version.id,
+      versionId: version.id,
 
-      numeroVersion:
-        version.numeroVersion,
+      numeroVersion: version.numeroVersion,
 
       archivo: {
-        id:
-          version.archivo.id,
+        id: version.archivo.id,
 
-        nombre:
-          version.archivo.nombreOriginal,
+        nombre: version.archivo.nombreOriginal,
 
-        extension:
-          version.archivo.extension,
+        extension: version.archivo.extension,
 
-        tamanioBytes:
-          version.archivo.tamanioBytes,
+        tamanioBytes: version.archivo.tamanioBytes,
       },
 
       recurso: {
-        id:
-          version.contenido.recurso.id,
+        id: version.contenido.recurso.id,
 
-        titulo:
-          version.contenido.recurso.titulo,
+        titulo: version.contenido.recurso.titulo,
 
-        alcance:
-          version.contenido.recurso.alcance,
+        alcance: version.contenido.recurso.alcance,
 
-        hito:
-          version.contenido.recurso.hito,
+        hito: version.contenido.recurso.hito,
       },
 
       contenido: {
-        id:
-          version.contenido.id,
+        id: version.contenido.id,
 
-        titulo:
-          version.contenido.titulo,
+        titulo: version.contenido.titulo,
       },
 
       estadisticas: {
-        caracteres:
-          texto.length,
+        caracteres: texto.length,
 
-        palabras:
-          texto
-            .split(
-              /\s+/,
-            )
-            .filter(
-              Boolean,
-            ).length,
+        palabras: texto.split(/\s+/).filter(Boolean).length,
 
-        bloques:
-          bloques.length,
+        bloques: bloques.length,
 
-        articulos:
-          conteo.ARTICULO ??
-          0,
+        articulos: conteo.ARTICULO ?? 0,
 
-        titulos:
-          conteo.TITULO ??
-          0,
+        titulos: conteo.TITULO ?? 0,
 
-        capitulos:
-          conteo.CAPITULO ??
-          0,
+        capitulos: conteo.CAPITULO ?? 0,
 
-        secciones:
-          conteo.SECCION ??
-          0,
+        secciones: conteo.SECCION ?? 0,
 
-        libros:
-          conteo.LIBRO ??
-          0,
+        libros: conteo.LIBRO ?? 0,
       },
 
-      estructura:
-        bloques
-          .filter(
-            (
-              bloque,
-            ) =>
-              [
-                'LIBRO',
-                'PARTE',
-                'TITULO',
-                'CAPITULO',
-                'SECCION',
-                'ARTICULO',
-              ].includes(
-                bloque.tipo,
-              ),
-          )
-          .slice(
-            0,
-            300,
-          )
-          .map(
-            (
-              bloque,
-            ) => ({
-              indice:
-                bloque.indice,
+      estructura: bloques
+        .filter((bloque) =>
+          [
+            'LIBRO',
+            'PARTE',
+            'TITULO',
+            'CAPITULO',
+            'SECCION',
+            'ARTICULO',
+          ].includes(bloque.tipo),
+        )
+        .slice(0, 300)
+        .map((bloque) => ({
+          indice: bloque.indice,
 
-              tipo:
-                bloque.tipo,
+          tipo: bloque.tipo,
 
-              titulo:
-                bloque.titulo,
+          titulo: bloque.titulo,
 
-              vistaPrevia:
-                bloque.texto
-                  .replace(
-                    /\s+/g,
-                    ' ',
-                  )
-                  .slice(
-                    0,
-                    220,
-                  ),
-            }),
-          ),
+          vistaPrevia: bloque.texto.replace(/\s+/g, ' ').slice(0, 220),
+        })),
     };
   }
 
   async buscar(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    versionId:
-      number,
+    versionId: number,
 
-    filtros:
-      BuscarDatasetQuizDto,
+    filtros: BuscarDatasetQuizDto,
   ) {
-    const version =
-      await this.obtenerVersionDataset(
-        usuario,
-        cursoId,
-        versionId,
-      );
+    const version = await this.obtenerVersionDataset(
+      usuario,
+      cursoId,
+      versionId,
+    );
 
-    const tipo =
-      filtros.tipo ??
-      'AUTO';
+    const tipo = filtros.tipo ?? 'AUTO';
 
-    const limite =
-      filtros.limite ??
-      20;
+    const limite = filtros.limite ?? 20;
 
-    const consulta =
-      filtros.q?.trim() ??
-      '';
+    const consulta = filtros.q?.trim() ?? '';
 
-    const bloques =
-      this.construirBloques(
-        version.archivo.textoExtraido!,
-      );
+    const bloques = this.construirBloques(version.archivo.textoExtraido);
 
-    const resultados =
-      bloques
-        .filter(
-          (
-            bloque,
-          ) =>
-            this.coincideTipo(
-              bloque,
-              tipo,
-            ),
-        )
-        .map(
-          (
-            bloque,
-          ) => ({
-            bloque,
+    const resultados = bloques
+      .filter((bloque) => this.coincideTipo(bloque, tipo))
+      .map((bloque) => ({
+        bloque,
 
-            puntaje:
-              this.puntuarBloque(
-                bloque,
-                consulta,
-              ),
-          }),
-        )
-        .filter(
-          (
-            item,
-          ) =>
-            consulta
-              ? item.puntaje >
-                0
-              : true,
-        )
-        .sort(
-          (
-            a,
-            b,
-          ) =>
-            b.puntaje -
-            a.puntaje ||
-            a.bloque.indice -
-            b.bloque.indice,
-        )
-        .slice(
-          0,
-          limite,
-        );
+        puntaje: this.puntuarBloque(bloque, consulta),
+      }))
+      .filter((item) => (consulta ? item.puntaje > 0 : true))
+      .sort(
+        (a, b) => b.puntaje - a.puntaje || a.bloque.indice - b.bloque.indice,
+      )
+      .slice(0, limite);
 
     return {
-      versionId:
-        version.id,
+      versionId: version.id,
 
       consulta,
 
       tipo,
 
-      total:
-        resultados.length,
+      total: resultados.length,
 
-      resultados:
-        resultados.map(
-          (
-            item,
-          ) => ({
-            indice:
-              item.bloque.indice,
+      resultados: resultados.map((item) => ({
+        indice: item.bloque.indice,
 
-            tipo:
-              item.bloque.tipo,
+        tipo: item.bloque.tipo,
 
-            titulo:
-              item.bloque.titulo,
+        titulo: item.bloque.titulo,
 
-            texto:
-              item.bloque.texto,
+        texto: item.bloque.texto,
 
-            puntaje:
-              item.puntaje,
+        puntaje: item.puntaje,
 
-            vistaPrevia:
-              item.bloque.texto
-                .replace(
-                  /\s+/g,
-                  ' ',
-                )
-                .slice(
-                  0,
-                  360,
-                ),
-          }),
-        ),
+        vistaPrevia: item.bloque.texto.replace(/\s+/g, ' ').slice(0, 360),
+      })),
     };
   }
 
   async seleccionarFragmentos(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
 
-    fuenteId:
-      number,
+    fuenteId: number,
 
-    datos:
-      SeleccionarFragmentosQuizDto,
+    datos: SeleccionarFragmentosQuizDto,
   ) {
-    await this.validarCursoDocente(
-      usuario,
-      cursoId,
-    );
+    await this.validarCursoDocente(usuario, cursoId);
 
-    const fuente =
-      await this.prisma.fuenteQuiz.findFirst({
-        where: {
-          id:
-            fuenteId,
+    const fuente = await this.prisma.fuenteQuiz.findFirst({
+      where: {
+        id: fuenteId,
 
-          quizId,
+        quizId,
 
-          quiz: {
-            cursoId,
+        quiz: {
+          cursoId,
 
-            estado:
-              'BORRADOR',
+          estado: 'BORRADOR',
+        },
+      },
+
+      select: {
+        id: true,
+
+        fragmentos: {
+          select: {
+            id: true,
+
+            texto: true,
           },
         },
+      },
+    });
 
-        select: {
-          id:
-            true,
-
-          fragmentos: {
-            select: {
-              id:
-                true,
-
-              texto:
-                true,
-            },
-          },
-        },
-      });
-
-    if (
-      !fuente
-    ) {
+    if (!fuente) {
       throw new BadRequestException(
         'La fuente no pertenece a un Quiz en borrador de este curso',
       );
     }
 
-    const existentes =
-      new Set(
-        fuente.fragmentos.map(
-          (
-            fragmento,
-          ) =>
-            this.normalizar(
-              fragmento.texto,
-            ),
-        ),
-      );
+    const existentes = new Set(
+      fuente.fragmentos.map((fragmento) => this.normalizar(fragmento.texto)),
+    );
 
-    const nuevos =
-      datos.fragmentos.filter(
-        (
-          fragmento,
-        ) =>
-          !existentes.has(
-            this.normalizar(
-              fragmento.texto,
-            ),
-          ),
-      );
+    const nuevos = datos.fragmentos.filter(
+      (fragmento) => !existentes.has(this.normalizar(fragmento.texto)),
+    );
 
-    if (
-      nuevos.length ===
-      0
-    ) {
+    if (nuevos.length === 0) {
       throw new BadRequestException(
         'Los fragmentos seleccionados ya fueron agregados al Quiz',
       );
     }
 
-    const cantidadActual =
-      fuente.fragmentos.length;
+    const cantidadActual = fuente.fragmentos.length;
 
     await this.prisma.fragmentoFuenteQuiz.createMany({
-      data:
-        nuevos.map(
-          (
-            fragmento,
-            indice,
-          ) => ({
-            fuenteId,
+      data: nuevos.map((fragmento, indice) => ({
+        fuenteId,
 
-            tituloReferencia:
-              fragmento.tituloReferencia?.trim() ||
-              null,
+        tituloReferencia: fragmento.tituloReferencia?.trim() || null,
 
-            tipoReferencia:
-              fragmento.tipoReferencia?.trim() ||
-              null,
+        tipoReferencia: fragmento.tipoReferencia?.trim() || null,
 
-            paginaInicio:
-              fragmento.paginaInicio,
+        paginaInicio: fragmento.paginaInicio,
 
-            paginaFin:
-              fragmento.paginaFin,
+        paginaFin: fragmento.paginaFin,
 
-            texto:
-              fragmento.texto.trim(),
+        texto: fragmento.texto.trim(),
 
-            orden:
-              fragmento.orden ??
-              cantidadActual +
-                indice,
-          }),
-        ),
+        orden: fragmento.orden ?? cantidadActual + indice,
+      })),
     });
 
     return this.prisma.fragmentoFuenteQuiz.findMany({
@@ -1122,8 +647,7 @@ export class QuizDatasetService {
       },
 
       orderBy: {
-        orden:
-          'asc',
+        orden: 'asc',
       },
     });
   }

@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 
 import { ConfigService } from '@nestjs/config';
 
@@ -9,18 +6,13 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class CorreoService {
-  constructor(
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly configService: ConfigService) {}
 
   private crearTransportador() {
-    const correo =
-      this.configService.get<string>('MAIL_USER');
+    const correo = this.configService.get<string>('MAIL_USER');
 
     const passwordAplicacion =
-      this.configService.get<string>(
-        'MAIL_APP_PASSWORD',
-      );
+      this.configService.get<string>('MAIL_APP_PASSWORD');
 
     if (!correo || !passwordAplicacion) {
       throw new InternalServerErrorException(
@@ -39,36 +31,27 @@ export class CorreoService {
   }
 
   async enviarEnlaceActivacion(datos: {
-  destinatario: string;
-  nombre: string;
-  enlaceActivacion: string;
-  fechaExpiracion: Date;
-}) {
-  const correoRemitente =
-    this.configService.get<string>('MAIL_USER');
+    destinatario: string;
+    nombre: string;
+    enlaceActivacion: string;
+    fechaExpiracion: Date;
+  }) {
+    const correoRemitente = this.configService.get<string>('MAIL_USER');
 
-  const fechaFormateada =
-    datos.fechaExpiracion.toLocaleString(
-      'es-BO',
-      {
-        dateStyle: 'long',
-        timeStyle: 'short',
-        timeZone: 'America/La_Paz',
-      },
-    );
+    const fechaFormateada = datos.fechaExpiracion.toLocaleString('es-BO', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+      timeZone: 'America/La_Paz',
+    });
 
-  const transportador =
-    this.crearTransportador();
+    const transportador = this.crearTransportador();
 
-  const resultado =
-    await transportador.sendMail({
-      from:
-        `"IusAcademy" <${correoRemitente}>`,
+    const resultado = await transportador.sendMail({
+      from: `"IusAcademy" <${correoRemitente}>`,
 
       to: datos.destinatario,
 
-      subject:
-        'Activa tu cuenta de IusAcademy',
+      subject: 'Activa tu cuenta de IusAcademy',
 
       text: `
 Hola ${datos.nombre}:
@@ -236,14 +219,13 @@ Si no solicitaste esta cuenta, comunícate con el administrador de IusAcademy.
       `,
     });
 
-  console.log('Resultado del correo de activación:', {
-    messageId: resultado.messageId,
-    accepted: resultado.accepted,
-    rejected: resultado.rejected,
-    response: resultado.response,
-  });
+    console.log('Resultado del correo de activación:', {
+      messageId: resultado.messageId,
+      accepted: resultado.accepted,
+      rejected: resultado.rejected,
+      response: resultado.response,
+    });
 
-  return resultado;
-}
-
+    return resultado;
+  }
 }

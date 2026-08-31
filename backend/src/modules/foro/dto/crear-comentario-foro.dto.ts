@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   IsInt,
@@ -15,16 +13,11 @@ export class CrearComentarioForoDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(12000)
-  contenido!:
-    string;
+  contenido!: string;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  comentarioPadreId?:
-    number;
+  comentarioPadreId?: number;
 }

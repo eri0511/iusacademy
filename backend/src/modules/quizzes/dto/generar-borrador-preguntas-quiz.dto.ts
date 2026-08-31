@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   ArrayMinSize,
@@ -35,12 +33,8 @@ export class GenerarBorradorPreguntasQuizDto {
   @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
-  @IsEnum(
-    TipoPreguntaQuiz,
-    {
-      each:
-        true,
-    },
-  )
+  @IsEnum(TipoPreguntaQuiz, {
+    each: true,
+  })
   tipos?: TipoPreguntaQuiz[];
 }

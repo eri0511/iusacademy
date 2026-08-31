@@ -1,5 +1,6 @@
 import {
   AlertCircle,
+  AlarmClock,
   ArrowLeft,
   Award,
   CalendarDays,
@@ -424,6 +425,42 @@ export default function DetalleTareaEstudiante() {
     );
 
   const [
+    extension,
+    setExtension,
+  ] =
+    useState<{
+      id:
+        number;
+
+      motivo:
+        string | null;
+
+      fechaAperturaExtendida:
+        string | null;
+
+      fechaLimiteExtendida:
+        string | null;
+
+      fechaMaximaRetrasoExtendida:
+        string | null;
+    } | null>(
+      null,
+    );
+
+  const [
+    calificacion,
+    setCalificacion,
+  ] = useState<{
+    notaBase: number | string;
+    descuentoRetraso: number | string;
+    ajusteIndividual: number | string;
+    notaFinal: number | string;
+    retroalimentacion: string | null;
+    calificadaEn: string | null;
+    publicadaEn: string | null;
+  } | null>(null);
+
+  const [
     cargando,
     setCargando,
   ] =
@@ -617,6 +654,24 @@ export default function DetalleTareaEstudiante() {
                     TareaCurso;
                 }
               ).tarea,
+            );
+
+            setExtension(
+              (
+                cuerpo as {
+                  extension?:
+                    typeof extension;
+                }
+              ).extension ??
+                null,
+            );
+
+            setCalificacion(
+              (
+                cuerpo as {
+                  calificacion?: typeof calificacion;
+                }
+              ).calificacion ?? null,
             );
           } catch (
             causa
@@ -1158,6 +1213,56 @@ export default function DetalleTareaEstudiante() {
           },
         ]}
       />
+
+      {extension && (
+        <div className="dte-extension">
+          <AlarmClock
+            size={20}
+          />
+
+          <div>
+            <strong>
+              Tu plazo fue ampliado
+            </strong>
+
+            <span>
+              {
+                extension.fechaLimiteExtendida
+                  ? `Nueva fecha límite: ${fecha(extension.fechaLimiteExtendida)}`
+                  : 'El docente amplió el plazo de esta tarea para ti.'
+              }
+              {
+                extension.motivo
+                  ? ` · ${extension.motivo}`
+                  : ''
+              }
+            </span>
+          </div>
+        </div>
+      )}
+
+      {calificacion && (
+        <section className="dte-calificacion-publicada">
+          <div className="dte-calificacion-publicada__encabezado">
+            <Award size={20} />
+            <div>
+              <strong>Calificación publicada</strong>
+              <span>El docente ya publicó el resultado de esta tarea.</span>
+            </div>
+            <b>
+              {Number(calificacion.notaFinal).toFixed(2)} /{' '}
+              {Number(tarea.puntajeMaximo).toFixed(2)}
+            </b>
+          </div>
+
+          {calificacion.retroalimentacion?.trim() && (
+            <div className="dte-calificacion-publicada__retroalimentacion">
+              <strong>Retroalimentación del docente</strong>
+              <p>{calificacion.retroalimentacion}</p>
+            </div>
+          )}
+        </section>
+      )}
 
       <EstadoTemporalTareaEstudiante
         tarea={
@@ -1799,6 +1904,108 @@ const styles = `
     min-width: 0;
     padding-bottom: 34px;
     color: var(--app-text);
+  }
+
+  .dte-extension {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--app-accent) 35%, var(--app-border));
+    border-radius: 14px;
+    color: var(--app-text);
+    background: var(--app-accent-soft);
+  }
+
+  .dte-extension > svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--app-accent-dark);
+  }
+
+  .dte-extension div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .dte-extension strong {
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .dte-extension span {
+    color: var(--app-text-soft);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .dte-calificacion-publicada {
+    display: grid;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid color-mix(in srgb, #16a34a 35%, var(--app-border));
+    border-radius: 16px;
+    background: color-mix(in srgb, #16a34a 8%, var(--app-surface));
+  }
+
+  .dte-calificacion-publicada__encabezado {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 11px;
+  }
+
+  .dte-calificacion-publicada__encabezado > svg {
+    color: #16a34a;
+  }
+
+  .dte-calificacion-publicada__encabezado div {
+    display: grid;
+    gap: 2px;
+  }
+
+  .dte-calificacion-publicada__encabezado strong {
+    font-size: 14px;
+  }
+
+  .dte-calificacion-publicada__encabezado span {
+    color: var(--app-text-muted);
+    font-size: 12px;
+  }
+
+  .dte-calificacion-publicada__encabezado b {
+    color: #15803d;
+    font-size: 18px;
+    white-space: nowrap;
+  }
+
+  .dte-calificacion-publicada__retroalimentacion {
+    padding: 11px 12px;
+    border-radius: 11px;
+    background: var(--app-surface);
+  }
+
+  .dte-calificacion-publicada__retroalimentacion strong {
+    font-size: 12px;
+  }
+
+  .dte-calificacion-publicada__retroalimentacion p {
+    margin: 5px 0 0;
+    color: var(--app-text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  @media (max-width: 560px) {
+    .dte-calificacion-publicada__encabezado {
+      grid-template-columns: auto 1fr;
+    }
+
+    .dte-calificacion-publicada__encabezado b {
+      grid-column: 2;
+    }
   }
 
   .dte-temporal {

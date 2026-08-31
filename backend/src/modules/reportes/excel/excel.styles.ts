@@ -1,9 +1,4 @@
-import type {
-  Alignment,
-  Borders,
-  Fill,
-  Font,
-} from 'exceljs';
+import type { Alignment, Borders, Fill, Font } from 'exceljs';
 
 export const EXCEL_COLORES = {
   acento: 'FFF18B4B',

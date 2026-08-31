@@ -8,36 +8,27 @@ import {
   MaxLength,
 } from 'class-validator';
 
-import {
-  TipoComponenteTarea,
-} from '../../../generated/prisma/client';
+import { TipoComponenteTarea } from '../../../generated/prisma/client';
 
 export class CrearComponenteTareaDto {
-  @IsEnum(
-    TipoComponenteTarea,
-  )
-  tipo!:
-    TipoComponenteTarea;
+  @IsEnum(TipoComponenteTarea)
+  tipo!: TipoComponenteTarea;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(140)
-  titulo!:
-    string;
+  titulo!: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(3000)
-  descripcion?:
-    string;
+  descripcion?: string;
 
   @IsOptional()
   @IsBoolean()
-  obligatorio?:
-    boolean;
+  obligatorio?: boolean;
 
   @IsOptional()
   @IsObject()
-  configuracion?:
-    Record<string, unknown>;
+  configuracion?: Record<string, unknown>;
 }

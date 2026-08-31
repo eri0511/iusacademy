@@ -113,6 +113,9 @@ export type CrearTareaDatos = {
   extensionesPermitidas?: string[];
   permitirEditarEntrega?: boolean;
   publicar?: boolean;
+  archivosConsigna?: File[];
+  archivoRubrica?: File | null;
+  modoRubrica?: 'PREDETERMINADA' | 'PERSONALIZADA';
 };
 
 export type ComponenteTarea = {
@@ -222,4 +225,13 @@ export type RespuestaListadoTareas = {
 export type RespuestaTarea = {
   mensaje?: string;
   tarea: TareaCurso;
+  calificacion?: {
+    notaBase: number | string;
+    descuentoRetraso: number | string;
+    ajusteIndividual: number | string;
+    notaFinal: number | string;
+    retroalimentacion: string | null;
+    calificadaEn: string | null;
+    publicadaEn: string | null;
+  } | null;
 };

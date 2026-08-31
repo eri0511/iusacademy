@@ -5,12 +5,8 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-import {
-  OrientacionReporte,
-} from '../tipos/reportes.types';
-import {
-  ExportarReporteBaseDto,
-} from './exportar-reporte-base.dto';
+import { OrientacionReporte } from '../tipos/reportes.types';
+import { ExportarReporteBaseDto } from './exportar-reporte-base.dto';
 
 export class ExportarPdfDto extends ExportarReporteBaseDto {
   @IsOptional()

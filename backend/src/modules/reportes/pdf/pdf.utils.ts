@@ -1,16 +1,12 @@
 import type PDFKit from 'pdfkit';
-import {
-  existsSync,
-} from 'node:fs';
+import { existsSync } from 'node:fs';
 
 import {
   AlineacionReporte,
   TipoDatoReporte,
   ValorCeldaReporte,
 } from '../tipos/reportes.types';
-import {
-  normalizarValorCelda,
-} from '../helpers/normalizacion.helper';
+import { normalizarValorCelda } from '../helpers/normalizacion.helper';
 
 export function convertirAlineacionPdf(
   alineacion?: AlineacionReporte,
@@ -31,7 +27,9 @@ export function valorCeldaATextoPdf(
 ): string {
   const normalizado = normalizarValorCelda(valor, tipo);
   return typeof normalizado === 'boolean'
-    ? normalizado ? 'Sí' : 'No'
+    ? normalizado
+      ? 'Sí'
+      : 'No'
     : String(normalizado);
 }
 

@@ -1,44 +1,22 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import {
-  AuthModule,
-} from '../auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
-import {
-  ReportesModule,
-} from '../reportes/reportes.module';
+import { ReportesModule } from '../reportes/reportes.module';
 
-import {
-  DocenteCursosController,
-} from './cursos/docente-cursos.controller';
+import { DocenteCursosController } from './cursos/docente-cursos.controller';
 
-import {
-  DocenteCursosService,
-} from './cursos/docente-cursos.service';
+import { DocenteCursosService } from './cursos/docente-cursos.service';
 
-import {
-  DocenteEstudiantesReportesService,
-} from './cursos/docente-estudiantes-reportes.service';
+import { DocenteEstudiantesReportesService } from './cursos/docente-estudiantes-reportes.service';
 
 @Module({
-  imports: [
-    AuthModule,
-    ReportesModule,
-  ],
+  imports: [AuthModule, ReportesModule],
 
-  controllers: [
-    DocenteCursosController,
-  ],
+  controllers: [DocenteCursosController],
 
-  providers: [
-    DocenteCursosService,
-    DocenteEstudiantesReportesService,
-  ],
+  providers: [DocenteCursosService, DocenteEstudiantesReportesService],
 
-  exports: [
-    DocenteCursosService,
-  ],
+  exports: [DocenteCursosService],
 })
 export class DocenteModule {}

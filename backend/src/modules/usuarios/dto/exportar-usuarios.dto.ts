@@ -1,15 +1,8 @@
-import {
-  IsEnum,
-  IsOptional,
-} from 'class-validator';
+import { IsEnum, IsOptional } from 'class-validator';
 
-import {
-  Rol,
-} from '../../../generated/prisma/client';
+import { Rol } from '../../../generated/prisma/client';
 
-import {
-  FormatoReporte,
-} from '../../reportes';
+import { FormatoReporte } from '../../reportes';
 
 export enum EstadoUsuarioReporte {
   TODOS = 'TODOS',

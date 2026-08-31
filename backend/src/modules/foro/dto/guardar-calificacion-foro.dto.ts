@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   IsNumber,
@@ -12,46 +10,31 @@ import {
 } from 'class-validator';
 
 export class GuardarCalificacionForoDto {
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0)
   @Max(100)
-  notaBase!:
-    number;
+  notaBase!: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0)
   @Max(100)
-  descuentoRetraso?:
-    number;
+  descuentoRetraso?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(-100)
   @Max(100)
-  ajusteIndividual?:
-    number;
+  ajusteIndividual?: number;
 
   /**
    * Solo se utiliza cuando el foro tiene modalidad
@@ -60,22 +43,16 @@ export class GuardarCalificacionForoDto {
    * ajusteIndividual para evitar una migración de Prisma.
    */
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0)
   @Max(100)
-  notaIndividual?:
-    number;
+  notaIndividual?: number;
 
   @IsOptional()
   @IsString()
   @MaxLength(3000)
-  retroalimentacion?:
-    string;
+  retroalimentacion?: string;
 }

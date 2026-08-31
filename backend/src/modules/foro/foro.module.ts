@@ -1,90 +1,46 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import {
-  AuthModule,
-} from '../auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
-import {
-  CalificacionesModule,
-} from '../calificaciones/calificaciones.module';
+import { CalificacionesModule } from '../calificaciones/calificaciones.module';
 
-import {
-  ReportesModule,
-} from '../reportes/reportes.module';
+import { ReportesModule } from '../reportes/reportes.module';
 
-import {
-  ForoAdministracionService,
-} from './foro-administracion.service';
+import { ForoAdministracionService } from './foro-administracion.service';
 
-import {
-  ForoCalificacionMasivaService,
-} from './foro-calificacion-masiva.service';
+import { ForoCalificacionMasivaService } from './foro-calificacion-masiva.service';
 
-import {
-  ForoCalificacionService,
-} from './foro-calificacion.service';
+import { ForoCalificacionService } from './foro-calificacion.service';
 
-import {
-  ForoCicloVidaService,
-} from './foro-ciclo-vida.service';
+import { ForoCicloVidaService } from './foro-ciclo-vida.service';
 import { ForoCierreAutomaticoService } from './foro-cierre-automatico.service';
 
-import {
-  ForoComentariosService,
-} from './foro-comentarios.service';
+import { ForoComentariosService } from './foro-comentarios.service';
 
-import {
-  ForoController,
-} from './foro.controller';
+import { ForoController } from './foro.controller';
 
-import {
-  ForoEstadisticasService,
-} from './foro-estadisticas.service';
+import { ForoEstadisticasService } from './foro-estadisticas.service';
 
-import {
-  ForoReglasService,
-} from './foro-reglas.service';
+import { ForoReglasService } from './foro-reglas.service';
 
-import {
-  ForoLibroCalificacionesService,
-} from './foro-libro-calificaciones.service';
+import { ForoLibroCalificacionesService } from './foro-libro-calificaciones.service';
 
-import {
-  ForoLecturasService,
-} from './foro-lecturas.service';
+import { ForoLecturasService } from './foro-lecturas.service';
 
-import {
-  ForoModeracionService,
-} from './foro-moderacion.service';
+import { ForoModeracionService } from './foro-moderacion.service';
 
-import {
-  ForoPublicacionNotasService,
-} from './foro-publicacion-notas.service';
+import { ForoPublicacionNotasService } from './foro-publicacion-notas.service';
 
-import {
-  ForoRespuestasService,
-} from './foro-respuestas.service';
+import { ForoRespuestasService } from './foro-respuestas.service';
 
-import {
-  ForoReportesService,
-} from './foro-reportes.service';
+import { ForoReportesService } from './foro-reportes.service';
 
-import {
-  ForoService,
-} from './foro.service';
+import { ForoService } from './foro.service';
 
 @Module({
-  imports: [
-    AuthModule,
-    CalificacionesModule,
-    ReportesModule,
-  ],
+  imports: [AuthModule, CalificacionesModule, ReportesModule],
 
-  controllers: [
-    ForoController,
-  ],
+  controllers: [ForoController],
 
   providers: [
     ForoService,

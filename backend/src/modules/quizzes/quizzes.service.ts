@@ -26,99 +26,64 @@ import {
   UsoRecursoCurso,
 } from '../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-import type {
-  UsuarioAutenticado,
-} from '../archivos/interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from '../archivos/interfaces/usuario-autenticado.interface';
 
-import {
-  ActualizarQuizDto,
-} from './dto/actualizar-quiz.dto';
+import { ActualizarQuizDto } from './dto/actualizar-quiz.dto';
 
-import {
-  AgregarFragmentoQuizDto,
-} from './dto/agregar-fragmento-quiz.dto';
+import { AgregarFragmentoQuizDto } from './dto/agregar-fragmento-quiz.dto';
 
-import {
-  AgregarFuenteQuizDto,
-} from './dto/agregar-fuente-quiz.dto';
+import { AgregarFuenteQuizDto } from './dto/agregar-fuente-quiz.dto';
 
-import {
-  CrearPreguntaQuizDto,
-} from './dto/crear-pregunta-quiz.dto';
+import { CrearPreguntaQuizDto } from './dto/crear-pregunta-quiz.dto';
 
-import {
-  CrearQuizDto,
-} from './dto/crear-quiz.dto';
+import { CrearQuizDto } from './dto/crear-quiz.dto';
 
-import {
-  ResponderPreguntaQuizDto,
-} from './dto/responder-pregunta-quiz.dto';
+import { ResponderPreguntaQuizDto } from './dto/responder-pregunta-quiz.dto';
 
-import {
-  SeleccionarAvatarQuizDto,
-} from './dto/seleccionar-avatar-quiz.dto';
+import { SeleccionarAvatarQuizDto } from './dto/seleccionar-avatar-quiz.dto';
 
 @Injectable()
 export class QuizzesService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  private readonly presenciaQuizMs =
-    12000;
+  private readonly presenciaQuizMs = 12000;
 
   private limitePresencia() {
-    return new Date(
-      Date.now() -
-        this.presenciaQuizMs,
-    );
+    return new Date(Date.now() - this.presenciaQuizMs);
   }
 
   private readonly includeDetalle = {
     hito: {
       select: {
-        id:
-          true,
+        id: true,
 
-        numero:
-          true,
+        numero: true,
 
-        codigo:
-          true,
+        codigo: true,
 
-        nombre:
-          true,
+        nombre: true,
       },
     },
 
     creador: {
       select: {
-        id:
-          true,
+        id: true,
 
-        nombres:
-          true,
+        nombres: true,
 
-        apellidoPaterno:
-          true,
+        apellidoPaterno: true,
 
-        apellidoMaterno:
-          true,
+        apellidoMaterno: true,
       },
     },
 
-    actividadCalificable:
-      true,
+    actividadCalificable: true,
 
     fuentes: {
       orderBy: {
-        orden:
-          'asc' as const,
+        orden: 'asc' as const,
       },
 
       include: {
@@ -126,33 +91,25 @@ export class QuizzesService {
           include: {
             archivo: {
               select: {
-                id:
-                  true,
+                id: true,
 
-                nombreOriginal:
-                  true,
+                nombreOriginal: true,
 
-                extension:
-                  true,
+                extension: true,
 
-                mimeType:
-                  true,
+                mimeType: true,
 
-                tamanioBytes:
-                  true,
+                tamanioBytes: true,
 
-                hashSha256:
-                  true,
+                hashSha256: true,
 
-                textoExtraido:
-                  true,
+                textoExtraido: true,
               },
             },
 
             contenido: {
               include: {
-                recurso:
-                  true,
+                recurso: true,
               },
             },
           },
@@ -160,8 +117,7 @@ export class QuizzesService {
 
         fragmentos: {
           orderBy: {
-            orden:
-              'asc' as const,
+            orden: 'asc' as const,
           },
         },
       },
@@ -169,79 +125,55 @@ export class QuizzesService {
 
     preguntas: {
       where: {
-        estaActiva:
-          true,
+        estaActiva: true,
       },
 
       orderBy: {
-        orden:
-          'asc' as const,
+        orden: 'asc' as const,
       },
 
       include: {
         opciones: {
           orderBy: {
-            orden:
-              'asc' as const,
+            orden: 'asc' as const,
           },
         },
 
-        fragmento:
-          true,
+        fragmento: true,
       },
     },
   };
 
-  private exigirDocente(
-    usuario:
-      UsuarioAutenticado,
-  ) {
-    if (
-      usuario.rol !==
-      Rol.DOCENTE
-    ) {
-      throw new ForbiddenException(
-        'Solo el docente puede administrar Quizzes',
-      );
+  private exigirDocente(usuario: UsuarioAutenticado) {
+    if (usuario.rol !== Rol.DOCENTE) {
+      throw new ForbiddenException('Solo el docente puede administrar Quizzes');
     }
   }
 
   private async validarCursoDocente(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
   ) {
-    this.exigirDocente(
-      usuario,
-    );
+    this.exigirDocente(usuario);
 
-    const curso =
-      await this.prisma.curso.findFirst({
-        where: {
-          id:
-            cursoId,
+    const curso = await this.prisma.curso.findFirst({
+      where: {
+        id: cursoId,
 
-          docenteId:
-            usuario.id,
-        },
+        docenteId: usuario.id,
+      },
 
-        select: {
-          id:
-            true,
+      select: {
+        id: true,
 
-          docenteId:
-            true,
+        docenteId: true,
 
-          planificacionId:
-            true,
-        },
-      });
+        planificacionId: true,
+      },
+    });
 
-    if (
-      !curso
-    ) {
+    if (!curso) {
       throw new NotFoundException(
         'El curso no existe o no pertenece al docente',
       );
@@ -251,42 +183,31 @@ export class QuizzesService {
   }
 
   private async validarEstudianteCurso(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
   ) {
-    if (
-      usuario.rol !==
-      Rol.ESTUDIANTE
-    ) {
+    if (usuario.rol !== Rol.ESTUDIANTE) {
       throw new ForbiddenException(
         'Solo los estudiantes pueden realizar esta acción',
       );
     }
 
-    const inscripcion =
-      await this.prisma.inscripcionCurso.findFirst({
-        where: {
-          cursoId,
+    const inscripcion = await this.prisma.inscripcionCurso.findFirst({
+      where: {
+        cursoId,
 
-          estudianteId:
-            usuario.id,
+        estudianteId: usuario.id,
 
-          estado:
-            EstadoInscripcion.ACTIVA,
-        },
+        estado: EstadoInscripcion.ACTIVA,
+      },
 
-        select: {
-          id:
-            true,
-        },
-      });
+      select: {
+        id: true,
+      },
+    });
 
-    if (
-      !inscripcion
-    ) {
+    if (!inscripcion) {
       throw new ForbiddenException(
         'No tienes una inscripción activa en este curso',
       );
@@ -294,38 +215,29 @@ export class QuizzesService {
   }
 
   private async validarHito(
-    planificacionId:
-      number | null,
+    planificacionId: number | null,
 
-    hitoId:
-      number,
+    hitoId: number,
   ) {
-    if (
-      !planificacionId
-    ) {
+    if (!planificacionId) {
       throw new BadRequestException(
         'El curso no tiene planificación académica',
       );
     }
 
-    const hito =
-      await this.prisma.hitoAcademico.findFirst({
-        where: {
-          id:
-            hitoId,
+    const hito = await this.prisma.hitoAcademico.findFirst({
+      where: {
+        id: hitoId,
 
-          planificacionId,
-        },
+        planificacionId,
+      },
 
-        select: {
-          id:
-            true,
-        },
-      });
+      select: {
+        id: true,
+      },
+    });
 
-    if (
-      !hito
-    ) {
+    if (!hito) {
       throw new BadRequestException(
         'El hito seleccionado no pertenece a la planificación del curso',
       );
@@ -336,107 +248,67 @@ export class QuizzesService {
 
   private validarConfiguracion(
     datos:
-      CrearQuizDto |
-      ActualizarQuizDto |
-      {
-        esCalificable:
-          boolean;
+      | CrearQuizDto
+      | ActualizarQuizDto
+      | {
+          esCalificable: boolean;
 
-        componente?:
-          ComponenteEvaluacion;
+          componente?: ComponenteEvaluacion;
 
-        modalidad:
-          ModalidadQuiz;
+          modalidad: ModalidadQuiz;
 
-        aperturaProgramada?:
-          string;
+          aperturaProgramada?: string;
 
-        cierreProgramado?:
-          string;
+          cierreProgramado?: string;
 
-        usarRanking:
-          boolean;
+          usarRanking: boolean;
 
-        descuentoPorPuesto:
-          number;
-      },
+          descuentoPorPuesto: number;
+        },
   ) {
-    if (
-      datos.esCalificable &&
-      !datos.componente
-    ) {
+    if (datos.esCalificable && !datos.componente) {
       throw new BadRequestException(
         'Un Quiz calificable debe pertenecer a evaluación CONTINUA o PROCESUAL',
       );
     }
 
-    if (
-      !datos.esCalificable &&
-      datos.componente
-    ) {
+    if (!datos.esCalificable && datos.componente) {
       throw new BadRequestException(
         'Un Quiz de práctica no debe tener componente de evaluación',
       );
     }
 
-    if (
-      datos.modalidad ===
-      ModalidadQuiz.PROGRAMADO
-    ) {
-      if (
-        !datos.aperturaProgramada
-      ) {
+    if (datos.modalidad === ModalidadQuiz.PROGRAMADO) {
+      if (!datos.aperturaProgramada) {
         throw new BadRequestException(
           'Un Quiz programado requiere fecha y hora de apertura',
         );
       }
 
-      const apertura =
-        new Date(
-          datos.aperturaProgramada,
-        );
+      const apertura = new Date(datos.aperturaProgramada);
 
-      if (
-        Number.isNaN(
-          apertura.getTime(),
-        )
-      ) {
+      if (Number.isNaN(apertura.getTime())) {
         throw new BadRequestException(
           'La fecha de apertura del Quiz no es válida',
         );
       }
 
-      if (
-        apertura <=
-        new Date()
-      ) {
+      if (apertura <= new Date()) {
         throw new BadRequestException(
           'La apertura programada debe ser posterior al momento actual',
         );
       }
 
-      if (
-        datos.cierreProgramado
-      ) {
-        const cierre =
-          new Date(
-            datos.cierreProgramado,
-          );
+      if (datos.cierreProgramado) {
+        const cierre = new Date(datos.cierreProgramado);
 
-        if (
-          Number.isNaN(
-            cierre.getTime(),
-          )
-        ) {
+        if (Number.isNaN(cierre.getTime())) {
           throw new BadRequestException(
             'La fecha de cierre del Quiz no es válida',
           );
         }
 
-        if (
-          cierre <=
-          apertura
-        ) {
+        if (cierre <= apertura) {
           throw new BadRequestException(
             'La fecha de cierre debe ser posterior a la apertura',
           );
@@ -459,9 +331,7 @@ export class QuizzesService {
       );
     }
 
-    if (
-      (velocidad.descuentoVelocidadPorPosicion ?? 0) > 100
-    ) {
+    if ((velocidad.descuentoVelocidadPorPosicion ?? 0) > 100) {
       throw new BadRequestException(
         'El descuento por posición no puede superar 100 puntos',
       );
@@ -478,39 +348,26 @@ export class QuizzesService {
   }
 
   private async buscarQuizDocente(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
   ) {
-    await this.validarCursoDocente(
-      usuario,
-      cursoId,
-    );
+    await this.validarCursoDocente(usuario, cursoId);
 
-    const quiz =
-      await this.prisma.quizCurso.findFirst({
-        where: {
-          id:
-            quizId,
+    const quiz = await this.prisma.quizCurso.findFirst({
+      where: {
+        id: quizId,
 
-          cursoId,
-        },
+        cursoId,
+      },
 
-        include:
-          this.includeDetalle,
-      });
+      include: this.includeDetalle,
+    });
 
-    if (
-      !quiz
-    ) {
-      throw new NotFoundException(
-        'El Quiz no existe',
-      );
+    if (!quiz) {
+      throw new NotFoundException('El Quiz no existe');
     }
 
     return quiz;
@@ -518,51 +375,33 @@ export class QuizzesService {
 
   private obtenerTiempoPregunta(
     quiz: {
-      tiempoPreguntaSegundos:
-        number;
+      tiempoPreguntaSegundos: number;
 
-      tiempoFacilSegundos:
-        number;
+      tiempoFacilSegundos: number;
 
-      tiempoMedioSegundos:
-        number;
+      tiempoMedioSegundos: number;
 
-      tiempoDificilSegundos:
-        number;
+      tiempoDificilSegundos: number;
 
-      modoTiempo:
-        string;
+      modoTiempo: string;
     },
 
     pregunta: {
-      tiempoSegundos:
-        number | null;
+      tiempoSegundos: number | null;
 
-      dificultad:
-        string;
+      dificultad: string;
     },
   ) {
-    if (
-      pregunta.tiempoSegundos
-    ) {
+    if (pregunta.tiempoSegundos) {
       return pregunta.tiempoSegundos;
     }
 
-    if (
-      quiz.modoTiempo ===
-      'AUTOMATICO_DIFICULTAD'
-    ) {
-      if (
-        pregunta.dificultad ===
-        'FACIL'
-      ) {
+    if (quiz.modoTiempo === 'AUTOMATICO_DIFICULTAD') {
+      if (pregunta.dificultad === 'FACIL') {
         return quiz.tiempoFacilSegundos;
       }
 
-      if (
-        pregunta.dificultad ===
-        'DIFICIL'
-      ) {
+      if (pregunta.dificultad === 'DIFICIL') {
         return quiz.tiempoDificilSegundos;
       }
 
@@ -594,7 +433,8 @@ export class QuizzesService {
         quiz.ritmo !== RitmoQuiz.AUTOMATICO ||
         quiz.estado !== EstadoQuiz.EN_CURSO ||
         quiz.preguntaActualOrden === null
-      ) return;
+      )
+        return;
 
       const actual = quiz.preguntas.find(
         (pregunta) => pregunta.orden === quiz.preguntaActualOrden,
@@ -617,7 +457,8 @@ export class QuizzesService {
       const tiempoAgotado = Boolean(
         quiz.preguntaCierraEn && ahora >= quiz.preguntaCierraEn,
       );
-      const todosRespondieron = totalActivos > 0 && respondieron >= totalActivos;
+      const todosRespondieron =
+        totalActivos > 0 && respondieron >= totalActivos;
 
       if (!tiempoAgotado && !todosRespondieron) return;
 
@@ -657,20 +498,12 @@ export class QuizzesService {
   }
 
   async listar(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
   ) {
-    if (
-      usuario.rol ===
-      Rol.DOCENTE
-    ) {
-      await this.validarCursoDocente(
-        usuario,
-        cursoId,
-      );
+    if (usuario.rol === Rol.DOCENTE) {
+      await this.validarCursoDocente(usuario, cursoId);
 
       return this.prisma.quizCurso.findMany({
         where: {
@@ -678,19 +511,14 @@ export class QuizzesService {
         },
 
         orderBy: {
-          creadoEn:
-            'desc',
+          creadoEn: 'desc',
         },
 
-        include:
-          this.includeDetalle,
+        include: this.includeDetalle,
       });
     }
 
-    await this.validarEstudianteCurso(
-      usuario,
-      cursoId,
-    );
+    await this.validarEstudianteCurso(usuario, cursoId);
 
     return this.prisma.quizCurso.findMany({
       where: {
@@ -708,60 +536,43 @@ export class QuizzesService {
       },
 
       orderBy: {
-        creadoEn:
-          'desc',
+        creadoEn: 'desc',
       },
 
       select: {
-        id:
-          true,
+        id: true,
 
-        titulo:
-          true,
+        titulo: true,
 
-        descripcion:
-          true,
+        descripcion: true,
 
-        dificultad:
-          true,
+        dificultad: true,
 
-        modalidad:
-          true,
+        modalidad: true,
 
-        estado:
-          true,
+        estado: true,
 
-        esCalificable:
-          true,
+        esCalificable: true,
 
-        componente:
-          true,
+        componente: true,
 
-        hito:
-          true,
+        hito: true,
 
-        aperturaProgramada:
-          true,
+        aperturaProgramada: true,
 
-        cierreProgramado:
-          true,
+        cierreProgramado: true,
 
-        salaPublicadaEn:
-          true,
+        salaPublicadaEn: true,
 
-        inicioEn:
-          true,
+        inicioEn: true,
 
-        finalizadoEn:
-          true,
+        finalizadoEn: true,
 
-        resultadosPublicados:
-          true,
+        resultadosPublicados: true,
 
         _count: {
           select: {
-            preguntas:
-              true,
+            preguntas: true,
           },
         },
       },
@@ -769,37 +580,758 @@ export class QuizzesService {
   }
 
   async listarDatasets(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
   ) {
-    await this.validarCursoDocente(
-      usuario,
-      cursoId,
-    );
+    await this.validarCursoDocente(usuario, cursoId);
 
-    const contenidos =
-      await this.prisma.recursoContenido.findMany({
+    const contenidos = await this.prisma.recursoContenido.findMany({
+      where: {
+        estaActivo: true,
+
+        tipo: TipoContenidoRecurso.ARCHIVO,
+
+        disponibleParaQuiz: true,
+
+        recurso: {
+          cursoId,
+
+          estaActivo: true,
+
+          estado: EstadoRecursoCurso.ACTIVO,
+
+          uso: {
+            in: [UsoRecursoCurso.AULA_Y_QUIZZES, UsoRecursoCurso.SOLO_QUIZZES],
+          },
+        },
+
+        versiones: {
+          some: {
+            esVigente: true,
+
+            estado: EstadoVersionRecurso.VIGENTE,
+
+            archivo: {
+              extension: {
+                equals: 'pdf',
+
+                mode: 'insensitive',
+              },
+            },
+          },
+        },
+      },
+
+      include: {
+        recurso: {
+          include: {
+            hito: true,
+          },
+        },
+
+        versiones: {
+          where: {
+            esVigente: true,
+
+            estado: EstadoVersionRecurso.VIGENTE,
+
+            estadoDataset: EstadoProcesamientoDataset.LISTO,
+          },
+
+          orderBy: {
+            numeroVersion: 'desc',
+          },
+
+          take: 1,
+
+          include: {
+            archivo: {
+              select: {
+                id: true,
+
+                nombreOriginal: true,
+
+                extension: true,
+
+                mimeType: true,
+
+                tamanioBytes: true,
+
+                textoExtraido: true,
+
+                hashSha256: true,
+              },
+            },
+          },
+        },
+      },
+
+      orderBy: [
+        {
+          recurso: {
+            titulo: 'asc',
+          },
+        },
+
+        {
+          orden: 'asc',
+        },
+      ],
+    });
+
+    return contenidos
+      .map((contenido) => {
+        const version = [...contenido.versiones].sort(
+          (a, b) => b.numeroVersion - a.numeroVersion,
+        )[0];
+
+        if (!version) {
+          return null;
+        }
+
+        return {
+          recursoId: contenido.recurso.id,
+
+          recursoTitulo: contenido.recurso.titulo,
+
+          recursoUso: contenido.recurso.uso,
+
+          recursoAlcance: contenido.recurso.alcance,
+
+          hito: contenido.recurso.hito,
+
+          contenidoId: contenido.id,
+
+          contenidoTitulo: contenido.titulo,
+
+          versionId: version.id,
+
+          numeroVersion: version.numeroVersion,
+
+          archivo: version.archivo,
+        };
+      })
+      .filter((item) => item !== null);
+  }
+
+  async crear(
+    usuario: UsuarioAutenticado,
+
+    cursoId: number,
+
+    datos: CrearQuizDto,
+  ) {
+    const curso = await this.validarCursoDocente(usuario, cursoId);
+
+    await this.validarHito(curso.planificacionId, datos.hitoId);
+
+    this.validarConfiguracion(datos);
+
+    return this.prisma.$transaction(async (tx) => {
+      const quiz = await tx.quizCurso.create({
+        data: {
+          cursoId,
+
+          hitoId: datos.hitoId,
+
+          creadorId: usuario.id,
+
+          titulo: datos.titulo.trim(),
+
+          descripcion: datos.descripcion?.trim() || null,
+
+          dificultad: datos.dificultad,
+
+          esCalificable: datos.esCalificable,
+
+          componente: datos.esCalificable ? datos.componente : null,
+
+          modalidad: datos.modalidad,
+
+          ritmo: datos.ritmo,
+
+          modoTiempo: datos.modoTiempo,
+
+          tiempoPreguntaSegundos: datos.tiempoPreguntaSegundos,
+
+          tiempoFacilSegundos: datos.tiempoFacilSegundos,
+
+          tiempoMedioSegundos: datos.tiempoMedioSegundos,
+
+          tiempoDificilSegundos: datos.tiempoDificilSegundos,
+
+          cantidadPreguntas: datos.cantidadPreguntas,
+
+          puntajeMaximo: datos.puntajeMaximo,
+
+          usarRanking: datos.usarRanking,
+
+          criterioRanking: datos.criterioRanking,
+
+          // El ranking final solo ordena la clasificación.
+          // Ya no reduce la nota final.
+          descuentoPorPuesto: 0,
+
+          puntajeMinimoRanking: 0,
+
+          // Esta configuración es independiente del ranking final.
+          usarPuntuacionVelocidad: datos.usarPuntuacionVelocidad,
+
+          descuentoVelocidadPorPosicion: datos.usarPuntuacionVelocidad
+            ? datos.descuentoVelocidadPorPosicion
+            : 0,
+
+          puntajeMinimoVelocidad: datos.usarPuntuacionVelocidad
+            ? datos.puntajeMinimoVelocidad
+            : 0,
+
+          permiteInicioConAusentes: datos.permiteInicioConAusentes,
+
+          cuentaRegresivaSegundos: datos.cuentaRegresivaSegundos,
+
+          aperturaProgramada:
+            datos.modalidad === ModalidadQuiz.PROGRAMADO
+              ? new Date(datos.aperturaProgramada!)
+              : null,
+
+          cierreProgramado:
+            datos.modalidad === ModalidadQuiz.PROGRAMADO &&
+            datos.cierreProgramado
+              ? new Date(datos.cierreProgramado)
+              : null,
+        },
+      });
+
+      if (datos.esCalificable) {
+        await tx.actividadCalificable.create({
+          data: {
+            cursoId,
+
+            hitoId: datos.hitoId,
+
+            creadorId: usuario.id,
+
+            quizId: quiz.id,
+
+            origen: TipoOrigenActividad.QUIZ,
+
+            componente: datos.componente!,
+
+            titulo: datos.titulo.trim(),
+
+            descripcion: datos.descripcion?.trim() || null,
+
+            puntajeMaximo: 100,
+
+            participaEnPromedio: true,
+
+            estado: EstadoActividadCalificable.BORRADOR,
+
+            visibleParaEstudiantes: false,
+          },
+        });
+      }
+
+      return tx.quizCurso.findUnique({
         where: {
-          estaActivo:
-            true,
+          id: quiz.id,
+        },
 
-          tipo:
-            TipoContenidoRecurso.ARCHIVO,
+        include: this.includeDetalle,
+      });
+    });
+  }
 
-          disponibleParaQuiz:
-            true,
+  async actualizar(
+    usuario: UsuarioAutenticado,
+
+    cursoId: number,
+
+    quizId: number,
+
+    datos: ActualizarQuizDto,
+  ) {
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
+
+    if (quiz.estado !== EstadoQuiz.BORRADOR) {
+      throw new BadRequestException(
+        'Solo puedes editar la configuración completa mientras el Quiz está en borrador',
+      );
+    }
+
+    const curso = await this.validarCursoDocente(usuario, cursoId);
+
+    if (datos.hitoId) {
+      await this.validarHito(curso.planificacionId, datos.hitoId);
+    }
+
+    const combinado = {
+      esCalificable: datos.esCalificable ?? quiz.esCalificable,
+
+      componente: datos.componente ?? quiz.componente ?? undefined,
+
+      modalidad: datos.modalidad ?? quiz.modalidad,
+
+      aperturaProgramada:
+        datos.aperturaProgramada ?? quiz.aperturaProgramada?.toISOString(),
+
+      cierreProgramado:
+        datos.cierreProgramado ?? quiz.cierreProgramado?.toISOString(),
+
+      usarRanking: datos.usarRanking ?? quiz.usarRanking,
+
+      descuentoPorPuesto: 0,
+
+      usarPuntuacionVelocidad:
+        datos.usarPuntuacionVelocidad ?? quiz.usarPuntuacionVelocidad,
+
+      descuentoVelocidadPorPosicion:
+        datos.descuentoVelocidadPorPosicion ??
+        Number(quiz.descuentoVelocidadPorPosicion),
+
+      puntajeMinimoVelocidad:
+        datos.puntajeMinimoVelocidad ?? Number(quiz.puntajeMinimoVelocidad),
+    };
+
+    this.validarConfiguracion(combinado);
+
+    return this.prisma.$transaction(async (tx) => {
+      const actualizado = await tx.quizCurso.update({
+        where: {
+          id: quizId,
+        },
+
+        data: {
+          ...datos,
+
+          // El ranking final no descuenta nota.
+          descuentoPorPuesto: 0,
+
+          puntajeMinimoRanking: 0,
+
+          usarPuntuacionVelocidad: combinado.usarPuntuacionVelocidad,
+
+          descuentoVelocidadPorPosicion: combinado.usarPuntuacionVelocidad
+            ? combinado.descuentoVelocidadPorPosicion
+            : 0,
+
+          puntajeMinimoVelocidad: combinado.usarPuntuacionVelocidad
+            ? combinado.puntajeMinimoVelocidad
+            : 0,
+
+          titulo: datos.titulo?.trim(),
+
+          descripcion:
+            datos.descripcion !== undefined
+              ? datos.descripcion.trim() || null
+              : undefined,
+
+          componente: combinado.esCalificable ? combinado.componente : null,
+
+          aperturaProgramada:
+            combinado.modalidad === ModalidadQuiz.PROGRAMADO
+              ? combinado.aperturaProgramada
+                ? new Date(combinado.aperturaProgramada)
+                : null
+              : null,
+
+          cierreProgramado:
+            combinado.modalidad === ModalidadQuiz.PROGRAMADO &&
+            combinado.cierreProgramado
+              ? new Date(combinado.cierreProgramado)
+              : null,
+        },
+      });
+
+      if (combinado.esCalificable) {
+        await tx.actividadCalificable.upsert({
+          where: {
+            quizId,
+          },
+
+          create: {
+            cursoId,
+
+            hitoId: datos.hitoId ?? quiz.hitoId,
+
+            creadorId: usuario.id,
+
+            quizId,
+
+            origen: TipoOrigenActividad.QUIZ,
+
+            componente: combinado.componente as ComponenteEvaluacion,
+
+            titulo: datos.titulo?.trim() ?? quiz.titulo,
+
+            descripcion:
+              datos.descripcion !== undefined
+                ? datos.descripcion.trim() || null
+                : quiz.descripcion,
+
+            puntajeMaximo: 100,
+
+            participaEnPromedio: true,
+
+            estado: EstadoActividadCalificable.BORRADOR,
+
+            visibleParaEstudiantes: false,
+          },
+
+          update: {
+            hitoId: datos.hitoId,
+
+            componente: combinado.componente as ComponenteEvaluacion,
+
+            titulo: datos.titulo?.trim(),
+
+            descripcion:
+              datos.descripcion !== undefined
+                ? datos.descripcion.trim() || null
+                : undefined,
+
+            puntajeMaximo: 100,
+          },
+        });
+      } else {
+        await tx.actividadCalificable.deleteMany({
+          where: {
+            quizId,
+          },
+        });
+      }
+
+      return tx.quizCurso.findUnique({
+        where: {
+          id: actualizado.id,
+        },
+
+        include: this.includeDetalle,
+      });
+    });
+  }
+
+  async obtener(
+    usuario: UsuarioAutenticado,
+
+    cursoId: number,
+
+    quizId: number,
+  ) {
+    if (usuario.rol === Rol.DOCENTE) {
+      return this.buscarQuizDocente(usuario, cursoId, quizId);
+    }
+
+    await this.validarEstudianteCurso(usuario, cursoId);
+
+    await this.sincronizarRitmoAutomatico(quizId);
+
+    const quiz = await this.prisma.quizCurso.findFirst({
+      where: {
+        id: quizId,
+
+        cursoId,
+
+        estado: {
+          notIn: [EstadoQuiz.BORRADOR, EstadoQuiz.CANCELADO],
+        },
+      },
+
+      include: {
+        hito: true,
+      },
+    });
+
+    if (!quiz) {
+      throw new NotFoundException('El Quiz no está disponible');
+    }
+
+    const preguntaActual =
+      quiz.estado === EstadoQuiz.EN_CURSO && quiz.preguntaActualOrden !== null
+        ? await this.prisma.preguntaQuiz.findFirst({
+            where: {
+              quizId,
+
+              orden: quiz.preguntaActualOrden,
+
+              estaActiva: true,
+            },
+
+            select: {
+              id: true,
+
+              enunciado: true,
+
+              tipo: true,
+
+              dificultad: true,
+
+              tiempoSegundos: true,
+
+              orden: true,
+
+              opciones: {
+                orderBy: {
+                  orden: 'asc',
+                },
+
+                select: {
+                  id: true,
+
+                  texto: true,
+
+                  orden: true,
+                },
+              },
+            },
+          })
+        : null;
+
+    const intento = await this.prisma.intentoQuiz.findUnique({
+      where: {
+        quizId_estudianteId: {
+          quizId,
+
+          estudianteId: usuario.id,
+        },
+      },
+
+      select: {
+        id: true,
+
+        estado: true,
+      },
+    });
+
+    const respuestaActual =
+      preguntaActual && intento
+        ? await this.prisma.respuestaIntentoQuiz.findUnique({
+            where: {
+              intentoId_preguntaId: {
+                intentoId: intento.id,
+
+                preguntaId: preguntaActual.id,
+              },
+            },
+
+            select: {
+              id: true,
+
+              respondidaEn: true,
+
+              tiempoRespuestaMs: true,
+
+              opcionesSeleccionadas: {
+                select: {
+                  opcionId: true,
+                },
+              },
+            },
+          })
+        : null;
+
+    const participante = await this.prisma.participanteQuiz.findUnique({
+      where: {
+        quizId_estudianteId: {
+          quizId,
+
+          estudianteId: usuario.id,
+        },
+      },
+
+      select: {
+        estudianteId: true,
+
+        estado: true,
+
+        avatarCodigo: true,
+
+        ultimaConexionEn: true,
+
+        listoEn: true,
+
+        inicioEn: true,
+
+        finalizadoEn: true,
+      },
+    });
+
+    return {
+      id: quiz.id,
+
+      titulo: quiz.titulo,
+
+      descripcion: quiz.descripcion,
+
+      dificultad: quiz.dificultad,
+
+      modalidad: quiz.modalidad,
+
+      estado: quiz.estado,
+
+      esCalificable: quiz.esCalificable,
+
+      componente: quiz.componente,
+
+      hito: quiz.hito,
+
+      cuentaRegresivaSegundos: quiz.cuentaRegresivaSegundos,
+
+      aperturaProgramada: quiz.aperturaProgramada,
+
+      cierreProgramado: quiz.cierreProgramado,
+
+      inicioEn: quiz.inicioEn,
+
+      preguntaActualOrden: quiz.preguntaActualOrden,
+
+      preguntaIniciadaEn: quiz.preguntaIniciadaEn,
+
+      preguntaCierraEn: quiz.preguntaCierraEn,
+
+      tiempoRestantePreguntaSegundos: quiz.tiempoRestantePreguntaSegundos,
+
+      tiempoTotalPreguntaSegundos: preguntaActual
+        ? this.obtenerTiempoPregunta(quiz, preguntaActual)
+        : null,
+
+      usarPuntuacionVelocidad: quiz.usarPuntuacionVelocidad,
+
+      descuentoVelocidadPorPosicion: Number(quiz.descuentoVelocidadPorPosicion),
+
+      puntajeMinimoVelocidad: Number(quiz.puntajeMinimoVelocidad),
+
+      resultadosPublicados: quiz.resultadosPublicados,
+
+      participante,
+
+      intento: intento
+        ? {
+            id: intento.id,
+
+            estado: intento.estado,
+          }
+        : null,
+
+      preguntaActual,
+
+      respuestaActual: respuestaActual
+        ? {
+            id: respuestaActual.id,
+
+            respondidoEn: respuestaActual.respondidaEn,
+
+            tiempoRespuestaMs: respuestaActual.tiempoRespuestaMs,
+
+            opcionIds: respuestaActual.opcionesSeleccionadas.map(
+              (item) => item.opcionId,
+            ),
+          }
+        : null,
+    };
+  }
+
+  async eliminar(
+    usuario: UsuarioAutenticado,
+
+    cursoId: number,
+
+    quizId: number,
+  ) {
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
+
+    if (quiz.estado !== EstadoQuiz.BORRADOR) {
+      throw new BadRequestException(
+        'Solo puedes eliminar un Quiz mientras está en borrador',
+      );
+    }
+
+    await this.prisma.quizCurso.delete({
+      where: {
+        id: quizId,
+      },
+    });
+
+    return {
+      ok: true,
+
+      mensaje: 'Borrador eliminado correctamente',
+    };
+  }
+
+  async agregarFuente(
+    usuario: UsuarioAutenticado,
+
+    cursoId: number,
+
+    quizId: number,
+
+    datos: AgregarFuenteQuizDto,
+  ) {
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
+
+    if (quiz.estado !== EstadoQuiz.BORRADOR) {
+      throw new BadRequestException(
+        'No puedes modificar las fuentes después de publicar la sala',
+      );
+    }
+
+    const existente = await this.prisma.fuenteQuiz.findUnique({
+      where: {
+        quizId_versionId: {
+          quizId,
+
+          versionId: datos.versionId,
+        },
+      },
+
+      include: {
+        version: {
+          include: {
+            archivo: true,
+
+            contenido: {
+              include: {
+                recurso: true,
+              },
+            },
+          },
+        },
+
+        fragmentos: {
+          orderBy: {
+            orden: 'asc',
+          },
+        },
+      },
+    });
+
+    if (existente) {
+      return existente;
+    }
+
+    const version = await this.prisma.recursoContenidoVersion.findFirst({
+      where: {
+        id: datos.versionId,
+
+        esVigente: true,
+
+        estado: EstadoVersionRecurso.VIGENTE,
+
+        contenido: {
+          estaActivo: true,
+
+          tipo: TipoContenidoRecurso.ARCHIVO,
+
+          disponibleParaQuiz: true,
 
           recurso: {
             cursoId,
 
-            estaActivo:
-              true,
+            estaActivo: true,
 
-            estado:
-              EstadoRecursoCurso.ACTIVO,
+            estado: EstadoRecursoCurso.ACTIVO,
 
             uso: {
               in: [
@@ -808,1152 +1340,63 @@ export class QuizzesService {
               ],
             },
           },
-
-          versiones: {
-            some: {
-              esVigente:
-                true,
-
-              estado:
-                EstadoVersionRecurso.VIGENTE,
-
-              archivo: {
-                extension: {
-                  equals:
-                    'pdf',
-
-                  mode:
-                    'insensitive',
-                },
-              },
-            },
-          },
         },
 
-        include: {
-          recurso: {
-            include: {
-              hito:
-                true,
-            },
-          },
+        archivo: {
+          extension: {
+            equals: 'pdf',
 
-          versiones: {
-            where: {
-              esVigente:
-                true,
-
-              estado:
-                EstadoVersionRecurso.VIGENTE,
-
-              estadoDataset:
-                EstadoProcesamientoDataset.LISTO,
-            },
-
-            orderBy: {
-              numeroVersion:
-                'desc',
-            },
-
-            take:
-              1,
-
-            include: {
-              archivo: {
-                select: {
-                  id:
-                    true,
-
-                  nombreOriginal:
-                    true,
-
-                  extension:
-                    true,
-
-                  mimeType:
-                    true,
-
-                  tamanioBytes:
-                    true,
-
-                  textoExtraido:
-                    true,
-
-                  hashSha256:
-                    true,
-                },
-              },
-            },
+            mode: 'insensitive',
           },
         },
-
-        orderBy: [
-          {
-            recurso: {
-              titulo:
-                'asc',
-            },
-          },
-
-          {
-            orden:
-              'asc',
-          },
-        ],
-      });
-
-    return contenidos
-      .map(
-        (
-          contenido,
-        ) => {
-          const version =
-            [...contenido.versiones]
-              .sort(
-                (
-                  a,
-                  b,
-                ) =>
-                  b.numeroVersion -
-                  a.numeroVersion,
-              )[
-                0
-              ];
-
-          if (
-            !version
-          ) {
-            return null;
-          }
-
-          return {
-            recursoId:
-              contenido.recurso.id,
-
-            recursoTitulo:
-              contenido.recurso.titulo,
-
-            recursoUso:
-              contenido.recurso.uso,
-
-            recursoAlcance:
-              contenido.recurso.alcance,
-
-            hito:
-              contenido.recurso.hito,
-
-            contenidoId:
-              contenido.id,
-
-            contenidoTitulo:
-              contenido.titulo,
-
-            versionId:
-              version.id,
-
-            numeroVersion:
-              version.numeroVersion,
-
-            archivo:
-              version.archivo,
-          };
-        },
-      )
-      .filter(
-        (
-          item,
-        ) =>
-          item !==
-          null,
-      );
-  }
-
-  async crear(
-    usuario:
-      UsuarioAutenticado,
-
-    cursoId:
-      number,
-
-    datos:
-      CrearQuizDto,
-  ) {
-    const curso =
-      await this.validarCursoDocente(
-        usuario,
-        cursoId,
-      );
-
-    await this.validarHito(
-      curso.planificacionId,
-      datos.hitoId,
-    );
-
-    this.validarConfiguracion(
-      datos,
-    );
-
-    return this.prisma.$transaction(
-      async (
-        tx,
-      ) => {
-        const quiz =
-          await tx.quizCurso.create({
-            data: {
-              cursoId,
-
-              hitoId:
-                datos.hitoId,
-
-              creadorId:
-                usuario.id,
-
-              titulo:
-                datos.titulo.trim(),
-
-              descripcion:
-                datos.descripcion?.trim() ||
-                null,
-
-              dificultad:
-                datos.dificultad,
-
-              esCalificable:
-                datos.esCalificable,
-
-              componente:
-                datos.esCalificable
-                  ? datos.componente
-                  : null,
-
-              modalidad:
-                datos.modalidad,
-
-              ritmo:
-                datos.ritmo,
-
-              modoTiempo:
-                datos.modoTiempo,
-
-              tiempoPreguntaSegundos:
-                datos.tiempoPreguntaSegundos,
-
-              tiempoFacilSegundos:
-                datos.tiempoFacilSegundos,
-
-              tiempoMedioSegundos:
-                datos.tiempoMedioSegundos,
-
-              tiempoDificilSegundos:
-                datos.tiempoDificilSegundos,
-
-              cantidadPreguntas:
-                datos.cantidadPreguntas,
-
-              puntajeMaximo:
-                datos.puntajeMaximo,
-
-              usarRanking:
-                datos.usarRanking,
-
-              criterioRanking:
-                datos.criterioRanking,
-
-              // El ranking final solo ordena la clasificación.
-              // Ya no reduce la nota final.
-              descuentoPorPuesto:
-                0,
-
-              puntajeMinimoRanking:
-                0,
-
-              // Esta configuración es independiente del ranking final.
-              usarPuntuacionVelocidad:
-                datos.usarPuntuacionVelocidad,
-
-              descuentoVelocidadPorPosicion:
-                datos.usarPuntuacionVelocidad
-                  ? datos.descuentoVelocidadPorPosicion
-                  : 0,
-
-              puntajeMinimoVelocidad:
-                datos.usarPuntuacionVelocidad
-                  ? datos.puntajeMinimoVelocidad
-                  : 0,
-
-              permiteInicioConAusentes:
-                datos.permiteInicioConAusentes,
-
-              cuentaRegresivaSegundos:
-                datos.cuentaRegresivaSegundos,
-
-              aperturaProgramada:
-                datos.modalidad ===
-                  ModalidadQuiz.PROGRAMADO
-                  ? new Date(
-                      datos.aperturaProgramada!,
-                    )
-                  : null,
-
-              cierreProgramado:
-                datos.modalidad ===
-                  ModalidadQuiz.PROGRAMADO &&
-                datos.cierreProgramado
-                  ? new Date(
-                      datos.cierreProgramado,
-                    )
-                  : null,
-            },
-          });
-
-        if (
-          datos.esCalificable
-        ) {
-          await tx.actividadCalificable.create({
-            data: {
-              cursoId,
-
-              hitoId:
-                datos.hitoId,
-
-              creadorId:
-                usuario.id,
-
-              quizId:
-                quiz.id,
-
-              origen:
-                TipoOrigenActividad.QUIZ,
-
-              componente:
-                datos.componente!,
-
-              titulo:
-                datos.titulo.trim(),
-
-              descripcion:
-                datos.descripcion?.trim() ||
-                null,
-
-              puntajeMaximo:
-                100,
-
-              participaEnPromedio:
-                true,
-
-              estado:
-                EstadoActividadCalificable.BORRADOR,
-
-              visibleParaEstudiantes:
-                false,
-            },
-          });
-        }
-
-        return tx.quizCurso.findUnique({
-          where: {
-            id:
-              quiz.id,
-          },
-
-          include:
-            this.includeDetalle,
-        });
       },
-    );
-  }
 
-  async actualizar(
-    usuario:
-      UsuarioAutenticado,
+      include: {
+        archivo: true,
 
-    cursoId:
-      number,
-
-    quizId:
-      number,
-
-    datos:
-      ActualizarQuizDto,
-  ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
-
-    if (
-      quiz.estado !==
-      EstadoQuiz.BORRADOR
-    ) {
-      throw new BadRequestException(
-        'Solo puedes editar la configuración completa mientras el Quiz está en borrador',
-      );
-    }
-
-    const curso =
-      await this.validarCursoDocente(
-        usuario,
-        cursoId,
-      );
-
-    if (
-      datos.hitoId
-    ) {
-      await this.validarHito(
-        curso.planificacionId,
-        datos.hitoId,
-      );
-    }
-
-    const combinado = {
-      esCalificable:
-        datos.esCalificable ??
-        quiz.esCalificable,
-
-      componente:
-        datos.componente ??
-        quiz.componente ??
-        undefined,
-
-      modalidad:
-        datos.modalidad ??
-        quiz.modalidad,
-
-      aperturaProgramada:
-        datos.aperturaProgramada ??
-        quiz.aperturaProgramada?.toISOString(),
-
-      cierreProgramado:
-        datos.cierreProgramado ??
-        quiz.cierreProgramado?.toISOString(),
-
-      usarRanking:
-        datos.usarRanking ??
-        quiz.usarRanking,
-
-      descuentoPorPuesto:
-        0,
-
-      usarPuntuacionVelocidad:
-        datos.usarPuntuacionVelocidad ??
-        quiz.usarPuntuacionVelocidad,
-
-      descuentoVelocidadPorPosicion:
-        datos.descuentoVelocidadPorPosicion ??
-        Number(
-          quiz.descuentoVelocidadPorPosicion,
-        ),
-
-      puntajeMinimoVelocidad:
-        datos.puntajeMinimoVelocidad ??
-        Number(
-          quiz.puntajeMinimoVelocidad,
-        ),
-    };
-
-    this.validarConfiguracion(
-      combinado,
-    );
-
-    return this.prisma.$transaction(
-      async (
-        tx,
-      ) => {
-        const actualizado =
-          await tx.quizCurso.update({
-            where: {
-              id:
-                quizId,
-            },
-
-            data: {
-              ...datos,
-
-              // El ranking final no descuenta nota.
-              descuentoPorPuesto:
-                0,
-
-              puntajeMinimoRanking:
-                0,
-
-              usarPuntuacionVelocidad:
-                combinado.usarPuntuacionVelocidad,
-
-              descuentoVelocidadPorPosicion:
-                combinado.usarPuntuacionVelocidad
-                  ? combinado.descuentoVelocidadPorPosicion
-                  : 0,
-
-              puntajeMinimoVelocidad:
-                combinado.usarPuntuacionVelocidad
-                  ? combinado.puntajeMinimoVelocidad
-                  : 0,
-
-              titulo:
-                datos.titulo?.trim(),
-
-              descripcion:
-                datos.descripcion !==
-                undefined
-                  ? datos.descripcion.trim() ||
-                    null
-                  : undefined,
-
-              componente:
-                combinado.esCalificable
-                  ? combinado.componente
-                  : null,
-
-              aperturaProgramada:
-                combinado.modalidad ===
-                ModalidadQuiz.PROGRAMADO
-                  ? combinado.aperturaProgramada
-                    ? new Date(
-                        combinado.aperturaProgramada,
-                      )
-                    : null
-                  : null,
-
-              cierreProgramado:
-                combinado.modalidad ===
-                  ModalidadQuiz.PROGRAMADO &&
-                combinado.cierreProgramado
-                  ? new Date(
-                      combinado.cierreProgramado,
-                    )
-                  : null,
-            },
-          });
-
-        if (
-          combinado.esCalificable
-        ) {
-          await tx.actividadCalificable.upsert({
-            where: {
-              quizId,
-            },
-
-            create: {
-              cursoId,
-
-              hitoId:
-                datos.hitoId ??
-                quiz.hitoId,
-
-              creadorId:
-                usuario.id,
-
-              quizId,
-
-              origen:
-                TipoOrigenActividad.QUIZ,
-
-              componente:
-                combinado.componente as ComponenteEvaluacion,
-
-              titulo:
-                datos.titulo?.trim() ??
-                quiz.titulo,
-
-              descripcion:
-                datos.descripcion !==
-                undefined
-                  ? datos.descripcion.trim() ||
-                    null
-                  : quiz.descripcion,
-
-              puntajeMaximo:
-                100,
-
-              participaEnPromedio:
-                true,
-
-              estado:
-                EstadoActividadCalificable.BORRADOR,
-
-              visibleParaEstudiantes:
-                false,
-            },
-
-            update: {
-              hitoId:
-                datos.hitoId,
-
-              componente:
-                combinado.componente as ComponenteEvaluacion,
-
-              titulo:
-                datos.titulo?.trim(),
-
-              descripcion:
-                datos.descripcion !==
-                undefined
-                  ? datos.descripcion.trim() ||
-                    null
-                  : undefined,
-
-              puntajeMaximo:
-                100,
-            },
-          });
-        } else {
-          await tx.actividadCalificable.deleteMany({
-            where: {
-              quizId,
-            },
-          });
-        }
-
-        return tx.quizCurso.findUnique({
-          where: {
-            id:
-              actualizado.id,
-          },
-
-          include:
-            this.includeDetalle,
-        });
-      },
-    );
-  }
-
-  async obtener(
-    usuario:
-      UsuarioAutenticado,
-
-    cursoId:
-      number,
-
-    quizId:
-      number,
-  ) {
-    if (
-      usuario.rol ===
-      Rol.DOCENTE
-    ) {
-      return this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
-    }
-
-    await this.validarEstudianteCurso(
-      usuario,
-      cursoId,
-    );
-
-    await this.sincronizarRitmoAutomatico(quizId);
-
-    const quiz =
-      await this.prisma.quizCurso.findFirst({
-        where: {
-          id:
-            quizId,
-
-          cursoId,
-
-          estado: {
-            notIn: [
-              EstadoQuiz.BORRADOR,
-              EstadoQuiz.CANCELADO,
-            ],
+        contenido: {
+          include: {
+            recurso: true,
           },
         },
-
-        include: {
-          hito:
-            true,
-        },
-      });
-
-    if (
-      !quiz
-    ) {
-      throw new NotFoundException(
-        'El Quiz no está disponible',
-      );
-    }
-
-    const preguntaActual =
-      quiz.estado ===
-          EstadoQuiz.EN_CURSO &&
-        quiz.preguntaActualOrden !==
-          null
-        ? await this.prisma.preguntaQuiz.findFirst({
-            where: {
-              quizId,
-
-              orden:
-                quiz.preguntaActualOrden,
-
-              estaActiva:
-                true,
-            },
-
-            select: {
-              id:
-                true,
-
-              enunciado:
-                true,
-
-              tipo:
-                true,
-
-              dificultad:
-                true,
-
-              tiempoSegundos:
-                true,
-
-              orden:
-                true,
-
-              opciones: {
-                orderBy: {
-                  orden:
-                    'asc',
-                },
-
-                select: {
-                  id:
-                    true,
-
-                  texto:
-                    true,
-
-                  orden:
-                    true,
-                },
-              },
-            },
-          })
-        : null;
-
-    const intento =
-      await this.prisma.intentoQuiz.findUnique({
-        where: {
-          quizId_estudianteId: {
-            quizId,
-
-            estudianteId:
-              usuario.id,
-          },
-        },
-
-        select: {
-          id:
-            true,
-
-          estado:
-            true,
-        },
-      });
-
-    const respuestaActual =
-      preguntaActual &&
-      intento
-        ? await this.prisma.respuestaIntentoQuiz.findUnique({
-            where: {
-              intentoId_preguntaId: {
-                intentoId:
-                  intento.id,
-
-                preguntaId:
-                  preguntaActual.id,
-              },
-            },
-
-            select: {
-              id:
-                true,
-
-              respondidaEn:
-                true,
-
-              tiempoRespuestaMs:
-                true,
-
-              opcionesSeleccionadas: {
-                select: {
-                  opcionId:
-                    true,
-                },
-              },
-            },
-          })
-        : null;
-
-    const participante =
-      await this.prisma.participanteQuiz.findUnique({
-        where: {
-          quizId_estudianteId: {
-            quizId,
-
-            estudianteId:
-              usuario.id,
-          },
-        },
-
-        select: {
-          estudianteId:
-            true,
-
-          estado:
-            true,
-
-          avatarCodigo:
-            true,
-
-          ultimaConexionEn:
-            true,
-
-          listoEn:
-            true,
-
-          inicioEn:
-            true,
-
-          finalizadoEn:
-            true,
-        },
-      });
-
-    return {
-      id:
-        quiz.id,
-
-      titulo:
-        quiz.titulo,
-
-      descripcion:
-        quiz.descripcion,
-
-      dificultad:
-        quiz.dificultad,
-
-      modalidad:
-        quiz.modalidad,
-
-      estado:
-        quiz.estado,
-
-      esCalificable:
-        quiz.esCalificable,
-
-      componente:
-        quiz.componente,
-
-      hito:
-        quiz.hito,
-
-      cuentaRegresivaSegundos:
-        quiz.cuentaRegresivaSegundos,
-
-      aperturaProgramada:
-        quiz.aperturaProgramada,
-
-      cierreProgramado:
-        quiz.cierreProgramado,
-
-      inicioEn:
-        quiz.inicioEn,
-
-      preguntaActualOrden:
-        quiz.preguntaActualOrden,
-
-      preguntaIniciadaEn:
-        quiz.preguntaIniciadaEn,
-
-      preguntaCierraEn:
-        quiz.preguntaCierraEn,
-
-      tiempoRestantePreguntaSegundos:
-        quiz.tiempoRestantePreguntaSegundos,
-
-      tiempoTotalPreguntaSegundos:
-        preguntaActual
-          ? this.obtenerTiempoPregunta(quiz, preguntaActual)
-          : null,
-
-      usarPuntuacionVelocidad:
-        quiz.usarPuntuacionVelocidad,
-
-      descuentoVelocidadPorPosicion:
-        Number(
-          quiz.descuentoVelocidadPorPosicion,
-        ),
-
-      puntajeMinimoVelocidad:
-        Number(
-          quiz.puntajeMinimoVelocidad,
-        ),
-
-      resultadosPublicados:
-        quiz.resultadosPublicados,
-
-      participante,
-
-      intento: intento
-        ? {
-            id:
-              intento.id,
-
-            estado:
-              intento.estado,
-          }
-        : null,
-
-      preguntaActual,
-
-      respuestaActual:
-        respuestaActual
-          ? {
-              id:
-                respuestaActual.id,
-
-              respondidoEn:
-                respuestaActual.respondidaEn,
-
-              tiempoRespuestaMs:
-                respuestaActual.tiempoRespuestaMs,
-
-              opcionIds:
-                respuestaActual.opcionesSeleccionadas.map(
-                  (
-                    item,
-                  ) =>
-                    item.opcionId,
-                ),
-            }
-          : null,
-    };
-  }
-
-  async eliminar(
-    usuario:
-      UsuarioAutenticado,
-
-    cursoId:
-      number,
-
-    quizId:
-      number,
-  ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
-
-    if (
-      quiz.estado !==
-      EstadoQuiz.BORRADOR
-    ) {
-      throw new BadRequestException(
-        'Solo puedes eliminar un Quiz mientras está en borrador',
-      );
-    }
-
-    await this.prisma.quizCurso.delete({
-      where: {
-        id:
-          quizId,
       },
     });
 
-    return {
-      ok:
-        true,
-
-      mensaje:
-        'Borrador eliminado correctamente',
-    };
-  }
-
-  async agregarFuente(
-    usuario:
-      UsuarioAutenticado,
-
-    cursoId:
-      number,
-
-    quizId:
-      number,
-
-    datos:
-      AgregarFuenteQuizDto,
-  ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
-
-    if (
-      quiz.estado !==
-      EstadoQuiz.BORRADOR
-    ) {
-      throw new BadRequestException(
-        'No puedes modificar las fuentes después de publicar la sala',
-      );
-    }
-
-    const existente =
-      await this.prisma.fuenteQuiz.findUnique({
-        where: {
-          quizId_versionId: {
-            quizId,
-
-            versionId:
-              datos.versionId,
-          },
-        },
-
-        include: {
-          version: {
-            include: {
-              archivo:
-                true,
-
-              contenido: {
-                include: {
-                  recurso:
-                    true,
-                },
-              },
-            },
-          },
-
-          fragmentos: {
-            orderBy: {
-              orden:
-                'asc',
-            },
-          },
-        },
-      });
-
-    if (
-      existente
-    ) {
-      return existente;
-    }
-
-    const version =
-      await this.prisma.recursoContenidoVersion.findFirst({
-        where: {
-          id:
-            datos.versionId,
-
-          esVigente:
-            true,
-
-          estado:
-            EstadoVersionRecurso.VIGENTE,
-
-          contenido: {
-            estaActivo:
-              true,
-
-            tipo:
-              TipoContenidoRecurso.ARCHIVO,
-
-            disponibleParaQuiz:
-              true,
-
-            recurso: {
-              cursoId,
-
-              estaActivo:
-                true,
-
-              estado:
-                EstadoRecursoCurso.ACTIVO,
-
-              uso: {
-                in: [
-                  UsoRecursoCurso.AULA_Y_QUIZZES,
-                  UsoRecursoCurso.SOLO_QUIZZES,
-                ],
-              },
-            },
-          },
-
-          archivo: {
-            extension: {
-              equals:
-                'pdf',
-
-              mode:
-                'insensitive',
-            },
-          },
-        },
-
-        include: {
-          archivo:
-            true,
-
-          contenido: {
-            include: {
-              recurso:
-                true,
-            },
-          },
-        },
-      });
-
-    if (
-      !version
-    ) {
+    if (!version) {
       throw new BadRequestException(
         'El PDF seleccionado no está disponible como dataset para Quizzes',
       );
     }
 
-    const cantidad =
-      await this.prisma.fuenteQuiz.count({
-        where: {
-          quizId,
-        },
-      });
+    const cantidad = await this.prisma.fuenteQuiz.count({
+      where: {
+        quizId,
+      },
+    });
 
     return this.prisma.fuenteQuiz.create({
       data: {
         quizId,
 
-        versionId:
-          version.id,
+        versionId: version.id,
 
-        orden:
-          cantidad,
+        orden: cantidad,
 
-        tituloSnapshot:
-          version.contenido.titulo,
+        tituloSnapshot: version.contenido.titulo,
 
-        nombreArchivoSnapshot:
-          version.archivo.nombreOriginal,
+        nombreArchivoSnapshot: version.archivo.nombreOriginal,
 
-        numeroVersionSnapshot:
-          version.numeroVersion,
+        numeroVersionSnapshot: version.numeroVersion,
       },
 
       include: {
         version: {
           include: {
-            archivo:
-              true,
+            archivo: true,
 
             contenido: {
               include: {
-                recurso:
-                  true,
+                recurso: true,
               },
             },
           },
@@ -1961,8 +1404,7 @@ export class QuizzesService {
 
         fragmentos: {
           orderBy: {
-            orden:
-              'asc',
+            orden: 'asc',
           },
         },
       },
@@ -1970,29 +1412,17 @@ export class QuizzesService {
   }
 
   async eliminarFuente(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
 
-    fuenteId:
-      number,
+    fuenteId: number,
   ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
 
-    if (
-      quiz.estado !==
-      EstadoQuiz.BORRADOR
-    ) {
+    if (quiz.estado !== EstadoQuiz.BORRADOR) {
       throw new BadRequestException(
         'No puedes modificar las fuentes después de publicar la sala',
       );
@@ -2000,171 +1430,114 @@ export class QuizzesService {
 
     await this.prisma.fuenteQuiz.deleteMany({
       where: {
-        id:
-          fuenteId,
+        id: fuenteId,
 
         quizId,
       },
     });
 
     return {
-      ok:
-        true,
+      ok: true,
     };
   }
 
   async agregarFragmento(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
 
-    fuenteId:
-      number,
+    fuenteId: number,
 
-    datos:
-      AgregarFragmentoQuizDto,
+    datos: AgregarFragmentoQuizDto,
   ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
 
-    if (
-      quiz.estado !==
-      EstadoQuiz.BORRADOR
-    ) {
+    if (quiz.estado !== EstadoQuiz.BORRADOR) {
       throw new BadRequestException(
         'No puedes modificar los fragmentos después de publicar la sala',
       );
     }
 
-    const fuente =
-      await this.prisma.fuenteQuiz.findFirst({
-        where: {
-          id:
-            fuenteId,
+    const fuente = await this.prisma.fuenteQuiz.findFirst({
+      where: {
+        id: fuenteId,
 
-          quizId,
-        },
+        quizId,
+      },
 
-        select: {
-          id:
-            true,
-        },
-      });
+      select: {
+        id: true,
+      },
+    });
 
-    if (
-      !fuente
-    ) {
-      throw new NotFoundException(
-        'La fuente no pertenece al Quiz',
-      );
+    if (!fuente) {
+      throw new NotFoundException('La fuente no pertenece al Quiz');
     }
 
     return this.prisma.fragmentoFuenteQuiz.create({
       data: {
         fuenteId,
 
-        tituloReferencia:
-          datos.tituloReferencia?.trim() ||
-          null,
+        tituloReferencia: datos.tituloReferencia?.trim() || null,
 
-        tipoReferencia:
-          datos.tipoReferencia?.trim() ||
-          null,
+        tipoReferencia: datos.tipoReferencia?.trim() || null,
 
-        paginaInicio:
-          datos.paginaInicio,
+        paginaInicio: datos.paginaInicio,
 
-        paginaFin:
-          datos.paginaFin,
+        paginaFin: datos.paginaFin,
 
-        texto:
-          datos.texto.trim(),
+        texto: datos.texto.trim(),
 
-        orden:
-          datos.orden ??
-          0,
+        orden: datos.orden ?? 0,
       },
     });
   }
 
   async crearPregunta(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
 
-    datos:
-      CrearPreguntaQuizDto,
+    datos: CrearPreguntaQuizDto,
   ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
 
-    if (
-      quiz.estado !==
-      EstadoQuiz.BORRADOR
-    ) {
+    if (quiz.estado !== EstadoQuiz.BORRADOR) {
       throw new BadRequestException(
         'No puedes modificar preguntas después de publicar la sala',
       );
     }
 
-    const correctas =
-      datos.opciones.filter(
-        (
-          opcion,
-        ) =>
-          opcion.esCorrecta,
-      ).length;
+    const correctas = datos.opciones.filter(
+      (opcion) => opcion.esCorrecta,
+    ).length;
 
-    if (
-      correctas ===
-      0
-    ) {
+    if (correctas === 0) {
       throw new BadRequestException(
         'Cada pregunta debe tener al menos una respuesta correcta',
       );
     }
 
-    if (
-      datos.fragmentoId
-    ) {
-      const fragmento =
-        await this.prisma.fragmentoFuenteQuiz.findFirst({
-          where: {
-            id:
-              datos.fragmentoId,
+    if (datos.fragmentoId) {
+      const fragmento = await this.prisma.fragmentoFuenteQuiz.findFirst({
+        where: {
+          id: datos.fragmentoId,
 
-            fuente: {
-              quizId,
-            },
+          fuente: {
+            quizId,
           },
+        },
 
-          select: {
-            id:
-              true,
-          },
-        });
+        select: {
+          id: true,
+        },
+      });
 
-      if (
-        !fragmento
-      ) {
+      if (!fragmento) {
         throw new BadRequestException(
           'El fragmento seleccionado no pertenece al Quiz',
         );
@@ -2175,58 +1548,39 @@ export class QuizzesService {
       data: {
         quizId,
 
-        fragmentoId:
-          datos.fragmentoId,
+        fragmentoId: datos.fragmentoId,
 
-        enunciado:
-          datos.enunciado.trim(),
+        enunciado: datos.enunciado.trim(),
 
-        tipo:
-          datos.tipo,
+        tipo: datos.tipo,
 
-        dificultad:
-          datos.dificultad,
+        dificultad: datos.dificultad,
 
-        origen:
-          datos.origen,
+        origen: datos.origen,
 
-        explicacion:
-          datos.explicacion?.trim() ||
-          null,
+        explicacion: datos.explicacion?.trim() || null,
 
-        tiempoSegundos:
-          datos.tiempoSegundos,
+        tiempoSegundos: datos.tiempoSegundos,
 
-        puntaje:
-          datos.puntaje,
+        puntaje: datos.puntaje,
 
-        orden:
-          datos.orden,
+        orden: datos.orden,
 
         opciones: {
-          create:
-            datos.opciones.map(
-              (
-                opcion,
-              ) => ({
-                texto:
-                  opcion.texto.trim(),
+          create: datos.opciones.map((opcion) => ({
+            texto: opcion.texto.trim(),
 
-                esCorrecta:
-                  opcion.esCorrecta,
+            esCorrecta: opcion.esCorrecta,
 
-                orden:
-                  opcion.orden,
-              }),
-            ),
+            orden: opcion.orden,
+          })),
         },
       },
 
       include: {
         opciones: {
           orderBy: {
-            orden:
-              'asc',
+            orden: 'asc',
           },
         },
       },
@@ -2234,29 +1588,17 @@ export class QuizzesService {
   }
 
   async eliminarPregunta(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
 
-    preguntaId:
-      number,
+    preguntaId: number,
   ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
 
-    if (
-      quiz.estado !==
-      EstadoQuiz.BORRADOR
-    ) {
+    if (quiz.estado !== EstadoQuiz.BORRADOR) {
       throw new BadRequestException(
         'No puedes modificar preguntas después de publicar la sala',
       );
@@ -2264,87 +1606,54 @@ export class QuizzesService {
 
     await this.prisma.preguntaQuiz.updateMany({
       where: {
-        id:
-          preguntaId,
+        id: preguntaId,
 
         quizId,
       },
 
       data: {
-        estaActiva:
-          false,
+        estaActiva: false,
       },
     });
 
     return {
-      ok:
-        true,
+      ok: true,
     };
   }
 
   async publicarSala(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
   ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
 
-    if (
-      quiz.estado !==
-      EstadoQuiz.BORRADOR
-    ) {
-      throw new BadRequestException(
-        'El Quiz ya fue publicado',
-      );
+    if (quiz.estado !== EstadoQuiz.BORRADOR) {
+      throw new BadRequestException('El Quiz ya fue publicado');
     }
 
-    if (
-      quiz.fuentes.length ===
-      0
-    ) {
+    if (quiz.fuentes.length === 0) {
       throw new BadRequestException(
         'Selecciona al menos un PDF como fuente del Quiz',
       );
     }
 
-    if (
-      quiz.preguntas.length ===
-      0
-    ) {
-      throw new BadRequestException(
-        'El Quiz debe tener al menos una pregunta',
-      );
+    if (quiz.preguntas.length === 0) {
+      throw new BadRequestException('El Quiz debe tener al menos una pregunta');
     }
 
-    const ahora =
-      new Date();
+    const ahora = new Date();
 
-    if (
-      quiz.modalidad ===
-      ModalidadQuiz.PROGRAMADO
-    ) {
-      if (
-        !quiz.aperturaProgramada
-      ) {
+    if (quiz.modalidad === ModalidadQuiz.PROGRAMADO) {
+      if (!quiz.aperturaProgramada) {
         throw new BadRequestException(
           'El Quiz programado no tiene una fecha de apertura válida',
         );
       }
 
-      if (
-        quiz.aperturaProgramada <=
-        ahora
-      ) {
+      if (quiz.aperturaProgramada <= ahora) {
         throw new BadRequestException(
           'La apertura programada debe ser posterior al momento de publicación',
         );
@@ -2352,8 +1661,7 @@ export class QuizzesService {
 
       if (
         quiz.cierreProgramado &&
-        quiz.cierreProgramado <=
-          quiz.aperturaProgramada
+        quiz.cierreProgramado <= quiz.aperturaProgramada
       ) {
         throw new BadRequestException(
           'El cierre programado debe ser posterior a la apertura',
@@ -2361,114 +1669,76 @@ export class QuizzesService {
       }
     }
 
-    return this.prisma.$transaction(
-      async (
-        tx,
-      ) => {
-        if (
-          quiz.esCalificable
-        ) {
-          await tx.actividadCalificable.updateMany({
-            where: {
-              quizId,
-            },
-
-            data: {
-              estado:
-                EstadoActividadCalificable.ACTIVA,
-
-              visibleParaEstudiantes:
-                true,
-
-              publicadaEn:
-                ahora,
-            },
-          });
-        }
-
-        return tx.quizCurso.update({
+    return this.prisma.$transaction(async (tx) => {
+      if (quiz.esCalificable) {
+        await tx.actividadCalificable.updateMany({
           where: {
-            id:
-              quizId,
+            quizId,
           },
 
           data: {
-            estado:
-              EstadoQuiz.ESPERANDO,
+            estado: EstadoActividadCalificable.ACTIVA,
 
-            salaPublicadaEn:
-              ahora,
+            visibleParaEstudiantes: true,
+
+            publicadaEn: ahora,
           },
-
-          include:
-            this.includeDetalle,
         });
-      },
-    );
+      }
+
+      return tx.quizCurso.update({
+        where: {
+          id: quizId,
+        },
+
+        data: {
+          estado: EstadoQuiz.ESPERANDO,
+
+          salaPublicadaEn: ahora,
+        },
+
+        include: this.includeDetalle,
+      });
+    });
   }
 
   async unirse(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
   ) {
-    await this.validarEstudianteCurso(
-      usuario,
-      cursoId,
-    );
+    await this.validarEstudianteCurso(usuario, cursoId);
 
-    const quiz =
-      await this.prisma.quizCurso.findFirst({
-        where: {
-          id:
-            quizId,
+    const quiz = await this.prisma.quizCurso.findFirst({
+      where: {
+        id: quizId,
 
-          cursoId,
+        cursoId,
 
-          estado: {
-            in: [
-              EstadoQuiz.ESPERANDO,
-              EstadoQuiz.CUENTA_REGRESIVA,
-            ],
-          },
+        estado: {
+          in: [EstadoQuiz.ESPERANDO, EstadoQuiz.CUENTA_REGRESIVA],
         },
-      });
+      },
+    });
 
-    if (
-      !quiz
-    ) {
+    if (!quiz) {
       throw new BadRequestException(
         'La sala del Quiz no está disponible para ingresar',
       );
     }
 
-    if (
-      quiz.modalidad ===
-      ModalidadQuiz.PROGRAMADO
-    ) {
-      const ahora =
-        new Date();
+    if (quiz.modalidad === ModalidadQuiz.PROGRAMADO) {
+      const ahora = new Date();
 
-      if (
-        quiz.aperturaProgramada &&
-        ahora <
-          quiz.aperturaProgramada
-      ) {
+      if (quiz.aperturaProgramada && ahora < quiz.aperturaProgramada) {
         throw new BadRequestException(
           `El Quiz estará disponible desde ${quiz.aperturaProgramada.toISOString()}`,
         );
       }
 
-      if (
-        quiz.cierreProgramado &&
-        ahora >=
-          quiz.cierreProgramado
-      ) {
+      if (quiz.cierreProgramado && ahora >= quiz.cierreProgramado) {
         throw new BadRequestException(
           'El periodo de ingreso a este Quiz ya finalizó',
         );
@@ -2480,282 +1750,549 @@ export class QuizzesService {
         quizId_estudianteId: {
           quizId,
 
-          estudianteId:
-            usuario.id,
+          estudianteId: usuario.id,
         },
       },
 
       create: {
         quizId,
 
-        estudianteId:
-          usuario.id,
+        estudianteId: usuario.id,
 
-        estado:
-          EstadoParticipanteQuiz.ESPERANDO,
+        estado: EstadoParticipanteQuiz.ESPERANDO,
 
-        conectadoEn:
-          new Date(),
+        conectadoEn: new Date(),
 
-        ultimaConexionEn:
-          new Date(),
+        ultimaConexionEn: new Date(),
       },
 
       update: {
-        estado:
-          EstadoParticipanteQuiz.ESPERANDO,
+        estado: EstadoParticipanteQuiz.ESPERANDO,
 
-        desconectadoEn:
-          null,
+        desconectadoEn: null,
 
-        ultimaConexionEn:
-          new Date(),
+        ultimaConexionEn: new Date(),
       },
     });
   }
 
   async marcarListo(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
   ) {
-    await this.validarEstudianteCurso(
-      usuario,
-      cursoId,
-    );
+    await this.validarEstudianteCurso(usuario, cursoId);
 
-    const participante =
-      await this.prisma.participanteQuiz.findUnique({
-        where: {
-          quizId_estudianteId: {
-            quizId,
+    const participante = await this.prisma.participanteQuiz.findUnique({
+      where: {
+        quizId_estudianteId: {
+          quizId,
 
-            estudianteId:
-              usuario.id,
-          },
+          estudianteId: usuario.id,
         },
-      });
+      },
+    });
 
-    if (
-      !participante
-    ) {
-      throw new BadRequestException(
-        'Primero debes ingresar a la sala',
-      );
+    if (!participante) {
+      throw new BadRequestException('Primero debes ingresar a la sala');
     }
 
     return this.prisma.participanteQuiz.update({
       where: {
-        id:
-          participante.id,
+        id: participante.id,
       },
 
       data: {
-        estado:
-          EstadoParticipanteQuiz.LISTO,
+        estado: EstadoParticipanteQuiz.LISTO,
 
-        listoEn:
-          new Date(),
+        listoEn: new Date(),
 
-        ultimaConexionEn:
-          new Date(),
+        ultimaConexionEn: new Date(),
       },
     });
   }
 
   async seleccionarAvatar(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
 
-    datos:
-      SeleccionarAvatarQuizDto,
+    datos: SeleccionarAvatarQuizDto,
   ) {
-    await this.validarEstudianteCurso(
-      usuario,
-      cursoId,
-    );
+    await this.validarEstudianteCurso(usuario, cursoId);
 
-    const participante =
-      await this.prisma.participanteQuiz.findUnique({
-        where: {
-          quizId_estudianteId: {
-            quizId,
+    const participante = await this.prisma.participanteQuiz.findUnique({
+      where: {
+        quizId_estudianteId: {
+          quizId,
 
-            estudianteId:
-              usuario.id,
-          },
+          estudianteId: usuario.id,
         },
-      });
+      },
+    });
 
-    if (
-      !participante
-    ) {
-      throw new BadRequestException(
-        'Primero debes ingresar a la sala',
-      );
+    if (!participante) {
+      throw new BadRequestException('Primero debes ingresar a la sala');
     }
 
     return this.prisma.participanteQuiz.update({
       where: {
-        id:
-          participante.id,
+        id: participante.id,
       },
 
       data: {
-        avatarCodigo:
-          datos.avatarCodigo ??
-          null,
+        avatarCodigo: datos.avatarCodigo ?? null,
 
-        ultimaConexionEn:
-          new Date(),
+        ultimaConexionEn: new Date(),
       },
     });
   }
 
   async heartbeat(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
   ) {
-    await this.validarEstudianteCurso(
-      usuario,
-      cursoId,
-    );
+    await this.validarEstudianteCurso(usuario, cursoId);
 
-    const participante =
-      await this.prisma.participanteQuiz.findUnique({
-        where: {
-          quizId_estudianteId: {
-            quizId,
+    const participante = await this.prisma.participanteQuiz.findUnique({
+      where: {
+        quizId_estudianteId: {
+          quizId,
 
-            estudianteId:
-              usuario.id,
-          },
+          estudianteId: usuario.id,
         },
-      });
+      },
+    });
 
-    if (
-      !participante
-    ) {
-      throw new BadRequestException(
-        'No estás registrado en esta sala',
-      );
+    if (!participante) {
+      throw new BadRequestException('No estás registrado en esta sala');
     }
 
     return this.prisma.participanteQuiz.update({
       where: {
-        id:
-          participante.id,
+        id: participante.id,
       },
 
       data: {
-        ultimaConexionEn:
-          new Date(),
+        ultimaConexionEn: new Date(),
 
-        desconectadoEn:
-          null,
+        desconectadoEn: null,
       },
 
       select: {
-        id:
-          true,
+        id: true,
 
-        estado:
-          true,
+        estado: true,
 
-        avatarCodigo:
-          true,
+        avatarCodigo: true,
 
-        ultimaConexionEn:
-          true,
+        ultimaConexionEn: true,
       },
     });
   }
 
   async lobby(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
   ) {
-    if (
-      usuario.rol ===
-      Rol.DOCENTE
-    ) {
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
+    if (usuario.rol === Rol.DOCENTE) {
+      await this.buscarQuizDocente(usuario, cursoId, quizId);
     } else {
-      await this.validarEstudianteCurso(
-        usuario,
-        cursoId,
-      );
+      await this.validarEstudianteCurso(usuario, cursoId);
 
-      const quiz =
-        await this.prisma.quizCurso.findFirst({
-          where: {
-            id:
-              quizId,
-
-            cursoId,
-
-            estado: {
-              notIn: [
-                EstadoQuiz.BORRADOR,
-                EstadoQuiz.CANCELADO,
-              ],
-            },
-          },
-
-          select: {
-            id:
-              true,
-          },
-        });
-
-      if (
-        !quiz
-      ) {
-        throw new NotFoundException(
-          'El Quiz no está disponible',
-        );
-      }
-    }
-
-    const totalInscritos =
-      await this.prisma.inscripcionCurso.count({
+      const quiz = await this.prisma.quizCurso.findFirst({
         where: {
+          id: quizId,
+
           cursoId,
 
-          estado:
-            EstadoInscripcion.ACTIVA,
+          estado: {
+            notIn: [EstadoQuiz.BORRADOR, EstadoQuiz.CANCELADO],
+          },
+        },
+
+        select: {
+          id: true,
         },
       });
 
-    const participantes =
-      await this.prisma.participanteQuiz.findMany({
+      if (!quiz) {
+        throw new NotFoundException('El Quiz no está disponible');
+      }
+    }
+
+    const totalInscritos = await this.prisma.inscripcionCurso.count({
+      where: {
+        cursoId,
+
+        estado: EstadoInscripcion.ACTIVA,
+      },
+    });
+
+    const participantes = await this.prisma.participanteQuiz.findMany({
+      where: {
+        quizId,
+      },
+
+      include: {
+        estudiante: {
+          select: {
+            id: true,
+
+            nombres: true,
+
+            apellidoPaterno: true,
+
+            apellidoMaterno: true,
+
+            fotoPerfilUrl: true,
+          },
+        },
+      },
+
+      orderBy: {
+        conectadoEn: 'asc',
+      },
+    });
+
+    const limite = this.limitePresencia();
+
+    const participantesVisuales = participantes.map((participante) => {
+      const conectado = participante.ultimaConexionEn >= limite;
+
+      return {
+        ...participante,
+
+        conectado,
+
+        estadoVisual: conectado
+          ? participante.estado
+          : EstadoParticipanteQuiz.DESCONECTADO,
+      };
+    });
+
+    return {
+      totalInscritos,
+
+      conectados: participantesVisuales.filter(
+        (participante) => participante.conectado,
+      ).length,
+
+      listos: participantesVisuales.filter(
+        (participante) =>
+          participante.conectado &&
+          participante.estado === EstadoParticipanteQuiz.LISTO,
+      ).length,
+
+      participantes: participantesVisuales,
+    };
+  }
+
+  async iniciar(
+    usuario: UsuarioAutenticado,
+
+    cursoId: number,
+
+    quizId: number,
+  ) {
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
+
+    if (quiz.estado !== EstadoQuiz.ESPERANDO) {
+      throw new BadRequestException(
+        'El Quiz debe estar esperando participantes para poder iniciarlo',
+      );
+    }
+
+    const totalInscritos = await this.prisma.inscripcionCurso.count({
+      where: {
+        cursoId,
+
+        estado: EstadoInscripcion.ACTIVA,
+      },
+    });
+
+    const listos = await this.prisma.participanteQuiz.count({
+      where: {
+        quizId,
+
+        estado: EstadoParticipanteQuiz.LISTO,
+
+        ultimaConexionEn: {
+          gte: this.limitePresencia(),
+        },
+      },
+    });
+
+    if (!quiz.permiteInicioConAusentes && listos < totalInscritos) {
+      throw new BadRequestException(
+        'Todavía faltan estudiantes por ingresar o marcarse como listos',
+      );
+    }
+
+    if (listos === 0) {
+      throw new BadRequestException(
+        'No hay estudiantes listos para iniciar el Quiz',
+      );
+    }
+
+    const ahora = new Date();
+
+    const cuentaRegresivaHasta = new Date(
+      ahora.getTime() + quiz.cuentaRegresivaSegundos * 1000,
+    );
+
+    const participantes = await this.prisma.participanteQuiz.findMany({
+      where: {
+        quizId,
+
+        estado: EstadoParticipanteQuiz.LISTO,
+      },
+
+      select: {
+        id: true,
+
+        estudianteId: true,
+      },
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.participanteQuiz.updateMany({
+        where: {
+          quizId,
+
+          estado: EstadoParticipanteQuiz.LISTO,
+        },
+
+        data: {
+          estado: EstadoParticipanteQuiz.EN_CURSO,
+
+          inicioEn: cuentaRegresivaHasta,
+        },
+      });
+
+      for (const participante of participantes) {
+        await tx.intentoQuiz.upsert({
+          where: {
+            quizId_estudianteId: {
+              quizId,
+
+              estudianteId: participante.estudianteId,
+            },
+          },
+
+          create: {
+            quizId,
+
+            estudianteId: participante.estudianteId,
+
+            participanteId: participante.id,
+
+            estado: EstadoIntentoQuiz.EN_CURSO,
+
+            iniciadoEn: cuentaRegresivaHasta,
+          },
+
+          update: {
+            estado: EstadoIntentoQuiz.EN_CURSO,
+
+            iniciadoEn: cuentaRegresivaHasta,
+
+            finalizadoEn: null,
+
+            anuladoEn: null,
+          },
+        });
+      }
+
+      await tx.quizCurso.update({
+        where: {
+          id: quizId,
+        },
+
+        data: {
+          estado: EstadoQuiz.CUENTA_REGRESIVA,
+
+          inicioEn: cuentaRegresivaHasta,
+
+          preguntaActualOrden: null,
+
+          preguntaIniciadaEn: null,
+
+          preguntaCierraEn: null,
+
+          tiempoRestantePreguntaSegundos: null,
+        },
+      });
+    });
+
+    return this.buscarQuizDocente(usuario, cursoId, quizId);
+  }
+
+  async activarEnCurso(
+    usuario: UsuarioAutenticado,
+
+    cursoId: number,
+
+    quizId: number,
+  ) {
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
+
+    if (quiz.estado !== EstadoQuiz.CUENTA_REGRESIVA) {
+      throw new BadRequestException('El Quiz no está en cuenta regresiva');
+    }
+
+    if (quiz.inicioEn && new Date() < quiz.inicioEn) {
+      throw new BadRequestException('La cuenta regresiva todavía no terminó');
+    }
+
+    const pregunta = quiz.preguntas[0];
+
+    if (!pregunta) {
+      throw new BadRequestException('El Quiz no tiene preguntas');
+    }
+
+    const tiempo = this.obtenerTiempoPregunta(quiz, pregunta);
+
+    const ahora = new Date();
+
+    return this.prisma.quizCurso.update({
+      where: {
+        id: quizId,
+      },
+
+      data: {
+        estado: EstadoQuiz.EN_CURSO,
+
+        preguntaActualOrden: pregunta.orden,
+
+        preguntaIniciadaEn: ahora,
+
+        preguntaCierraEn: new Date(ahora.getTime() + tiempo * 1000),
+
+        tiempoRestantePreguntaSegundos: null,
+      },
+
+      include: this.includeDetalle,
+    });
+  }
+
+  async pausar(
+    usuario: UsuarioAutenticado,
+
+    cursoId: number,
+
+    quizId: number,
+  ) {
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
+
+    if (quiz.estado !== EstadoQuiz.EN_CURSO) {
+      throw new BadRequestException(
+        'Solo puedes pausar un Quiz que está en curso',
+      );
+    }
+
+    const ahora = new Date();
+
+    const restante = quiz.preguntaCierraEn
+      ? Math.max(
+          0,
+          Math.ceil((quiz.preguntaCierraEn.getTime() - ahora.getTime()) / 1000),
+        )
+      : 0;
+
+    return this.prisma.quizCurso.update({
+      where: {
+        id: quizId,
+      },
+
+      data: {
+        estado: EstadoQuiz.PAUSADO,
+
+        tiempoRestantePreguntaSegundos: restante,
+
+        preguntaCierraEn: null,
+      },
+
+      include: this.includeDetalle,
+    });
+  }
+
+  async reanudar(
+    usuario: UsuarioAutenticado,
+
+    cursoId: number,
+
+    quizId: number,
+  ) {
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
+
+    if (quiz.estado !== EstadoQuiz.PAUSADO) {
+      throw new BadRequestException('El Quiz no está pausado');
+    }
+
+    const restante = quiz.tiempoRestantePreguntaSegundos ?? 0;
+
+    if (restante <= 0) {
+      throw new BadRequestException('La pregunta ya no tiene tiempo restante');
+    }
+
+    const ahora = new Date();
+
+    return this.prisma.quizCurso.update({
+      where: {
+        id: quizId,
+      },
+
+      data: {
+        estado: EstadoQuiz.EN_CURSO,
+
+        preguntaIniciadaEn: ahora,
+
+        preguntaCierraEn: new Date(ahora.getTime() + restante * 1000),
+
+        tiempoRestantePreguntaSegundos: null,
+      },
+
+      include: this.includeDetalle,
+    });
+  }
+
+  async estadoEnVivo(
+    usuario: UsuarioAutenticado,
+
+    cursoId: number,
+
+    quizId: number,
+  ) {
+    await this.sincronizarRitmoAutomatico(quizId);
+
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
+
+    const estadosValidos: EstadoQuiz[] = [
+      EstadoQuiz.CUENTA_REGRESIVA,
+      EstadoQuiz.EN_CURSO,
+      EstadoQuiz.PAUSADO,
+      EstadoQuiz.FINALIZADO,
+    ];
+
+    if (!estadosValidos.includes(quiz.estado)) {
+      throw new BadRequestException(
+        'El Quiz todavía no tiene una sesión activa',
+      );
+    }
+
+    const [participantes, intentos] = await Promise.all([
+      this.prisma.participanteQuiz.findMany({
         where: {
           quizId,
         },
@@ -2763,935 +2300,220 @@ export class QuizzesService {
         include: {
           estudiante: {
             select: {
-              id:
-                true,
+              id: true,
 
-              nombres:
-                true,
+              nombres: true,
 
-              apellidoPaterno:
-                true,
+              apellidoPaterno: true,
 
-              apellidoMaterno:
-                true,
+              apellidoMaterno: true,
 
-              fotoPerfilUrl:
-                true,
+              fotoPerfilUrl: true,
             },
           },
         },
 
         orderBy: {
-          conectadoEn:
-            'asc',
+          conectadoEn: 'asc',
         },
-      });
+      }),
 
-    const limite =
-      this.limitePresencia();
-
-    const participantesVisuales =
-      participantes.map(
-        (
-          participante,
-        ) => {
-          const conectado =
-            participante.ultimaConexionEn >=
-            limite;
-
-          return {
-            ...participante,
-
-            conectado,
-
-            estadoVisual:
-              conectado
-                ? participante.estado
-                : EstadoParticipanteQuiz.DESCONECTADO,
-          };
-        },
-      );
-
-    return {
-      totalInscritos,
-
-      conectados:
-        participantesVisuales.filter(
-          (
-            participante,
-          ) =>
-            participante.conectado,
-        ).length,
-
-      listos:
-        participantesVisuales.filter(
-          (
-            participante,
-          ) =>
-            participante.conectado &&
-            participante.estado ===
-              EstadoParticipanteQuiz.LISTO,
-        ).length,
-
-      participantes:
-        participantesVisuales,
-    };
-  }
-
-  async iniciar(
-    usuario:
-      UsuarioAutenticado,
-
-    cursoId:
-      number,
-
-    quizId:
-      number,
-  ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
-
-    if (
-      quiz.estado !==
-      EstadoQuiz.ESPERANDO
-    ) {
-      throw new BadRequestException(
-        'El Quiz debe estar esperando participantes para poder iniciarlo',
-      );
-    }
-
-    const totalInscritos =
-      await this.prisma.inscripcionCurso.count({
-        where: {
-          cursoId,
-
-          estado:
-            EstadoInscripcion.ACTIVA,
-        },
-      });
-
-    const listos =
-      await this.prisma.participanteQuiz.count({
+      this.prisma.intentoQuiz.findMany({
         where: {
           quizId,
-
-          estado:
-            EstadoParticipanteQuiz.LISTO,
-
-          ultimaConexionEn: {
-            gte:
-              this.limitePresencia(),
-          },
-        },
-      });
-
-    if (
-      !quiz.permiteInicioConAusentes &&
-      listos <
-        totalInscritos
-    ) {
-      throw new BadRequestException(
-        'Todavía faltan estudiantes por ingresar o marcarse como listos',
-      );
-    }
-
-    if (
-      listos ===
-      0
-    ) {
-      throw new BadRequestException(
-        'No hay estudiantes listos para iniciar el Quiz',
-      );
-    }
-
-    const ahora =
-      new Date();
-
-    const cuentaRegresivaHasta =
-      new Date(
-        ahora.getTime() +
-          quiz.cuentaRegresivaSegundos *
-            1000,
-      );
-
-    const participantes =
-      await this.prisma.participanteQuiz.findMany({
-        where: {
-          quizId,
-
-          estado:
-            EstadoParticipanteQuiz.LISTO,
         },
 
-        select: {
-          id:
-            true,
-
-          estudianteId:
-            true,
+        include: {
+          respuestas: true,
         },
-      });
+      }),
+    ]);
 
-    await this.prisma.$transaction(
-      async (
-        tx,
-      ) => {
-        await tx.participanteQuiz.updateMany({
-          where: {
-            quizId,
-
-            estado:
-              EstadoParticipanteQuiz.LISTO,
-          },
-
-          data: {
-            estado:
-              EstadoParticipanteQuiz.EN_CURSO,
-
-            inicioEn:
-              cuentaRegresivaHasta,
-          },
-        });
-
-        for (
-          const participante
-          of participantes
-        ) {
-          await tx.intentoQuiz.upsert({
-            where: {
-              quizId_estudianteId: {
-                quizId,
-
-                estudianteId:
-                  participante.estudianteId,
-              },
-            },
-
-            create: {
-              quizId,
-
-              estudianteId:
-                participante.estudianteId,
-
-              participanteId:
-                participante.id,
-
-              estado:
-                EstadoIntentoQuiz.EN_CURSO,
-
-              iniciadoEn:
-                cuentaRegresivaHasta,
-            },
-
-            update: {
-              estado:
-                EstadoIntentoQuiz.EN_CURSO,
-
-              iniciadoEn:
-                cuentaRegresivaHasta,
-
-              finalizadoEn:
-                null,
-
-              anuladoEn:
-                null,
-            },
-          });
-        }
-
-        await tx.quizCurso.update({
-          where: {
-            id:
-              quizId,
-          },
-
-          data: {
-            estado:
-              EstadoQuiz.CUENTA_REGRESIVA,
-
-            inicioEn:
-              cuentaRegresivaHasta,
-
-            preguntaActualOrden:
-              null,
-
-            preguntaIniciadaEn:
-              null,
-
-            preguntaCierraEn:
-              null,
-
-            tiempoRestantePreguntaSegundos:
-              null,
-          },
-        });
-      },
+    const preguntasActivas = quiz.preguntas.filter(
+      (pregunta) => pregunta.estaActiva,
     );
 
-    return this.buscarQuizDocente(
-      usuario,
-      cursoId,
-      quizId,
-    );
-  }
-
-  async activarEnCurso(
-    usuario:
-      UsuarioAutenticado,
-
-    cursoId:
-      number,
-
-    quizId:
-      number,
-  ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
-
-    if (
-      quiz.estado !==
-      EstadoQuiz.CUENTA_REGRESIVA
-    ) {
-      throw new BadRequestException(
-        'El Quiz no está en cuenta regresiva',
-      );
-    }
-
-    if (
-      quiz.inicioEn &&
-      new Date() <
-        quiz.inicioEn
-    ) {
-      throw new BadRequestException(
-        'La cuenta regresiva todavía no terminó',
-      );
-    }
-
-    const pregunta =
-      quiz.preguntas[
-        0
-      ];
-
-    if (
-      !pregunta
-    ) {
-      throw new BadRequestException(
-        'El Quiz no tiene preguntas',
-      );
-    }
-
-    const tiempo =
-      this.obtenerTiempoPregunta(
-        quiz,
-        pregunta,
-      );
-
-    const ahora =
-      new Date();
-
-    return this.prisma.quizCurso.update({
-      where: {
-        id:
-          quizId,
-      },
-
-      data: {
-        estado:
-          EstadoQuiz.EN_CURSO,
-
-        preguntaActualOrden:
-          pregunta.orden,
-
-        preguntaIniciadaEn:
-          ahora,
-
-        preguntaCierraEn:
-          new Date(
-            ahora.getTime() +
-              tiempo *
-                1000,
-          ),
-
-        tiempoRestantePreguntaSegundos:
-          null,
-      },
-
-      include:
-        this.includeDetalle,
-    });
-  }
-
-  async pausar(
-    usuario:
-      UsuarioAutenticado,
-
-    cursoId:
-      number,
-
-    quizId:
-      number,
-  ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
-
-    if (
-      quiz.estado !==
-      EstadoQuiz.EN_CURSO
-    ) {
-      throw new BadRequestException(
-        'Solo puedes pausar un Quiz que está en curso',
-      );
-    }
-
-    const ahora =
-      new Date();
-
-    const restante =
-      quiz.preguntaCierraEn
-        ? Math.max(
-            0,
-            Math.ceil(
-              (
-                quiz.preguntaCierraEn.getTime() -
-                ahora.getTime()
-              ) /
-                1000,
-            ),
-          )
-        : 0;
-
-    return this.prisma.quizCurso.update({
-      where: {
-        id:
-          quizId,
-      },
-
-      data: {
-        estado:
-          EstadoQuiz.PAUSADO,
-
-        tiempoRestantePreguntaSegundos:
-          restante,
-
-        preguntaCierraEn:
-          null,
-      },
-
-      include:
-        this.includeDetalle,
-    });
-  }
-
-  async reanudar(
-    usuario:
-      UsuarioAutenticado,
-
-    cursoId:
-      number,
-
-    quizId:
-      number,
-  ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
-
-    if (
-      quiz.estado !==
-      EstadoQuiz.PAUSADO
-    ) {
-      throw new BadRequestException(
-        'El Quiz no está pausado',
-      );
-    }
-
-    const restante =
-      quiz.tiempoRestantePreguntaSegundos ??
-      0;
-
-    if (
-      restante <=
-      0
-    ) {
-      throw new BadRequestException(
-        'La pregunta ya no tiene tiempo restante',
-      );
-    }
-
-    const ahora =
-      new Date();
-
-    return this.prisma.quizCurso.update({
-      where: {
-        id:
-          quizId,
-      },
-
-      data: {
-        estado:
-          EstadoQuiz.EN_CURSO,
-
-        preguntaIniciadaEn:
-          ahora,
-
-        preguntaCierraEn:
-          new Date(
-            ahora.getTime() +
-              restante *
-                1000,
-          ),
-
-        tiempoRestantePreguntaSegundos:
-          null,
-      },
-
-      include:
-        this.includeDetalle,
-    });
-  }
-
-  async estadoEnVivo(
-    usuario:
-      UsuarioAutenticado,
-
-    cursoId:
-      number,
-
-    quizId:
-      number,
-  ) {
-    await this.sincronizarRitmoAutomatico(
-      quizId,
+    const puntajeTotalPreguntas = preguntasActivas.reduce(
+      (suma, pregunta) => suma + Number(pregunta.puntaje),
+      0,
     );
 
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
+    const intentoPorEstudiante = new Map(
+      intentos.map((intento) => [intento.estudianteId, intento]),
+    );
 
-    const estadosValidos:
-      EstadoQuiz[] = [
-        EstadoQuiz.CUENTA_REGRESIVA,
-        EstadoQuiz.EN_CURSO,
-        EstadoQuiz.PAUSADO,
-        EstadoQuiz.FINALIZADO,
-      ];
+    const ahora = new Date();
 
-    if (
-      !estadosValidos.includes(
-        quiz.estado,
-      )
-    ) {
-      throw new BadRequestException(
-        'El Quiz todavía no tiene una sesión activa',
-      );
-    }
+    const ranking = participantes
+      .map((participante) => {
+        const intento = intentoPorEstudiante.get(participante.estudianteId);
 
-    const [
-      participantes,
-      intentos,
-    ] =
-      await Promise.all([
-        this.prisma.participanteQuiz.findMany({
-          where: {
-            quizId,
-          },
+        const respuestas = intento?.respuestas ?? [];
 
-          include: {
-            estudiante: {
-              select: {
-                id:
-                  true,
-
-                nombres:
-                  true,
-
-                apellidoPaterno:
-                  true,
-
-                apellidoMaterno:
-                  true,
-
-                fotoPerfilUrl:
-                  true,
-              },
-            },
-          },
-
-          orderBy: {
-            conectadoEn:
-              'asc',
-          },
-        }),
-
-        this.prisma.intentoQuiz.findMany({
-          where: {
-            quizId,
-          },
-
-          include: {
-            respuestas:
-              true,
-          },
-        }),
-      ]);
-
-    const preguntasActivas =
-      quiz.preguntas.filter(
-        (
-          pregunta,
-        ) =>
-          pregunta.estaActiva,
-      );
-
-    const puntajeTotalPreguntas =
-      preguntasActivas.reduce(
-        (
-          suma,
-          pregunta,
-        ) =>
-          suma +
-          Number(
-            pregunta.puntaje,
-          ),
-        0,
-      );
-
-    const intentoPorEstudiante =
-      new Map(
-        intentos.map(
-          (
-            intento,
-          ) => [
-            intento.estudianteId,
-            intento,
-          ],
-        ),
-      );
-
-    const ahora =
-      new Date();
-
-    const ranking =
-      participantes
-        .map(
-          (
-            participante,
-          ) => {
-            const intento =
-              intentoPorEstudiante.get(
-                participante.estudianteId,
-              );
-
-            const respuestas =
-              intento?.respuestas ??
-              [];
-
-            const puntajeBruto =
-              respuestas.reduce(
-                (
-                  suma,
-                  respuesta,
-                ) =>
-                  suma +
-                  Number(
-                    respuesta.puntajeObtenido,
-                  ),
-                0,
-              );
-
-            const respuestasCorrectas =
-              respuestas.filter(
-                (
-                  respuesta,
-                ) =>
-                  respuesta.esCorrecta ===
-                  true,
-              ).length;
-
-            const respuestasIncorrectas =
-              respuestas.filter(
-                (
-                  respuesta,
-                ) =>
-                  respuesta.esCorrecta ===
-                  false,
-              ).length;
-
-            const respuestasOmitidas =
-              quiz.estado ===
-              EstadoQuiz.FINALIZADO
-                ? Math.max(
-                    0,
-                    preguntasActivas.length -
-                      respuestas.length,
-                  )
-                : 0;
-
-            const tiempoAcumuladoMs =
-              respuestas.reduce(
-                (
-                  suma,
-                  respuesta,
-                ) =>
-                  suma +
-                  Math.max(
-                    0,
-                    respuesta.tiempoRespuestaMs ??
-                      0,
-                  ),
-                0,
-              );
-
-            const notaActual =
-              puntajeTotalPreguntas >
-              0
-                ? Math.min(
-                    100,
-                    Math.max(
-                      0,
-                      (
-                        puntajeBruto /
-                        puntajeTotalPreguntas
-                      ) *
-                        100,
-                    ),
-                  )
-                : 0;
-
-            const conectado =
-              participante.ultimaConexionEn >=
-              this.limitePresencia();
-
-            return {
-              estudianteId:
-                participante.estudianteId,
-
-              nombres:
-                participante.estudiante.nombres,
-
-              apellidoPaterno:
-                participante.estudiante.apellidoPaterno,
-
-              apellidoMaterno:
-                participante.estudiante.apellidoMaterno,
-
-              fotoPerfilUrl:
-                participante.estudiante.fotoPerfilUrl,
-
-              conectado,
-
-              estadoParticipante:
-                participante.estado,
-
-              puntajeActual:
-                Number(
-                  puntajeBruto.toFixed(
-                    2,
-                  ),
-                ),
-
-              notaActual:
-                Number(
-                  notaActual.toFixed(
-                    2,
-                  ),
-                ),
-
-              respuestasCorrectas,
-
-              respuestasIncorrectas,
-
-              respuestasOmitidas,
-
-              tiempoAcumuladoMs,
-
-              posicion:
-                0,
-            };
-          },
-        )
-        .sort(
-          (
-            a,
-            b,
-          ) => {
-            if (
-              b.puntajeActual !==
-              a.puntajeActual
-            ) {
-              return (
-                b.puntajeActual -
-                a.puntajeActual
-              );
-            }
-
-            if (
-              b.respuestasCorrectas !==
-              a.respuestasCorrectas
-            ) {
-              return (
-                b.respuestasCorrectas -
-                a.respuestasCorrectas
-              );
-            }
-
-            return (
-              a.tiempoAcumuladoMs -
-              b.tiempoAcumuladoMs
-            );
-          },
-        )
-        .map(
-          (
-            item,
-            indice,
-          ) => ({
-            ...item,
-
-            posicion:
-              indice +
-              1,
-          }),
+        const puntajeBruto = respuestas.reduce(
+          (suma, respuesta) => suma + Number(respuesta.puntajeObtenido),
+          0,
         );
 
-    const totalParticipantes =
-      participantes.length;
+        const respuestasCorrectas = respuestas.filter(
+          (respuesta) => respuesta.esCorrecta === true,
+        ).length;
 
-    if (
-      quiz.preguntaActualOrden ===
-        null
-    ) {
+        const respuestasIncorrectas = respuestas.filter(
+          (respuesta) => respuesta.esCorrecta === false,
+        ).length;
+
+        const respuestasOmitidas =
+          quiz.estado === EstadoQuiz.FINALIZADO
+            ? Math.max(0, preguntasActivas.length - respuestas.length)
+            : 0;
+
+        const tiempoAcumuladoMs = respuestas.reduce(
+          (suma, respuesta) =>
+            suma + Math.max(0, respuesta.tiempoRespuestaMs ?? 0),
+          0,
+        );
+
+        const notaActual =
+          puntajeTotalPreguntas > 0
+            ? Math.min(
+                100,
+                Math.max(0, (puntajeBruto / puntajeTotalPreguntas) * 100),
+              )
+            : 0;
+
+        const conectado =
+          participante.ultimaConexionEn >= this.limitePresencia();
+
+        return {
+          estudianteId: participante.estudianteId,
+
+          nombres: participante.estudiante.nombres,
+
+          apellidoPaterno: participante.estudiante.apellidoPaterno,
+
+          apellidoMaterno: participante.estudiante.apellidoMaterno,
+
+          fotoPerfilUrl: participante.estudiante.fotoPerfilUrl,
+
+          conectado,
+
+          estadoParticipante: participante.estado,
+
+          puntajeActual: Number(puntajeBruto.toFixed(2)),
+
+          notaActual: Number(notaActual.toFixed(2)),
+
+          respuestasCorrectas,
+
+          respuestasIncorrectas,
+
+          respuestasOmitidas,
+
+          tiempoAcumuladoMs,
+
+          posicion: 0,
+        };
+      })
+      .sort((a, b) => {
+        if (b.puntajeActual !== a.puntajeActual) {
+          return b.puntajeActual - a.puntajeActual;
+        }
+
+        if (b.respuestasCorrectas !== a.respuestasCorrectas) {
+          return b.respuestasCorrectas - a.respuestasCorrectas;
+        }
+
+        return a.tiempoAcumuladoMs - b.tiempoAcumuladoMs;
+      })
+      .map((item, indice) => ({
+        ...item,
+
+        posicion: indice + 1,
+      }));
+
+    const totalParticipantes = participantes.length;
+
+    if (quiz.preguntaActualOrden === null) {
       return {
         quizId,
 
-        estado:
-          quiz.estado,
+        estado: quiz.estado,
 
-        preguntaActualOrden:
-          null,
+        preguntaActualOrden: null,
 
-        totalPreguntas:
-          preguntasActivas.length,
+        totalPreguntas: preguntasActivas.length,
 
         totalParticipantes,
 
-        respondieron:
-          0,
+        respondieron: 0,
 
-        correctas:
-          0,
+        correctas: 0,
 
-        incorrectas:
-          0,
+        incorrectas: 0,
 
-        pendientes:
-          totalParticipantes,
+        pendientes: totalParticipantes,
 
-        preguntaCierraEn:
-          quiz.preguntaCierraEn,
+        preguntaCierraEn: quiz.preguntaCierraEn,
 
-        tiempoRestanteSegundos:
-          null,
+        tiempoRestanteSegundos: null,
 
         ranking,
       };
     }
 
-    const pregunta =
-      preguntasActivas.find(
-        (
-          item,
-        ) =>
-          item.orden ===
-          quiz.preguntaActualOrden,
-      );
+    const pregunta = preguntasActivas.find(
+      (item) => item.orden === quiz.preguntaActualOrden,
+    );
 
-    if (
-      !pregunta
-    ) {
-      throw new NotFoundException(
-        'No se encontró la pregunta activa del Quiz',
-      );
+    if (!pregunta) {
+      throw new NotFoundException('No se encontró la pregunta activa del Quiz');
     }
 
-    const [
-      respondieron,
-      correctas,
-      incorrectas,
-    ] =
-      await Promise.all([
-        this.prisma.respuestaIntentoQuiz.count({
-          where: {
-            preguntaId:
-              pregunta.id,
+    const [respondieron, correctas, incorrectas] = await Promise.all([
+      this.prisma.respuestaIntentoQuiz.count({
+        where: {
+          preguntaId: pregunta.id,
 
-            intento: {
-              quizId,
-            },
+          intento: {
+            quizId,
           },
-        }),
+        },
+      }),
 
-        this.prisma.respuestaIntentoQuiz.count({
-          where: {
-            preguntaId:
-              pregunta.id,
+      this.prisma.respuestaIntentoQuiz.count({
+        where: {
+          preguntaId: pregunta.id,
 
-            esCorrecta:
-              true,
+          esCorrecta: true,
 
-            intento: {
-              quizId,
-            },
+          intento: {
+            quizId,
           },
-        }),
+        },
+      }),
 
-        this.prisma.respuestaIntentoQuiz.count({
-          where: {
-            preguntaId:
-              pregunta.id,
+      this.prisma.respuestaIntentoQuiz.count({
+        where: {
+          preguntaId: pregunta.id,
 
-            esCorrecta:
-              false,
+          esCorrecta: false,
 
-            intento: {
-              quizId,
-            },
+          intento: {
+            quizId,
           },
-        }),
-      ]);
+        },
+      }),
+    ]);
 
     const tiempoRestanteSegundos =
-      quiz.estado ===
-        EstadoQuiz.PAUSADO
-        ? quiz.tiempoRestantePreguntaSegundos ??
-          0
+      quiz.estado === EstadoQuiz.PAUSADO
+        ? (quiz.tiempoRestantePreguntaSegundos ?? 0)
         : quiz.preguntaCierraEn
           ? Math.max(
               0,
               Math.ceil(
-                (
-                  quiz.preguntaCierraEn.getTime() -
-                  ahora.getTime()
-                ) /
-                  1000,
+                (quiz.preguntaCierraEn.getTime() - ahora.getTime()) / 1000,
               ),
             )
           : null;
@@ -3699,17 +2521,13 @@ export class QuizzesService {
     return {
       quizId,
 
-      estado:
-        quiz.estado,
+      estado: quiz.estado,
 
-      preguntaActualOrden:
-        quiz.preguntaActualOrden,
+      preguntaActualOrden: quiz.preguntaActualOrden,
 
-      preguntaId:
-        pregunta.id,
+      preguntaId: pregunta.id,
 
-      totalPreguntas:
-        preguntasActivas.length,
+      totalPreguntas: preguntasActivas.length,
 
       totalParticipantes,
 
@@ -3719,15 +2537,9 @@ export class QuizzesService {
 
       incorrectas,
 
-      pendientes:
-        Math.max(
-          0,
-          totalParticipantes -
-            respondieron,
-        ),
+      pendientes: Math.max(0, totalParticipantes - respondieron),
 
-      preguntaCierraEn:
-        quiz.preguntaCierraEn,
+      preguntaCierraEn: quiz.preguntaCierraEn,
 
       tiempoRestanteSegundos,
 
@@ -3736,1750 +2548,1053 @@ export class QuizzesService {
   }
 
   async siguientePregunta(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
   ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
 
     if (
-      quiz.estado !==
-        EstadoQuiz.EN_CURSO &&
-      quiz.estado !==
-        EstadoQuiz.PAUSADO
+      quiz.estado !== EstadoQuiz.EN_CURSO &&
+      quiz.estado !== EstadoQuiz.PAUSADO
     ) {
       throw new BadRequestException(
         'El Quiz debe estar en curso o pausado para avanzar',
       );
     }
 
-    const actual =
-      quiz.preguntaActualOrden;
+    const actual = quiz.preguntaActualOrden;
 
-    const siguiente =
-      quiz.preguntas.find(
-        (
-          pregunta,
-        ) =>
-          actual ===
-            null ||
-          pregunta.orden >
-            actual,
-      );
+    const siguiente = quiz.preguntas.find(
+      (pregunta) => actual === null || pregunta.orden > actual,
+    );
 
-    if (
-      !siguiente
-    ) {
-      return this.finalizar(
-        usuario,
-        cursoId,
-        quizId,
-      );
+    if (!siguiente) {
+      return this.finalizar(usuario, cursoId, quizId);
     }
 
-    const ahora =
-      new Date();
+    const ahora = new Date();
 
-    const tiempo =
-      this.obtenerTiempoPregunta(
-        quiz,
-        siguiente,
-      );
+    const tiempo = this.obtenerTiempoPregunta(quiz, siguiente);
 
     return this.prisma.quizCurso.update({
       where: {
-        id:
-          quizId,
+        id: quizId,
       },
 
       data: {
-        estado:
-          EstadoQuiz.EN_CURSO,
+        estado: EstadoQuiz.EN_CURSO,
 
-        preguntaActualOrden:
-          siguiente.orden,
+        preguntaActualOrden: siguiente.orden,
 
-        preguntaIniciadaEn:
-          ahora,
+        preguntaIniciadaEn: ahora,
 
-        preguntaCierraEn:
-          new Date(
-            ahora.getTime() +
-              tiempo *
-                1000,
-          ),
+        preguntaCierraEn: new Date(ahora.getTime() + tiempo * 1000),
 
-        tiempoRestantePreguntaSegundos:
-          null,
+        tiempoRestantePreguntaSegundos: null,
       },
 
-      include:
-        this.includeDetalle,
+      include: this.includeDetalle,
     });
   }
 
   async responder(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
 
-    datos:
-      ResponderPreguntaQuizDto,
+    datos: ResponderPreguntaQuizDto,
   ) {
-    await this.validarEstudianteCurso(
-      usuario,
-      cursoId,
-    );
+    await this.validarEstudianteCurso(usuario, cursoId);
 
-    const quiz =
-      await this.prisma.quizCurso.findFirst({
-        where: {
-          id:
-            quizId,
+    const quiz = await this.prisma.quizCurso.findFirst({
+      where: {
+        id: quizId,
 
-          cursoId,
+        cursoId,
 
-          estado:
-            EstadoQuiz.EN_CURSO,
-        },
+        estado: EstadoQuiz.EN_CURSO,
+      },
 
-        include: {
-          preguntas: {
-            where: {
-              id:
-                datos.preguntaId,
+      include: {
+        preguntas: {
+          where: {
+            id: datos.preguntaId,
 
-              estaActiva:
-                true,
-            },
+            estaActiva: true,
+          },
 
-            include: {
-              opciones:
-                true,
-            },
+          include: {
+            opciones: true,
           },
         },
-      });
+      },
+    });
 
-    if (
-      !quiz
-    ) {
-      throw new BadRequestException(
-        'El Quiz no está en curso',
-      );
+    if (!quiz) {
+      throw new BadRequestException('El Quiz no está en curso');
     }
 
-    const pregunta =
-      quiz.preguntas[
-        0
-      ];
+    const pregunta = quiz.preguntas[0];
 
-    if (
-      !pregunta ||
-      pregunta.orden !==
-        quiz.preguntaActualOrden
-    ) {
+    if (!pregunta || pregunta.orden !== quiz.preguntaActualOrden) {
       throw new BadRequestException(
         'Esta pregunta no está activa en este momento',
       );
     }
 
-    if (
-      quiz.preguntaCierraEn &&
-      new Date() >
-        quiz.preguntaCierraEn
-    ) {
+    if (quiz.preguntaCierraEn && new Date() > quiz.preguntaCierraEn) {
       throw new BadRequestException(
         'El tiempo para responder esta pregunta terminó',
       );
     }
 
-    const intento =
-      await this.prisma.intentoQuiz.findUnique({
-        where: {
-          quizId_estudianteId: {
-            quizId,
+    const intento = await this.prisma.intentoQuiz.findUnique({
+      where: {
+        quizId_estudianteId: {
+          quizId,
 
-            estudianteId:
-              usuario.id,
-          },
+          estudianteId: usuario.id,
         },
-      });
+      },
+    });
 
-    if (
-      !intento ||
-      intento.estado !==
-      EstadoIntentoQuiz.EN_CURSO
-    ) {
-      throw new BadRequestException(
-        'No tienes un intento activo',
-      );
+    if (!intento || intento.estado !== EstadoIntentoQuiz.EN_CURSO) {
+      throw new BadRequestException('No tienes un intento activo');
     }
 
-    const existente =
-      await this.prisma.respuestaIntentoQuiz.findUnique({
-        where: {
-          intentoId_preguntaId: {
-            intentoId:
-              intento.id,
+    const existente = await this.prisma.respuestaIntentoQuiz.findUnique({
+      where: {
+        intentoId_preguntaId: {
+          intentoId: intento.id,
 
-            preguntaId:
-              pregunta.id,
-          },
+          preguntaId: pregunta.id,
         },
+      },
 
-        select: {
-          id:
-            true,
-        },
-      });
+      select: {
+        id: true,
+      },
+    });
 
-    if (
-      existente
-    ) {
+    if (existente) {
       throw new ConflictException(
         'La respuesta de esta pregunta ya fue registrada',
       );
     }
 
-    const opcionesValidas =
-      pregunta.opciones.filter(
-        (
-          opcion,
-        ) =>
-          datos.opcionIds.includes(
-            opcion.id,
-          ),
-      );
+    const opcionesValidas = pregunta.opciones.filter((opcion) =>
+      datos.opcionIds.includes(opcion.id),
+    );
 
-    if (
-      opcionesValidas.length !==
-      datos.opcionIds.length
-    ) {
+    if (opcionesValidas.length !== datos.opcionIds.length) {
       throw new BadRequestException(
         'Una o más opciones no pertenecen a la pregunta',
       );
     }
 
-    const idsCorrectos =
-      pregunta.opciones
-        .filter(
-          (
-            opcion,
-          ) =>
-            opcion.esCorrecta,
-        )
-        .map(
-          (
-            opcion,
-          ) =>
-            opcion.id,
-        )
-        .sort(
-          (
-            a,
-            b,
-          ) =>
-            a -
-            b,
-        );
+    const idsCorrectos = pregunta.opciones
+      .filter((opcion) => opcion.esCorrecta)
+      .map((opcion) => opcion.id)
+      .sort((a, b) => a - b);
 
-    const idsSeleccionados =
-      [
-        ...datos.opcionIds,
-      ].sort(
-        (
-          a,
-          b,
-        ) =>
-          a -
-          b,
-      );
+    const idsSeleccionados = [...datos.opcionIds].sort((a, b) => a - b);
 
     const esCorrecta =
-      idsCorrectos.length ===
-        idsSeleccionados.length &&
-      idsCorrectos.every(
-        (
-          id,
-          indice,
-        ) =>
-          id ===
-          idsSeleccionados[
-            indice
-          ],
-      );
+      idsCorrectos.length === idsSeleccionados.length &&
+      idsCorrectos.every((id, indice) => id === idsSeleccionados[indice]);
 
-    const ahora =
-      new Date();
+    const ahora = new Date();
 
-    const tiempoRespuestaMs =
-      quiz.preguntaIniciadaEn
-        ? Math.max(0, ahora.getTime() - quiz.preguntaIniciadaEn.getTime())
-        : 0;
+    const tiempoRespuestaMs = quiz.preguntaIniciadaEn
+      ? Math.max(0, ahora.getTime() - quiz.preguntaIniciadaEn.getTime())
+      : 0;
 
-    const puntajeBase =
-      esCorrecta
-        ? Number(
-            pregunta.puntaje,
-          )
-        : 0;
+    const puntajeBase = esCorrecta ? Number(pregunta.puntaje) : 0;
 
-    let posicionRespuestaCorrecta:
-      number |
-      null =
-        null;
+    let posicionRespuestaCorrecta: number | null = null;
 
-    let descuentoVelocidad =
-      0;
+    let descuentoVelocidad = 0;
 
-    let puntajeObtenido =
-      puntajeBase;
+    let puntajeObtenido = puntajeBase;
 
-    if (
-      esCorrecta &&
-      quiz.usarPuntuacionVelocidad
-    ) {
-      const correctasAnteriores =
-        await this.prisma.respuestaIntentoQuiz.count({
-          where: {
-            preguntaId:
-              pregunta.id,
+    if (esCorrecta && quiz.usarPuntuacionVelocidad) {
+      const correctasAnteriores = await this.prisma.respuestaIntentoQuiz.count({
+        where: {
+          preguntaId: pregunta.id,
 
-            esCorrecta:
-              true,
+          esCorrecta: true,
 
-            intento: {
-              quizId,
-            },
+          intento: {
+            quizId,
           },
-        });
-
-      posicionRespuestaCorrecta =
-        correctasAnteriores +
-        1;
-
-      descuentoVelocidad =
-        Math.max(
-          0,
-          (
-            posicionRespuestaCorrecta -
-            1
-          ) *
-            Number(
-              quiz.descuentoVelocidadPorPosicion,
-            ),
-        );
-
-      const minimoProtegido =
-        Math.min(
-          puntajeBase,
-          Math.max(
-            0,
-            Number(
-              quiz.puntajeMinimoVelocidad,
-            ),
-          ),
-        );
-
-      puntajeObtenido =
-        Math.max(
-          minimoProtegido,
-          puntajeBase -
-            descuentoVelocidad,
-        );
-
-      descuentoVelocidad =
-        Math.max(
-          0,
-          puntajeBase -
-            puntajeObtenido,
-        );
-    }
-
-    const respuesta =
-      await this.prisma.respuestaIntentoQuiz.create({
-        data: {
-          intentoId:
-            intento.id,
-
-          preguntaId:
-            pregunta.id,
-
-          respondidaEn:
-            ahora,
-
-          tiempoRespuestaMs,
-
-          esCorrecta,
-
-          puntajeObtenido,
-
-          posicionRespuestaCorrecta,
-
-          descuentoVelocidad,
-
-          opcionesSeleccionadas: {
-            create:
-              datos.opcionIds.map(
-                (
-                  opcionId,
-                ) => ({
-                  opcionId,
-                }),
-              ),
-          },
-        },
-
-        include: {
-          opcionesSeleccionadas:
-            true,
         },
       });
+
+      posicionRespuestaCorrecta = correctasAnteriores + 1;
+
+      descuentoVelocidad = Math.max(
+        0,
+        (posicionRespuestaCorrecta - 1) *
+          Number(quiz.descuentoVelocidadPorPosicion),
+      );
+
+      const minimoProtegido = Math.min(
+        puntajeBase,
+        Math.max(0, Number(quiz.puntajeMinimoVelocidad)),
+      );
+
+      puntajeObtenido = Math.max(
+        minimoProtegido,
+        puntajeBase - descuentoVelocidad,
+      );
+
+      descuentoVelocidad = Math.max(0, puntajeBase - puntajeObtenido);
+    }
+
+    const respuesta = await this.prisma.respuestaIntentoQuiz.create({
+      data: {
+        intentoId: intento.id,
+
+        preguntaId: pregunta.id,
+
+        respondidaEn: ahora,
+
+        tiempoRespuestaMs,
+
+        esCorrecta,
+
+        puntajeObtenido,
+
+        posicionRespuestaCorrecta,
+
+        descuentoVelocidad,
+
+        opcionesSeleccionadas: {
+          create: datos.opcionIds.map((opcionId) => ({
+            opcionId,
+          })),
+        },
+      },
+
+      include: {
+        opcionesSeleccionadas: true,
+      },
+    });
 
     await this.sincronizarRitmoAutomatico(quizId);
     return respuesta;
   }
 
   async finalizar(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
   ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
 
     if (
-      quiz.estado !==
-        EstadoQuiz.EN_CURSO &&
-      quiz.estado !==
-        EstadoQuiz.PAUSADO
+      quiz.estado !== EstadoQuiz.EN_CURSO &&
+      quiz.estado !== EstadoQuiz.PAUSADO
     ) {
       throw new BadRequestException(
         'El Quiz debe estar en curso o pausado para finalizar',
       );
     }
 
-    const ahora =
-      new Date();
+    const ahora = new Date();
 
-    const preguntas =
-      quiz.preguntas.filter(
-        (
-          pregunta,
-        ) =>
-          pregunta.estaActiva,
-      );
+    const preguntas = quiz.preguntas.filter((pregunta) => pregunta.estaActiva);
 
-    const puntajeTotalPreguntas =
-      preguntas.reduce(
-        (
-          suma,
-          pregunta,
-        ) =>
-          suma +
-          Number(
-            pregunta.puntaje,
-          ),
-        0,
-      );
+    const puntajeTotalPreguntas = preguntas.reduce(
+      (suma, pregunta) => suma + Number(pregunta.puntaje),
+      0,
+    );
 
-    if (
-      puntajeTotalPreguntas <=
-      0
-    ) {
+    if (puntajeTotalPreguntas <= 0) {
       throw new BadRequestException(
         'El Quiz no tiene una distribución válida de puntajes',
       );
     }
 
-    const intentos =
-      await this.prisma.intentoQuiz.findMany({
-        where: {
-          quizId,
+    const intentos = await this.prisma.intentoQuiz.findMany({
+      where: {
+        quizId,
 
-          estado:
-            EstadoIntentoQuiz.EN_CURSO,
-        },
+        estado: EstadoIntentoQuiz.EN_CURSO,
+      },
 
-        include: {
-          respuestas:
-            true,
+      include: {
+        respuestas: true,
 
-          estudiante: {
-            select: {
-              id:
-                true,
+        estudiante: {
+          select: {
+            id: true,
 
-              nombres:
-                true,
+            nombres: true,
 
-              apellidoPaterno:
-                true,
+            apellidoPaterno: true,
 
-              apellidoMaterno:
-                true,
-            },
+            apellidoMaterno: true,
           },
         },
-      });
-
-    const calculados =
-      intentos.map(
-        (
-          intento,
-        ) => {
-          const puntajeBruto =
-            intento.respuestas.reduce(
-              (
-                suma,
-                respuesta,
-              ) =>
-                suma +
-                Number(
-                  respuesta.puntajeObtenido,
-                ),
-              0,
-            );
-
-          const respuestasCorrectas =
-            intento.respuestas.filter(
-              (
-                respuesta,
-              ) =>
-                respuesta.esCorrecta ===
-                true,
-            ).length;
-
-          const respuestasIncorrectas =
-            intento.respuestas.filter(
-              (
-                respuesta,
-              ) =>
-                respuesta.esCorrecta ===
-                false,
-            ).length;
-
-          const respuestasOmitidas =
-            Math.max(
-              0,
-              preguntas.length -
-                intento.respuestas.length,
-            );
-
-          const ultimaRespuesta =
-            intento.respuestas.reduce<
-              Date |
-              null
-            >(
-              (
-                ultima,
-                respuesta,
-              ) => {
-                if (
-                  !ultima ||
-                  respuesta.respondidaEn >
-                    ultima
-                ) {
-                  return respuesta.respondidaEn;
-                }
-
-                return ultima;
-              },
-              null,
-            );
-
-          const finalizadoEn =
-            ultimaRespuesta ??
-            ahora;
-
-          const tiempoTotalMs =
-            intento.iniciadoEn
-              ? Math.max(
-                  0,
-                  finalizadoEn.getTime() -
-                    intento.iniciadoEn.getTime(),
-                )
-              : 0;
-
-          const notaBase =
-            Math.min(
-              100,
-              Math.max(
-                0,
-                (
-                  puntajeBruto /
-                  puntajeTotalPreguntas
-                ) *
-                  100,
-              ),
-            );
-
-          return {
-            intento,
-
-            puntajeBruto,
-
-            respuestasCorrectas,
-
-            respuestasIncorrectas,
-
-            respuestasOmitidas,
-
-            finalizadoEn,
-
-            tiempoTotalMs,
-
-            notaBase,
-          };
-        },
-      );
-
-    const ranking =
-      [
-        ...calculados,
-      ].sort(
-        (
-          a,
-          b,
-        ) => {
-          if (
-            b.notaBase !==
-            a.notaBase
-          ) {
-            return (
-              b.notaBase -
-              a.notaBase
-            );
-          }
-
-          return (
-            a.tiempoTotalMs -
-            b.tiempoTotalMs
-          );
-        },
-      );
-
-    const posicionPorIntento =
-      new Map<
-        number,
-        number
-      >();
-
-    ranking.forEach(
-      (
-        item,
-        indice,
-      ) => {
-        posicionPorIntento.set(
-          item.intento.id,
-          indice +
-            1,
-        );
       },
-    );
+    });
 
-    await this.prisma.$transaction(
-      async (
-        tx,
-      ) => {
-        for (
-          const item
-          of calculados
-        ) {
-          const posicion =
-            posicionPorIntento.get(
-              item.intento.id,
-            ) ??
-            null;
+    const calculados = intentos.map((intento) => {
+      const puntajeBruto = intento.respuestas.reduce(
+        (suma, respuesta) => suma + Number(respuesta.puntajeObtenido),
+        0,
+      );
 
-          // El ranking final NO regala una nota mínima ni descuenta puntos.
-          // Un estudiante con 0 respuestas correctas conserva nota 0.
-          const descuentoPosicion =
-            0;
+      const respuestasCorrectas = intento.respuestas.filter(
+        (respuesta) => respuesta.esCorrecta === true,
+      ).length;
 
-          const notaFinal =
-            Math.min(
-              100,
-              Math.max(
-                0,
-                item.notaBase,
-              ),
-            );
+      const respuestasIncorrectas = intento.respuestas.filter(
+        (respuesta) => respuesta.esCorrecta === false,
+      ).length;
 
-          await tx.intentoQuiz.update({
-            where: {
-              id:
-                item.intento.id,
-            },
+      const respuestasOmitidas = Math.max(
+        0,
+        preguntas.length - intento.respuestas.length,
+      );
 
-            data: {
-              estado:
-                EstadoIntentoQuiz.FINALIZADO,
-
-              finalizadoEn:
-                item.finalizadoEn,
-
-              tiempoTotalMs:
-                item.tiempoTotalMs,
-
-              posicionFinal:
-                posicion,
-
-              respuestasCorrectas:
-                item.respuestasCorrectas,
-
-              respuestasIncorrectas:
-                item.respuestasIncorrectas,
-
-              respuestasOmitidas:
-                item.respuestasOmitidas,
-
-              puntajeBruto:
-                item.puntajeBruto,
-
-              notaBase:
-                item.notaBase,
-
-              descuentoPosicion,
-
-              notaFinal,
-            },
-          });
-
-          await tx.participanteQuiz.update({
-            where: {
-              id:
-                item.intento.participanteId,
-            },
-
-            data: {
-              estado:
-                EstadoParticipanteQuiz.FINALIZADO,
-
-              finalizadoEn:
-                item.finalizadoEn,
-
-              ultimaConexionEn:
-                ahora,
-            },
-          });
-
-          if (
-            quiz.esCalificable &&
-            quiz.actividadCalificable
-          ) {
-            const calificacion =
-              await tx.calificacionEstudiante.upsert({
-                where: {
-                  actividadId_estudianteId: {
-                    actividadId:
-                      quiz.actividadCalificable.id,
-
-                    estudianteId:
-                      item.intento.estudianteId,
-                  },
-                },
-
-                create: {
-                  actividadId:
-                    quiz.actividadCalificable.id,
-
-                  estudianteId:
-                    item.intento.estudianteId,
-
-                  calificadorId:
-                    usuario.id,
-
-                  intentoQuizId:
-                    item.intento.id,
-
-                  notaBase:
-                    item.notaBase,
-
-                  descuentoRetraso:
-                    0,
-
-                  descuentoComentarios:
-                    0,
-
-                  ajusteIndividual:
-                    -descuentoPosicion,
-
-                  notaFinal,
-
-                  retroalimentacion:
-                    posicion
-                      ? `Quiz finalizado. Posición: ${posicion}.`
-                      : 'Quiz finalizado.',
-
-                  estado:
-                    EstadoCalificacion.CALIFICADA,
-
-                  calificadaEn:
-                    ahora,
-                },
-
-                update: {
-                  calificadorId:
-                    usuario.id,
-
-                  intentoQuizId:
-                    item.intento.id,
-
-                  notaBase:
-                    item.notaBase,
-
-                  descuentoRetraso:
-                    0,
-
-                  descuentoComentarios:
-                    0,
-
-                  ajusteIndividual:
-                    -descuentoPosicion,
-
-                  notaFinal,
-
-                  retroalimentacion:
-                    posicion
-                      ? `Quiz finalizado. Posición: ${posicion}.`
-                      : 'Quiz finalizado.',
-
-                  estado:
-                    EstadoCalificacion.CALIFICADA,
-
-                  calificadaEn:
-                    ahora,
-
-                  publicadaEn:
-                    null,
-                },
-              });
-
-            await tx.historialCalificacion.create({
-              data: {
-                actividadId:
-                  quiz.actividadCalificable.id,
-
-                calificacionId:
-                  calificacion.id,
-
-                actorId:
-                  usuario.id,
-
-                accion:
-                  AccionHistorialCalificacion.CALIFICACION_ACTUALIZADA,
-
-                detalle: {
-                  origen:
-                    'QUIZ',
-
-                  quizId:
-                    quiz.id,
-
-                  intentoQuizId:
-                    item.intento.id,
-
-                  notaBase:
-                    Number(
-                      item.notaBase.toFixed(
-                        2,
-                      ),
-                    ),
-
-                  posicion,
-
-                  descuentoPosicion:
-                    Number(
-                      descuentoPosicion.toFixed(
-                        2,
-                      ),
-                    ),
-
-                  notaFinal:
-                    Number(
-                      notaFinal.toFixed(
-                        2,
-                      ),
-                    ),
-                },
-              },
-            });
+      const ultimaRespuesta = intento.respuestas.reduce<Date | null>(
+        (ultima, respuesta) => {
+          if (!ultima || respuesta.respondidaEn > ultima) {
+            return respuesta.respondidaEn;
           }
-        }
 
-        if (
-          quiz.esCalificable &&
-          quiz.actividadCalificable
-        ) {
-          const estudiantesConIntento =
-            new Set(
-              calculados.map(
-                (
-                  item,
-                ) =>
-                  item.intento.estudianteId,
-              ),
-            );
+          return ultima;
+        },
+        null,
+      );
 
-          const inscripcionesActivas =
-            await tx.inscripcionCurso.findMany({
-              where: {
-                cursoId,
+      const finalizadoEn = ultimaRespuesta ?? ahora;
 
-                estado:
-                  EstadoInscripcion.ACTIVA,
-              },
+      const tiempoTotalMs = intento.iniciadoEn
+        ? Math.max(0, finalizadoEn.getTime() - intento.iniciadoEn.getTime())
+        : 0;
 
-              select: {
-                estudianteId:
-                  true,
-              },
-            });
+      const notaBase = Math.min(
+        100,
+        Math.max(0, (puntajeBruto / puntajeTotalPreguntas) * 100),
+      );
 
-          const ausentes =
-            inscripcionesActivas.filter(
-              (
-                inscripcion,
-              ) =>
-                !estudiantesConIntento.has(
-                  inscripcion.estudianteId,
-                ),
-            );
+      return {
+        intento,
 
-          for (
-            const ausente
-            of ausentes
-          ) {
-            const calificacion =
-              await tx.calificacionEstudiante.upsert({
-                where: {
-                  actividadId_estudianteId: {
-                    actividadId:
-                      quiz.actividadCalificable.id,
+        puntajeBruto,
 
-                    estudianteId:
-                      ausente.estudianteId,
-                  },
-                },
+        respuestasCorrectas,
 
-                create: {
-                  actividadId:
-                    quiz.actividadCalificable.id,
+        respuestasIncorrectas,
 
-                  estudianteId:
-                    ausente.estudianteId,
+        respuestasOmitidas,
 
-                  calificadorId:
-                    usuario.id,
+        finalizadoEn,
 
-                  notaBase:
-                    0,
+        tiempoTotalMs,
 
-                  descuentoRetraso:
-                    0,
+        notaBase,
+      };
+    });
 
-                  descuentoComentarios:
-                    0,
+    const ranking = [...calculados].sort((a, b) => {
+      if (b.notaBase !== a.notaBase) {
+        return b.notaBase - a.notaBase;
+      }
 
-                  ajusteIndividual:
-                    0,
+      return a.tiempoTotalMs - b.tiempoTotalMs;
+    });
 
-                  notaFinal:
-                    0,
+    const posicionPorIntento = new Map<number, number>();
 
-                  retroalimentacion:
-                    'No participó en el Quiz.',
+    ranking.forEach((item, indice) => {
+      posicionPorIntento.set(item.intento.id, indice + 1);
+    });
 
-                  estado:
-                    EstadoCalificacion.CALIFICADA,
+    await this.prisma.$transaction(async (tx) => {
+      for (const item of calculados) {
+        const posicion = posicionPorIntento.get(item.intento.id) ?? null;
 
-                  calificadaEn:
-                    ahora,
-                },
+        // El ranking final NO regala una nota mínima ni descuenta puntos.
+        // Un estudiante con 0 respuestas correctas conserva nota 0.
+        const descuentoPosicion = 0;
 
-                update: {
-                  calificadorId:
-                    usuario.id,
+        const notaFinal = Math.min(100, Math.max(0, item.notaBase));
 
-                  notaBase:
-                    0,
-
-                  descuentoRetraso:
-                    0,
-
-                  descuentoComentarios:
-                    0,
-
-                  ajusteIndividual:
-                    0,
-
-                  notaFinal:
-                    0,
-
-                  retroalimentacion:
-                    'No participó en el Quiz.',
-
-                  estado:
-                    EstadoCalificacion.CALIFICADA,
-
-                  calificadaEn:
-                    ahora,
-
-                  publicadaEn:
-                    null,
-                },
-              });
-
-            await tx.historialCalificacion.create({
-              data: {
-                actividadId:
-                  quiz.actividadCalificable.id,
-
-                calificacionId:
-                  calificacion.id,
-
-                actorId:
-                  usuario.id,
-
-                accion:
-                  AccionHistorialCalificacion.CALIFICACION_ACTUALIZADA,
-
-                detalle: {
-                  origen:
-                    'QUIZ',
-
-                  quizId:
-                    quiz.id,
-
-                  noParticipo:
-                    true,
-
-                  notaBase:
-                    0,
-
-                  notaFinal:
-                    0,
-                },
-              },
-            });
-          }
-        }
-
-        await tx.quizCurso.update({
+        await tx.intentoQuiz.update({
           where: {
-            id:
-              quizId,
+            id: item.intento.id,
           },
 
           data: {
-            estado:
-              EstadoQuiz.FINALIZADO,
+            estado: EstadoIntentoQuiz.FINALIZADO,
 
-            finalizadoEn:
-              ahora,
+            finalizadoEn: item.finalizadoEn,
 
-            preguntaCierraEn:
-              null,
+            tiempoTotalMs: item.tiempoTotalMs,
 
-            tiempoRestantePreguntaSegundos:
-              null,
+            posicionFinal: posicion,
+
+            respuestasCorrectas: item.respuestasCorrectas,
+
+            respuestasIncorrectas: item.respuestasIncorrectas,
+
+            respuestasOmitidas: item.respuestasOmitidas,
+
+            puntajeBruto: item.puntajeBruto,
+
+            notaBase: item.notaBase,
+
+            descuentoPosicion,
+
+            notaFinal,
           },
         });
 
-        if (
-          quiz.esCalificable &&
-          quiz.actividadCalificable
-        ) {
-          await tx.actividadCalificable.update({
+        await tx.participanteQuiz.update({
+          where: {
+            id: item.intento.participanteId,
+          },
+
+          data: {
+            estado: EstadoParticipanteQuiz.FINALIZADO,
+
+            finalizadoEn: item.finalizadoEn,
+
+            ultimaConexionEn: ahora,
+          },
+        });
+
+        if (quiz.esCalificable && quiz.actividadCalificable) {
+          const calificacion = await tx.calificacionEstudiante.upsert({
             where: {
-              id:
-                quiz.actividadCalificable.id,
+              actividadId_estudianteId: {
+                actividadId: quiz.actividadCalificable.id,
+
+                estudianteId: item.intento.estudianteId,
+              },
             },
 
-            data: {
-              estado:
-                EstadoActividadCalificable.CALIFICADA,
+            create: {
+              actividadId: quiz.actividadCalificable.id,
 
-              cerradaEn:
-                ahora,
+              estudianteId: item.intento.estudianteId,
+
+              calificadorId: usuario.id,
+
+              intentoQuizId: item.intento.id,
+
+              notaBase: item.notaBase,
+
+              descuentoRetraso: 0,
+
+              descuentoComentarios: 0,
+
+              ajusteIndividual: -descuentoPosicion,
+
+              notaFinal,
+
+              retroalimentacion: posicion
+                ? `Quiz finalizado. Posición: ${posicion}.`
+                : 'Quiz finalizado.',
+
+              estado: EstadoCalificacion.CALIFICADA,
+
+              calificadaEn: ahora,
+            },
+
+            update: {
+              calificadorId: usuario.id,
+
+              intentoQuizId: item.intento.id,
+
+              notaBase: item.notaBase,
+
+              descuentoRetraso: 0,
+
+              descuentoComentarios: 0,
+
+              ajusteIndividual: -descuentoPosicion,
+
+              notaFinal,
+
+              retroalimentacion: posicion
+                ? `Quiz finalizado. Posición: ${posicion}.`
+                : 'Quiz finalizado.',
+
+              estado: EstadoCalificacion.CALIFICADA,
+
+              calificadaEn: ahora,
+
+              publicadaEn: null,
+            },
+          });
+
+          await tx.historialCalificacion.create({
+            data: {
+              actividadId: quiz.actividadCalificable.id,
+
+              calificacionId: calificacion.id,
+
+              actorId: usuario.id,
+
+              accion: AccionHistorialCalificacion.CALIFICACION_ACTUALIZADA,
+
+              detalle: {
+                origen: 'QUIZ',
+
+                quizId: quiz.id,
+
+                intentoQuizId: item.intento.id,
+
+                notaBase: Number(item.notaBase.toFixed(2)),
+
+                posicion,
+
+                descuentoPosicion: Number(descuentoPosicion.toFixed(2)),
+
+                notaFinal: Number(notaFinal.toFixed(2)),
+              },
             },
           });
         }
-      },
-    );
+      }
 
-    return this.resultadosDocente(
-      usuario,
-      cursoId,
-      quizId,
-    );
-  }
+      if (quiz.esCalificable && quiz.actividadCalificable) {
+        const estudiantesConIntento = new Set(
+          calculados.map((item) => item.intento.estudianteId),
+        );
 
-  async resultadosDocente(
-    usuario:
-      UsuarioAutenticado,
-
-    cursoId:
-      number,
-
-    quizId:
-      number,
-  ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
-
-    const [
-      inscripciones,
-      intentos,
-    ] =
-      await Promise.all([
-        this.prisma.inscripcionCurso.findMany({
+        const inscripcionesActivas = await tx.inscripcionCurso.findMany({
           where: {
             cursoId,
 
-            estado:
-              EstadoInscripcion.ACTIVA,
-
-            estudiante: {
-              estaActivo:
-                true,
-
-              rol:
-                Rol.ESTUDIANTE,
-            },
+            estado: EstadoInscripcion.ACTIVA,
           },
-
-          orderBy: [
-            {
-              estudiante: {
-                apellidoPaterno:
-                  'asc',
-              },
-            },
-            {
-              estudiante: {
-                nombres:
-                  'asc',
-              },
-            },
-          ],
 
           select: {
-            estudianteId:
-              true,
-
-            estudiante: {
-              select: {
-                id:
-                  true,
-
-                nombres:
-                  true,
-
-                apellidoPaterno:
-                  true,
-
-                apellidoMaterno:
-                  true,
-
-                fotoPerfilUrl:
-                  true,
-              },
-            },
+            estudianteId: true,
           },
-        }),
+        });
 
-        this.prisma.intentoQuiz.findMany({
-          where: {
-            quizId,
-          },
-
-          include: {
-            estudiante: {
-              select: {
-                id:
-                  true,
-
-                nombres:
-                  true,
-
-                apellidoPaterno:
-                  true,
-
-                apellidoMaterno:
-                  true,
-
-                fotoPerfilUrl:
-                  true,
-              },
-            },
-          },
-        }),
-      ]);
-
-    const intentoPorEstudiante =
-      new Map(
-        intentos.map(
-          (
-            intento,
-          ) => [
-            intento.estudianteId,
-            intento,
-          ],
-        ),
-      );
-
-    const totalPreguntas =
-      quiz.preguntas.filter(
-        (
-          pregunta,
-        ) =>
-          pregunta.estaActiva,
-      ).length;
-
-    const resultados =
-      inscripciones
-        .map(
-          (
-            inscripcion,
-          ) => {
-            const intento =
-              intentoPorEstudiante.get(
-                inscripcion.estudianteId,
-              );
-
-            if (
-              intento
-            ) {
-              return {
-                id:
-                  intento.id,
-
-                estudianteId:
-                  intento.estudianteId,
-
-                participo:
-                  true,
-
-                posicionFinal:
-                  intento.posicionFinal,
-
-                respuestasCorrectas:
-                  intento.respuestasCorrectas,
-
-                respuestasIncorrectas:
-                  intento.respuestasIncorrectas,
-
-                respuestasOmitidas:
-                  intento.respuestasOmitidas,
-
-                puntajeBruto:
-                  intento.puntajeBruto,
-
-                notaBase:
-                  intento.notaBase,
-
-                descuentoPosicion:
-                  intento.descuentoPosicion,
-
-                notaFinal:
-                  intento.notaFinal,
-
-                tiempoTotalMs:
-                  intento.tiempoTotalMs,
-
-                finalizadoEn:
-                  intento.finalizadoEn,
-
-                estudiante:
-                  intento.estudiante,
-              };
-            }
-
-            return {
-              id:
-                null,
-
-              estudianteId:
-                inscripcion.estudianteId,
-
-              participo:
-                false,
-
-              posicionFinal:
-                null,
-
-              respuestasCorrectas:
-                0,
-
-              respuestasIncorrectas:
-                0,
-
-              respuestasOmitidas:
-                totalPreguntas,
-
-              puntajeBruto:
-                0,
-
-              notaBase:
-                0,
-
-              descuentoPosicion:
-                0,
-
-              notaFinal:
-                0,
-
-              tiempoTotalMs:
-                null,
-
-              finalizadoEn:
-                null,
-
-              estudiante:
-                inscripcion.estudiante,
-            };
-          },
-        )
-        .sort(
-          (
-            a,
-            b,
-          ) => {
-            if (
-              a.participo !==
-              b.participo
-            ) {
-              return a.participo
-                ? -1
-                : 1;
-            }
-
-            if (
-              a.participo &&
-              b.participo
-            ) {
-              const posicionA =
-                a.posicionFinal ??
-                Number.MAX_SAFE_INTEGER;
-
-              const posicionB =
-                b.posicionFinal ??
-                Number.MAX_SAFE_INTEGER;
-
-              if (
-                posicionA !==
-                posicionB
-              ) {
-                return (
-                  posicionA -
-                  posicionB
-                );
-              }
-
-              const notaA =
-                Number(
-                  a.notaFinal,
-                );
-
-              const notaB =
-                Number(
-                  b.notaFinal,
-                );
-
-              if (
-                notaA !==
-                notaB
-              ) {
-                return (
-                  notaB -
-                  notaA
-                );
-              }
-            }
-
-            const apellido =
-              a.estudiante.apellidoPaterno.localeCompare(
-                b.estudiante.apellidoPaterno,
-                'es',
-              );
-
-            if (
-              apellido !==
-              0
-            ) {
-              return apellido;
-            }
-
-            return a.estudiante.nombres.localeCompare(
-              b.estudiante.nombres,
-              'es',
-            );
-          },
+        const ausentes = inscripcionesActivas.filter(
+          (inscripcion) => !estudiantesConIntento.has(inscripcion.estudianteId),
         );
+
+        for (const ausente of ausentes) {
+          const calificacion = await tx.calificacionEstudiante.upsert({
+            where: {
+              actividadId_estudianteId: {
+                actividadId: quiz.actividadCalificable.id,
+
+                estudianteId: ausente.estudianteId,
+              },
+            },
+
+            create: {
+              actividadId: quiz.actividadCalificable.id,
+
+              estudianteId: ausente.estudianteId,
+
+              calificadorId: usuario.id,
+
+              notaBase: 0,
+
+              descuentoRetraso: 0,
+
+              descuentoComentarios: 0,
+
+              ajusteIndividual: 0,
+
+              notaFinal: 0,
+
+              retroalimentacion: 'No participó en el Quiz.',
+
+              estado: EstadoCalificacion.CALIFICADA,
+
+              calificadaEn: ahora,
+            },
+
+            update: {
+              calificadorId: usuario.id,
+
+              notaBase: 0,
+
+              descuentoRetraso: 0,
+
+              descuentoComentarios: 0,
+
+              ajusteIndividual: 0,
+
+              notaFinal: 0,
+
+              retroalimentacion: 'No participó en el Quiz.',
+
+              estado: EstadoCalificacion.CALIFICADA,
+
+              calificadaEn: ahora,
+
+              publicadaEn: null,
+            },
+          });
+
+          await tx.historialCalificacion.create({
+            data: {
+              actividadId: quiz.actividadCalificable.id,
+
+              calificacionId: calificacion.id,
+
+              actorId: usuario.id,
+
+              accion: AccionHistorialCalificacion.CALIFICACION_ACTUALIZADA,
+
+              detalle: {
+                origen: 'QUIZ',
+
+                quizId: quiz.id,
+
+                noParticipo: true,
+
+                notaBase: 0,
+
+                notaFinal: 0,
+              },
+            },
+          });
+        }
+      }
+
+      await tx.quizCurso.update({
+        where: {
+          id: quizId,
+        },
+
+        data: {
+          estado: EstadoQuiz.FINALIZADO,
+
+          finalizadoEn: ahora,
+
+          preguntaCierraEn: null,
+
+          tiempoRestantePreguntaSegundos: null,
+        },
+      });
+
+      if (quiz.esCalificable && quiz.actividadCalificable) {
+        await tx.actividadCalificable.update({
+          where: {
+            id: quiz.actividadCalificable.id,
+          },
+
+          data: {
+            estado: EstadoActividadCalificable.CALIFICADA,
+
+            cerradaEn: ahora,
+          },
+        });
+      }
+    });
+
+    return this.resultadosDocente(usuario, cursoId, quizId);
+  }
+
+  async resultadosDocente(
+    usuario: UsuarioAutenticado,
+
+    cursoId: number,
+
+    quizId: number,
+  ) {
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
+
+    const [inscripciones, intentos] = await Promise.all([
+      this.prisma.inscripcionCurso.findMany({
+        where: {
+          cursoId,
+
+          estado: EstadoInscripcion.ACTIVA,
+
+          estudiante: {
+            estaActivo: true,
+
+            rol: Rol.ESTUDIANTE,
+          },
+        },
+
+        orderBy: [
+          {
+            estudiante: {
+              apellidoPaterno: 'asc',
+            },
+          },
+          {
+            estudiante: {
+              nombres: 'asc',
+            },
+          },
+        ],
+
+        select: {
+          estudianteId: true,
+
+          estudiante: {
+            select: {
+              id: true,
+
+              nombres: true,
+
+              apellidoPaterno: true,
+
+              apellidoMaterno: true,
+
+              fotoPerfilUrl: true,
+            },
+          },
+        },
+      }),
+
+      this.prisma.intentoQuiz.findMany({
+        where: {
+          quizId,
+        },
+
+        include: {
+          estudiante: {
+            select: {
+              id: true,
+
+              nombres: true,
+
+              apellidoPaterno: true,
+
+              apellidoMaterno: true,
+
+              fotoPerfilUrl: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const intentoPorEstudiante = new Map(
+      intentos.map((intento) => [intento.estudianteId, intento]),
+    );
+
+    const totalPreguntas = quiz.preguntas.filter(
+      (pregunta) => pregunta.estaActiva,
+    ).length;
+
+    const resultados = inscripciones
+      .map((inscripcion) => {
+        const intento = intentoPorEstudiante.get(inscripcion.estudianteId);
+
+        if (intento) {
+          return {
+            id: intento.id,
+
+            estudianteId: intento.estudianteId,
+
+            participo: true,
+
+            posicionFinal: intento.posicionFinal,
+
+            respuestasCorrectas: intento.respuestasCorrectas,
+
+            respuestasIncorrectas: intento.respuestasIncorrectas,
+
+            respuestasOmitidas: intento.respuestasOmitidas,
+
+            puntajeBruto: intento.puntajeBruto,
+
+            notaBase: intento.notaBase,
+
+            descuentoPosicion: intento.descuentoPosicion,
+
+            notaFinal: intento.notaFinal,
+
+            tiempoTotalMs: intento.tiempoTotalMs,
+
+            finalizadoEn: intento.finalizadoEn,
+
+            estudiante: intento.estudiante,
+          };
+        }
+
+        return {
+          id: null,
+
+          estudianteId: inscripcion.estudianteId,
+
+          participo: false,
+
+          posicionFinal: null,
+
+          respuestasCorrectas: 0,
+
+          respuestasIncorrectas: 0,
+
+          respuestasOmitidas: totalPreguntas,
+
+          puntajeBruto: 0,
+
+          notaBase: 0,
+
+          descuentoPosicion: 0,
+
+          notaFinal: 0,
+
+          tiempoTotalMs: null,
+
+          finalizadoEn: null,
+
+          estudiante: inscripcion.estudiante,
+        };
+      })
+      .sort((a, b) => {
+        if (a.participo !== b.participo) {
+          return a.participo ? -1 : 1;
+        }
+
+        if (a.participo && b.participo) {
+          const posicionA = a.posicionFinal ?? Number.MAX_SAFE_INTEGER;
+
+          const posicionB = b.posicionFinal ?? Number.MAX_SAFE_INTEGER;
+
+          if (posicionA !== posicionB) {
+            return posicionA - posicionB;
+          }
+
+          const notaA = Number(a.notaFinal);
+
+          const notaB = Number(b.notaFinal);
+
+          if (notaA !== notaB) {
+            return notaB - notaA;
+          }
+        }
+
+        const apellido = a.estudiante.apellidoPaterno.localeCompare(
+          b.estudiante.apellidoPaterno,
+          'es',
+        );
+
+        if (apellido !== 0) {
+          return apellido;
+        }
+
+        return a.estudiante.nombres.localeCompare(b.estudiante.nombres, 'es');
+      });
 
     return {
       quiz: {
-        id:
-          quiz.id,
+        id: quiz.id,
 
-        titulo:
-          quiz.titulo,
+        titulo: quiz.titulo,
 
-        estado:
-          quiz.estado,
+        estado: quiz.estado,
 
-        esCalificable:
-          quiz.esCalificable,
+        esCalificable: quiz.esCalificable,
 
-        componente:
-          quiz.componente,
+        componente: quiz.componente,
 
-        usarRanking:
-          quiz.usarRanking,
+        usarRanking: quiz.usarRanking,
 
-        descuentoPorPuesto:
-          quiz.descuentoPorPuesto,
+        descuentoPorPuesto: quiz.descuentoPorPuesto,
 
-        puntajeMinimoRanking:
-          quiz.puntajeMinimoRanking,
+        puntajeMinimoRanking: quiz.puntajeMinimoRanking,
 
-        usarPuntuacionVelocidad:
-          quiz.usarPuntuacionVelocidad,
+        usarPuntuacionVelocidad: quiz.usarPuntuacionVelocidad,
 
-        descuentoVelocidadPorPosicion:
-          Number(
-            quiz.descuentoVelocidadPorPosicion,
-          ),
+        descuentoVelocidadPorPosicion: Number(
+          quiz.descuentoVelocidadPorPosicion,
+        ),
 
-        puntajeMinimoVelocidad:
-          Number(
-            quiz.puntajeMinimoVelocidad,
-          ),
+        puntajeMinimoVelocidad: Number(quiz.puntajeMinimoVelocidad),
 
-        resultadosPublicados:
-          quiz.resultadosPublicados,
+        resultadosPublicados: quiz.resultadosPublicados,
       },
 
-      totalInscritos:
-        inscripciones.length,
+      totalInscritos: inscripciones.length,
 
-      totalParticiparon:
-        resultados.filter(
-          (
-            item,
-          ) =>
-            item.participo,
-        ).length,
+      totalParticiparon: resultados.filter((item) => item.participo).length,
 
-      intentos:
-        resultados,
+      intentos: resultados,
     };
   }
 
   async detalleResultadoEstudiante(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
 
-    estudianteId:
-      number,
+    estudianteId: number,
   ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
 
-    if (
-      quiz.estado !==
-      EstadoQuiz.FINALIZADO
-    ) {
+    if (quiz.estado !== EstadoQuiz.FINALIZADO) {
       throw new BadRequestException(
         'El detalle de resultados está disponible cuando el Quiz finaliza',
       );
     }
 
-    const intento =
-      await this.prisma.intentoQuiz.findFirst({
-        where: {
-          quizId,
+    const intento = await this.prisma.intentoQuiz.findFirst({
+      where: {
+        quizId,
 
-          estudianteId,
+        estudianteId,
+      },
+
+      include: {
+        estudiante: {
+          select: {
+            id: true,
+
+            nombres: true,
+
+            apellidoPaterno: true,
+
+            apellidoMaterno: true,
+
+            fotoPerfilUrl: true,
+          },
         },
 
-        include: {
-          estudiante: {
-            select: {
-              id:
-                true,
-
-              nombres:
-                true,
-
-              apellidoPaterno:
-                true,
-
-              apellidoMaterno:
-                true,
-
-              fotoPerfilUrl:
-                true,
+        respuestas: {
+          orderBy: {
+            pregunta: {
+              orden: 'asc',
             },
           },
 
-          respuestas: {
-            orderBy: {
-              pregunta: {
-                orden:
-                  'asc',
-              },
-            },
-
-            include: {
-              pregunta: {
-                include: {
-                  opciones: {
-                    orderBy: {
-                      orden:
-                        'asc',
-                    },
+          include: {
+            pregunta: {
+              include: {
+                opciones: {
+                  orderBy: {
+                    orden: 'asc',
                   },
                 },
               },
+            },
 
-              opcionesSeleccionadas: {
-                include: {
-                  opcion:
-                    true,
-                },
+            opcionesSeleccionadas: {
+              include: {
+                opcion: true,
               },
             },
           },
         },
-      });
+      },
+    });
 
-    if (
-      !intento
-    ) {
-      throw new NotFoundException(
-        'No existe un intento para este estudiante',
-      );
+    if (!intento) {
+      throw new NotFoundException('No existe un intento para este estudiante');
     }
 
-    const respuestaPorPregunta =
-      new Map(
-        intento.respuestas.map(
-          (
-            respuesta,
-          ) => [
-            respuesta.preguntaId,
-            respuesta,
-          ],
-        ),
-      );
+    const respuestaPorPregunta = new Map(
+      intento.respuestas.map((respuesta) => [respuesta.preguntaId, respuesta]),
+    );
 
-    const preguntas =
-      quiz.preguntas.map(
-        (
-          pregunta,
-        ) => {
-          const respuesta =
-            respuestaPorPregunta.get(
-              pregunta.id,
-            );
+    const preguntas = quiz.preguntas.map((pregunta) => {
+      const respuesta = respuestaPorPregunta.get(pregunta.id);
 
-          const seleccionadas =
-            respuesta?.opcionesSeleccionadas.map(
-              (
-                item,
-              ) => ({
-                id:
-                  item.opcion.id,
+      const seleccionadas =
+        respuesta?.opcionesSeleccionadas.map((item) => ({
+          id: item.opcion.id,
 
-                texto:
-                  item.opcion.texto,
-              }),
-            ) ??
-            [];
+          texto: item.opcion.texto,
+        })) ?? [];
 
-          const correctas =
-            pregunta.opciones
-              .filter(
-                (
-                  opcion,
-                ) =>
-                  opcion.esCorrecta,
-              )
-              .map(
-                (
-                  opcion,
-                ) => ({
-                  id:
-                    opcion.id,
+      const correctas = pregunta.opciones
+        .filter((opcion) => opcion.esCorrecta)
+        .map((opcion) => ({
+          id: opcion.id,
 
-                  texto:
-                    opcion.texto,
-                }),
-              );
+          texto: opcion.texto,
+        }));
 
-          return {
-            preguntaId:
-              pregunta.id,
+      return {
+        preguntaId: pregunta.id,
 
-            orden:
-              pregunta.orden,
+        orden: pregunta.orden,
 
-            enunciado:
-              pregunta.enunciado,
+        enunciado: pregunta.enunciado,
 
-            dificultad:
-              pregunta.dificultad,
+        dificultad: pregunta.dificultad,
 
-            esCorrecta:
-              respuesta?.esCorrecta ??
-              null,
+        esCorrecta: respuesta?.esCorrecta ?? null,
 
-            omitida:
-              !respuesta,
+        omitida: !respuesta,
 
-            tiempoRespuestaMs:
-              respuesta?.tiempoRespuestaMs ??
-              null,
+        tiempoRespuestaMs: respuesta?.tiempoRespuestaMs ?? null,
 
-            puntajeObtenido:
-              respuesta
-                ? Number(
-                    respuesta.puntajeObtenido,
-                  )
-                : 0,
+        puntajeObtenido: respuesta ? Number(respuesta.puntajeObtenido) : 0,
 
-            posicionRespuestaCorrecta:
-              respuesta?.posicionRespuestaCorrecta ??
-              null,
+        posicionRespuestaCorrecta: respuesta?.posicionRespuestaCorrecta ?? null,
 
-            descuentoVelocidad:
-              respuesta
-                ? Number(
-                    respuesta.descuentoVelocidad,
-                  )
-                : 0,
+        descuentoVelocidad: respuesta
+          ? Number(respuesta.descuentoVelocidad)
+          : 0,
 
-            puntajePregunta:
-              Number(
-                pregunta.puntaje,
-              ),
+        puntajePregunta: Number(pregunta.puntaje),
 
-            opcionesSeleccionadas:
-              seleccionadas,
+        opcionesSeleccionadas: seleccionadas,
 
-            opcionesCorrectas:
-              correctas,
+        opcionesCorrectas: correctas,
 
-            explicacion:
-              pregunta.explicacion,
-          };
-        },
-      );
+        explicacion: pregunta.explicacion,
+      };
+    });
 
     return {
       quiz: {
-        id:
-          quiz.id,
+        id: quiz.id,
 
-        titulo:
-          quiz.titulo,
+        titulo: quiz.titulo,
 
-        esCalificable:
-          quiz.esCalificable,
+        esCalificable: quiz.esCalificable,
 
-        componente:
-          quiz.componente,
+        componente: quiz.componente,
 
-        resultadosPublicados:
-          quiz.resultadosPublicados,
+        resultadosPublicados: quiz.resultadosPublicados,
       },
 
-      estudiante:
-        intento.estudiante,
+      estudiante: intento.estudiante,
 
       intento: {
-        id:
-          intento.id,
+        id: intento.id,
 
-        posicionFinal:
-          intento.posicionFinal,
+        posicionFinal: intento.posicionFinal,
 
-        respuestasCorrectas:
-          intento.respuestasCorrectas,
+        respuestasCorrectas: intento.respuestasCorrectas,
 
-        respuestasIncorrectas:
-          intento.respuestasIncorrectas,
+        respuestasIncorrectas: intento.respuestasIncorrectas,
 
-        respuestasOmitidas:
-          intento.respuestasOmitidas,
+        respuestasOmitidas: intento.respuestasOmitidas,
 
-        puntajeBruto:
-          Number(
-            intento.puntajeBruto,
-          ),
+        puntajeBruto: Number(intento.puntajeBruto),
 
-        notaBase:
-          Number(
-            intento.notaBase,
-          ),
+        notaBase: Number(intento.notaBase),
 
-        descuentoPosicion:
-          Number(
-            intento.descuentoPosicion,
-          ),
+        descuentoPosicion: Number(intento.descuentoPosicion),
 
-        notaFinal:
-          Number(
-            intento.notaFinal,
-          ),
+        notaFinal: Number(intento.notaFinal),
 
-        tiempoTotalMs:
-          intento.tiempoTotalMs,
+        tiempoTotalMs: intento.tiempoTotalMs,
 
-        finalizadoEn:
-          intento.finalizadoEn,
+        finalizadoEn: intento.finalizadoEn,
       },
 
       preguntas,
@@ -5487,389 +3602,244 @@ export class QuizzesService {
   }
 
   async publicarResultados(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
   ) {
-    const quiz =
-      await this.buscarQuizDocente(
-        usuario,
-        cursoId,
-        quizId,
-      );
+    const quiz = await this.buscarQuizDocente(usuario, cursoId, quizId);
 
-    if (
-      quiz.estado !==
-      EstadoQuiz.FINALIZADO
-    ) {
+    if (quiz.estado !== EstadoQuiz.FINALIZADO) {
       throw new BadRequestException(
         'Solo puedes publicar resultados cuando el Quiz esté finalizado',
       );
     }
 
-    const ahora =
-      new Date();
+    const ahora = new Date();
 
-    await this.prisma.$transaction(
-      async (
-        tx,
-      ) => {
-        await tx.quizCurso.update({
+    await this.prisma.$transaction(async (tx) => {
+      await tx.quizCurso.update({
+        where: {
+          id: quizId,
+        },
+
+        data: {
+          resultadosPublicados: true,
+
+          resultadosPublicadosEn: ahora,
+        },
+      });
+
+      if (quiz.esCalificable && quiz.actividadCalificable) {
+        await tx.calificacionEstudiante.updateMany({
           where: {
-            id:
-              quizId,
+            actividadId: quiz.actividadCalificable.id,
+
+            estado: EstadoCalificacion.CALIFICADA,
           },
 
           data: {
-            resultadosPublicados:
-              true,
+            estado: EstadoCalificacion.PUBLICADA,
 
-            resultadosPublicadosEn:
-              ahora,
+            publicadaEn: ahora,
           },
         });
 
-        if (
-          quiz.esCalificable &&
-          quiz.actividadCalificable
-        ) {
-          await tx.calificacionEstudiante.updateMany({
-            where: {
-              actividadId:
-                quiz.actividadCalificable.id,
+        await tx.actividadCalificable.update({
+          where: {
+            id: quiz.actividadCalificable.id,
+          },
 
-              estado:
-                EstadoCalificacion.CALIFICADA,
+          data: {
+            estado: EstadoActividadCalificable.PUBLICADA,
+
+            visibleParaEstudiantes: true,
+
+            publicadaEn: quiz.actividadCalificable.publicadaEn ?? ahora,
+          },
+        });
+
+        await tx.historialCalificacion.create({
+          data: {
+            actividadId: quiz.actividadCalificable.id,
+
+            actorId: usuario.id,
+
+            accion: AccionHistorialCalificacion.CALIFICACIONES_PUBLICADAS,
+
+            detalle: {
+              origen: 'QUIZ',
+
+              quizId: quiz.id,
+
+              publicadoEn: ahora.toISOString(),
             },
-
-            data: {
-              estado:
-                EstadoCalificacion.PUBLICADA,
-
-              publicadaEn:
-                ahora,
-            },
-          });
-
-          await tx.actividadCalificable.update({
-            where: {
-              id:
-                quiz.actividadCalificable.id,
-            },
-
-            data: {
-              estado:
-                EstadoActividadCalificable.PUBLICADA,
-
-              visibleParaEstudiantes:
-                true,
-
-              publicadaEn:
-                quiz.actividadCalificable.publicadaEn ??
-                ahora,
-            },
-          });
-
-          await tx.historialCalificacion.create({
-            data: {
-              actividadId:
-                quiz.actividadCalificable.id,
-
-              actorId:
-                usuario.id,
-
-              accion:
-                AccionHistorialCalificacion.CALIFICACIONES_PUBLICADAS,
-
-              detalle: {
-                origen:
-                  'QUIZ',
-
-                quizId:
-                  quiz.id,
-
-                publicadoEn:
-                  ahora.toISOString(),
-              },
-            },
-          });
-        }
-      },
-    );
+          },
+        });
+      }
+    });
 
     return {
-      ok:
-        true,
+      ok: true,
 
-      publicadoEn:
-        ahora,
+      publicadoEn: ahora,
     };
   }
 
   async rankingFinalEstudiante(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
   ) {
-    await this.validarEstudianteCurso(
-      usuario,
-      cursoId,
-    );
+    await this.validarEstudianteCurso(usuario, cursoId);
 
-    const quiz =
-      await this.prisma.quizCurso.findFirst({
-        where: {
-          id:
-            quizId,
+    const quiz = await this.prisma.quizCurso.findFirst({
+      where: {
+        id: quizId,
 
-          cursoId,
+        cursoId,
 
-          estado:
-            EstadoQuiz.FINALIZADO,
-        },
+        estado: EstadoQuiz.FINALIZADO,
+      },
 
-        select: {
-          id:
-            true,
+      select: {
+        id: true,
 
-          titulo:
-            true,
+        titulo: true,
 
-          resultadosPublicados:
-            true,
+        resultadosPublicados: true,
 
-          esCalificable:
-            true,
+        esCalificable: true,
 
-          componente:
-            true,
-        },
-      });
+        componente: true,
+      },
+    });
 
-    if (
-      !quiz
-    ) {
+    if (!quiz) {
       throw new BadRequestException(
         'El ranking final estará disponible cuando el Quiz haya finalizado',
       );
     }
 
-    const participantes =
-      await this.prisma.participanteQuiz.findMany({
-        where: {
-          quizId,
-        },
+    const participantes = await this.prisma.participanteQuiz.findMany({
+      where: {
+        quizId,
+      },
 
-        include: {
-          estudiante: {
-            select: {
-              id:
-                true,
+      include: {
+        estudiante: {
+          select: {
+            id: true,
 
-              nombres:
-                true,
+            nombres: true,
 
-              apellidoPaterno:
-                true,
+            apellidoPaterno: true,
 
-              apellidoMaterno:
-                true,
+            apellidoMaterno: true,
 
-              fotoPerfilUrl:
-                true,
-            },
-          },
-
-          intento: {
-            select: {
-              posicionFinal:
-                true,
-
-              respuestasCorrectas:
-                true,
-
-              respuestasIncorrectas:
-                true,
-
-              respuestasOmitidas:
-                true,
-
-              puntajeBruto:
-                true,
-
-              notaBase:
-                true,
-
-              notaFinal:
-                true,
-
-              tiempoTotalMs:
-                true,
-            },
+            fotoPerfilUrl: true,
           },
         },
-      });
 
-    const ranking =
-      participantes
-        .map(
-          (
-            participante,
-          ) => ({
-            estudianteId:
-              participante.estudianteId,
+        intento: {
+          select: {
+            posicionFinal: true,
 
-            nombres:
-              participante.estudiante.nombres,
+            respuestasCorrectas: true,
 
-            apellidoPaterno:
-              participante.estudiante.apellidoPaterno,
+            respuestasIncorrectas: true,
 
-            apellidoMaterno:
-              participante.estudiante.apellidoMaterno,
+            respuestasOmitidas: true,
 
-            fotoPerfilUrl:
-              participante.estudiante.fotoPerfilUrl,
+            puntajeBruto: true,
 
-            avatarCodigo:
-              participante.avatarCodigo,
+            notaBase: true,
 
-            posicion:
-              participante.intento?.posicionFinal ??
-              null,
+            notaFinal: true,
 
-            puntaje:
-              participante.intento
-                ? Number(
-                    participante.intento.puntajeBruto,
-                  )
-                : 0,
-
-            notaFinal:
-              participante.intento
-                ? Number(
-                    participante.intento.notaFinal,
-                  )
-                : 0,
-
-            respuestasCorrectas:
-              participante.intento?.respuestasCorrectas ??
-              0,
-
-            respuestasIncorrectas:
-              participante.intento?.respuestasIncorrectas ??
-              0,
-
-            respuestasOmitidas:
-              participante.intento?.respuestasOmitidas ??
-              0,
-
-            tiempoTotalMs:
-              participante.intento?.tiempoTotalMs ??
-              null,
-          }),
-        )
-        .sort(
-          (
-            a,
-            b,
-          ) => {
-            const posicionA =
-              a.posicion ??
-              Number.MAX_SAFE_INTEGER;
-
-            const posicionB =
-              b.posicion ??
-              Number.MAX_SAFE_INTEGER;
-
-            if (
-              posicionA !==
-              posicionB
-            ) {
-              return (
-                posicionA -
-                posicionB
-              );
-            }
-
-            if (
-              b.puntaje !==
-              a.puntaje
-            ) {
-              return (
-                b.puntaje -
-                a.puntaje
-              );
-            }
-
-            const tiempoA =
-              a.tiempoTotalMs ??
-              Number.MAX_SAFE_INTEGER;
-
-            const tiempoB =
-              b.tiempoTotalMs ??
-              Number.MAX_SAFE_INTEGER;
-
-            return (
-              tiempoA -
-              tiempoB
-            );
+            tiempoTotalMs: true,
           },
-        )
-        .map(
-          (
-            item,
-            indice,
-          ) => ({
-            ...item,
+        },
+      },
+    });
 
-            posicion:
-              item.posicion ??
-              indice +
-              1,
+    const ranking = participantes
+      .map((participante) => ({
+        estudianteId: participante.estudianteId,
 
-            esYo:
-              item.estudianteId ===
-              usuario.id,
-          }),
-        );
+        nombres: participante.estudiante.nombres,
+
+        apellidoPaterno: participante.estudiante.apellidoPaterno,
+
+        apellidoMaterno: participante.estudiante.apellidoMaterno,
+
+        fotoPerfilUrl: participante.estudiante.fotoPerfilUrl,
+
+        avatarCodigo: participante.avatarCodigo,
+
+        posicion: participante.intento?.posicionFinal ?? null,
+
+        puntaje: participante.intento
+          ? Number(participante.intento.puntajeBruto)
+          : 0,
+
+        notaFinal: participante.intento
+          ? Number(participante.intento.notaFinal)
+          : 0,
+
+        respuestasCorrectas: participante.intento?.respuestasCorrectas ?? 0,
+
+        respuestasIncorrectas: participante.intento?.respuestasIncorrectas ?? 0,
+
+        respuestasOmitidas: participante.intento?.respuestasOmitidas ?? 0,
+
+        tiempoTotalMs: participante.intento?.tiempoTotalMs ?? null,
+      }))
+      .sort((a, b) => {
+        const posicionA = a.posicion ?? Number.MAX_SAFE_INTEGER;
+
+        const posicionB = b.posicion ?? Number.MAX_SAFE_INTEGER;
+
+        if (posicionA !== posicionB) {
+          return posicionA - posicionB;
+        }
+
+        if (b.puntaje !== a.puntaje) {
+          return b.puntaje - a.puntaje;
+        }
+
+        const tiempoA = a.tiempoTotalMs ?? Number.MAX_SAFE_INTEGER;
+
+        const tiempoB = b.tiempoTotalMs ?? Number.MAX_SAFE_INTEGER;
+
+        return tiempoA - tiempoB;
+      })
+      .map((item, indice) => ({
+        ...item,
+
+        posicion: item.posicion ?? indice + 1,
+
+        esYo: item.estudianteId === usuario.id,
+      }));
 
     return {
       quiz: {
-        id:
-          quiz.id,
+        id: quiz.id,
 
-        titulo:
-          quiz.titulo,
+        titulo: quiz.titulo,
 
-        resultadosPublicados:
-          quiz.resultadosPublicados,
+        resultadosPublicados: quiz.resultadosPublicados,
 
-        esCalificable:
-          quiz.esCalificable,
+        esCalificable: quiz.esCalificable,
 
-        componente:
-          quiz.componente,
+        componente: quiz.componente,
       },
 
       miPosicion:
-        ranking.find(
-          (
-            item,
-          ) =>
-            item.estudianteId ===
-            usuario.id,
-        )?.posicion ??
+        ranking.find((item) => item.estudianteId === usuario.id)?.posicion ??
         null,
 
       ranking,
@@ -5877,293 +3847,184 @@ export class QuizzesService {
   }
 
   async miResultado(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    quizId:
-      number,
+    quizId: number,
   ) {
-    await this.validarEstudianteCurso(
-      usuario,
-      cursoId,
-    );
+    await this.validarEstudianteCurso(usuario, cursoId);
 
-    const quiz =
-      await this.prisma.quizCurso.findFirst({
-        where: {
-          id:
-            quizId,
+    const quiz = await this.prisma.quizCurso.findFirst({
+      where: {
+        id: quizId,
 
-          cursoId,
+        cursoId,
 
-          estado:
-            EstadoQuiz.FINALIZADO,
-        },
+        estado: EstadoQuiz.FINALIZADO,
+      },
 
-        select: {
-          id:
-            true,
+      select: {
+        id: true,
 
-          titulo:
-            true,
+        titulo: true,
 
-          esCalificable:
-            true,
+        esCalificable: true,
 
-          componente:
-            true,
+        componente: true,
 
-          resultadosPublicados:
-            true,
-        },
-      });
+        resultadosPublicados: true,
+      },
+    });
 
-    if (
-      !quiz
-    ) {
-      throw new NotFoundException(
-        'El Quiz no está finalizado',
-      );
+    if (!quiz) {
+      throw new NotFoundException('El Quiz no está finalizado');
     }
 
-    if (
-      !quiz.resultadosPublicados
-    ) {
+    if (!quiz.resultadosPublicados) {
       throw new ForbiddenException(
         'Los resultados todavía no fueron publicados por el docente',
       );
     }
 
-    const intento =
-      await this.prisma.intentoQuiz.findUnique({
-        where: {
-          quizId_estudianteId: {
-            quizId,
+    const intento = await this.prisma.intentoQuiz.findUnique({
+      where: {
+        quizId_estudianteId: {
+          quizId,
 
-            estudianteId:
-              usuario.id,
-          },
+          estudianteId: usuario.id,
         },
+      },
 
-        include: {
-          respuestas: {
-            include: {
-              opcionesSeleccionadas: {
-                include: {
-                  opcion: {
-                    select: {
-                      id:
-                        true,
+      include: {
+        respuestas: {
+          include: {
+            opcionesSeleccionadas: {
+              include: {
+                opcion: {
+                  select: {
+                    id: true,
 
-                      texto:
-                        true,
+                    texto: true,
 
-                      orden:
-                        true,
-                    },
+                    orden: true,
                   },
                 },
               },
             },
           },
         },
-      });
+      },
+    });
 
-    if (
-      !intento
-    ) {
+    if (!intento) {
       throw new NotFoundException(
         'No existe un intento registrado para este Quiz',
       );
     }
 
-    const respuestasPorPregunta =
-      new Map(
-        intento.respuestas.map(
-          (
-            respuesta,
-          ) => [
-            respuesta.preguntaId,
-            respuesta,
-          ],
-        ),
-      );
+    const respuestasPorPregunta = new Map(
+      intento.respuestas.map((respuesta) => [respuesta.preguntaId, respuesta]),
+    );
 
-    const preguntas =
-      await this.prisma.preguntaQuiz.findMany({
-        where: {
-          quizId,
+    const preguntas = await this.prisma.preguntaQuiz.findMany({
+      where: {
+        quizId,
 
-          estaActiva:
-            true,
-        },
+        estaActiva: true,
+      },
 
-        orderBy: {
-          orden:
-            'asc',
-        },
+      orderBy: {
+        orden: 'asc',
+      },
 
-        include: {
-          opciones: {
-            orderBy: {
-              orden:
-                'asc',
-            },
+      include: {
+        opciones: {
+          orderBy: {
+            orden: 'asc',
           },
         },
-      });
+      },
+    });
 
     return {
       quiz,
 
       intento: {
-        id:
-          intento.id,
+        id: intento.id,
 
-        posicionFinal:
-          intento.posicionFinal,
+        posicionFinal: intento.posicionFinal,
 
-        respuestasCorrectas:
-          intento.respuestasCorrectas,
+        respuestasCorrectas: intento.respuestasCorrectas,
 
-        respuestasIncorrectas:
-          intento.respuestasIncorrectas,
+        respuestasIncorrectas: intento.respuestasIncorrectas,
 
-        respuestasOmitidas:
-          intento.respuestasOmitidas,
+        respuestasOmitidas: intento.respuestasOmitidas,
 
-        puntajeBruto:
-          Number(
-            intento.puntajeBruto,
-          ),
+        puntajeBruto: Number(intento.puntajeBruto),
 
-        notaBase:
-          Number(
-            intento.notaBase,
-          ),
+        notaBase: Number(intento.notaBase),
 
-        descuentoPosicion:
-          Number(
-            intento.descuentoPosicion,
-          ),
+        descuentoPosicion: Number(intento.descuentoPosicion),
 
-        notaFinal:
-          Number(
-            intento.notaFinal,
-          ),
+        notaFinal: Number(intento.notaFinal),
 
-        tiempoTotalMs:
-          intento.tiempoTotalMs,
+        tiempoTotalMs: intento.tiempoTotalMs,
 
-        finalizadoEn:
-          intento.finalizadoEn,
+        finalizadoEn: intento.finalizadoEn,
       },
 
-      preguntas:
-        preguntas.map(
-          (
-            pregunta,
-          ) => {
-            const respuesta =
-              respuestasPorPregunta.get(
-                pregunta.id,
-              );
+      preguntas: preguntas.map((pregunta) => {
+        const respuesta = respuestasPorPregunta.get(pregunta.id);
 
-            return {
-              preguntaId:
-                pregunta.id,
+        return {
+          preguntaId: pregunta.id,
 
-              orden:
-                pregunta.orden,
+          orden: pregunta.orden,
 
-              enunciado:
-                pregunta.enunciado,
+          enunciado: pregunta.enunciado,
 
-              dificultad:
-                pregunta.dificultad,
+          dificultad: pregunta.dificultad,
 
-              explicacion:
-                pregunta.explicacion,
+          explicacion: pregunta.explicacion,
 
-              puntajePregunta:
-                Number(
-                  pregunta.puntaje,
-                ),
+          puntajePregunta: Number(pregunta.puntaje),
 
-              esCorrecta:
-                respuesta?.esCorrecta ??
-                null,
+          esCorrecta: respuesta?.esCorrecta ?? null,
 
-              omitida:
-                !respuesta,
+          omitida: !respuesta,
 
-              tiempoRespuestaMs:
-                respuesta?.tiempoRespuestaMs ??
-                null,
+          tiempoRespuestaMs: respuesta?.tiempoRespuestaMs ?? null,
 
-              puntajeObtenido:
-                respuesta
-                  ? Number(
-                      respuesta.puntajeObtenido,
-                    )
-                  : 0,
+          puntajeObtenido: respuesta ? Number(respuesta.puntajeObtenido) : 0,
 
-              posicionRespuestaCorrecta:
-                respuesta?.posicionRespuestaCorrecta ??
-                null,
+          posicionRespuestaCorrecta:
+            respuesta?.posicionRespuestaCorrecta ?? null,
 
-              descuentoVelocidad:
-                respuesta
-                  ? Number(
-                      respuesta.descuentoVelocidad,
-                    )
-                  : 0,
+          descuentoVelocidad: respuesta
+            ? Number(respuesta.descuentoVelocidad)
+            : 0,
 
-              opcionesSeleccionadas:
-                respuesta?.opcionesSeleccionadas.map(
-                  (
-                    item,
-                  ) => ({
-                    id:
-                      item.opcion.id,
+          opcionesSeleccionadas:
+            respuesta?.opcionesSeleccionadas.map((item) => ({
+              id: item.opcion.id,
 
-                    texto:
-                      item.opcion.texto,
+              texto: item.opcion.texto,
 
-                    orden:
-                      item.opcion.orden,
-                  }),
-                ) ??
-                [],
+              orden: item.opcion.orden,
+            })) ?? [],
 
-              opcionesCorrectas:
-                pregunta.opciones
-                  .filter(
-                    (
-                      opcion,
-                    ) =>
-                      opcion.esCorrecta,
-                  )
-                  .map(
-                    (
-                      opcion,
-                    ) => ({
-                      id:
-                        opcion.id,
+          opcionesCorrectas: pregunta.opciones
+            .filter((opcion) => opcion.esCorrecta)
+            .map((opcion) => ({
+              id: opcion.id,
 
-                      texto:
-                        opcion.texto,
+              texto: opcion.texto,
 
-                      orden:
-                        opcion.orden,
-                    }),
-                  ),
-            };
-          },
-        ),
+              orden: opcion.orden,
+            })),
+        };
+      }),
     };
   }
 }

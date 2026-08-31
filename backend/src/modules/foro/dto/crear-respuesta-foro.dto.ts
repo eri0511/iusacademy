@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   IsInt,
@@ -15,32 +13,22 @@ export class CrearRespuestaForoDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(180)
-  titulo!:
-    string;
+  titulo!: string;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(30000)
-  contenido!:
-    string;
+  contenido!: string;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  grupoCursoId?:
-    number;
+  grupoCursoId?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  equipoAfinidadId?:
-    number;
+  equipoAfinidadId?: number;
 }

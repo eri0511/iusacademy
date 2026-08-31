@@ -6,7 +6,6 @@ import {
   Download,
   Eye,
   FilePenLine,
-  FileText,
   Files,
   Image as ImageIcon,
   Info,
@@ -14,6 +13,7 @@ import {
   Loader2,
   Pencil,
   Presentation,
+  Save,
   Scale,
   Send,
   ShieldCheck,
@@ -46,10 +46,6 @@ import {
 
 import useEntregaTareaEstudiante from '../../hooks/tareas/useEntregaTareaEstudiante';
 
-const API_URL =
-  import.meta.env.VITE_API_URL ??
-  'http://localhost:3000';
-
 import type {
   ArchivoEntregaTarea,
   ContextoGrupoEntregaTarea,
@@ -61,201 +57,173 @@ import type {
   TipoTarea,
 } from '../../types/tareas/tareas.types';
 
+const API_URL =
+  import.meta.env.VITE_API_URL ??
+  'http://localhost:3000';
+
 type TipoVisual = {
-  titulo:
-    string;
-
-  descripcion:
-    string;
-
-  accion:
-    string;
-
-  icono:
-    ComponentType<{
-      size?: number;
-    }>;
-};
-
-const visual:
-  Record<
-    TipoTarea,
-    TipoVisual
-  > = {
-    ENTREGA_ARCHIVOS: {
-      titulo:
-        'Entrega de archivos',
-
-      descripcion:
-        'Adjunta los documentos o evidencias solicitadas por el docente.',
-
-      accion:
-        'Subir archivos',
-
-      icono:
-        Files,
-    },
-
-    RESPUESTA_ESCRITA: {
-      titulo:
-        'Respuesta escrita',
-
-      descripcion:
-        'Desarrolla tu respuesta directamente dentro de IusAcademy.',
-
-      accion:
-        'Escribir respuesta',
-
-      icono:
-        FilePenLine,
-    },
-
-    DOCUMENTO_COLABORATIVO: {
-      titulo:
-        'Documento colaborativo',
-
-      descripcion:
-        'Tu equipo construirá un documento compartido con seguimiento de autoría.',
-
-      accion:
-        'Abrir documento',
-
-      icono:
-        Workflow,
-    },
-
-    REDACCION_JURIDICA: {
-      titulo:
-        'Redacción jurídica',
-
-      descripcion:
-        'Redacta el documento jurídico siguiendo la estructura y consignas definidas.',
-
-      accion:
-        'Iniciar redacción',
-
-      icono:
-        Scale,
-    },
-
-    EXPOSICION: {
-      titulo:
-        'Exposición',
-
-      descripcion:
-        'Prepara la presentación y el material de apoyo solicitado.',
-
-      accion:
-        'Subir presentación',
-
-      icono:
-        Presentation,
-    },
-
-    CASO_PRACTICO: {
-      titulo:
-        'Caso práctico',
-
-      descripcion:
-        'Analiza el caso y desarrolla una respuesta jurídicamente fundamentada.',
-
-      accion:
-        'Resolver caso',
-
-      icono:
-        BookOpenCheck,
-    },
-
-    MIXTA: {
-      titulo:
-        'Actividad mixta',
-
-      descripcion:
-        'Completa cada uno de los componentes configurados por el docente.',
-
-      accion:
-        'Comenzar actividad',
-
-      icono:
-        ListChecks,
-    },
-
-    PRESENCIAL: {
-      titulo:
-        'Actividad presencial',
-
-      descripcion:
-        'Esta actividad se desarrolla principalmente en aula y será registrada por el docente.',
-
-      accion:
-        'Sin entrega digital',
-
-      icono:
-        CheckCircle2,
-    },
-  };
-
-const nombresEstado:
-  Record<
-    EstadoEntregaTarea,
-    string
-  > = {
-    BORRADOR:
-      'Borrador',
-
-    ENTREGADA:
-      'Entregada',
-
-    TARDIA:
-      'Entregada con retraso',
-
-    BLOQUEADA:
-      'Bloqueada',
-
-    ANULADA:
-      'Anulada',
-  };
-
-type Props = {
-  tarea:
-    TareaCurso;
-
-  disponible:
-    boolean;
-
-  tardia:
-    boolean;
-
-  onContextoGrupo?:
-    (
-      contexto:
-        ContextoGrupoEntregaTarea | null,
-    ) => void;
+  titulo: string;
+  descripcion: string;
+  accion: string;
+  icono: ComponentType<{
+    size?: number;
+  }>;
 };
 
 type ToastActual = {
-  visible:
-    boolean;
+  visible: boolean;
+  tipo: TipoToast;
+  titulo: string;
+  mensaje?: string;
+};
 
-  tipo:
-    TipoToast;
+type SeccionesEstructuradas = Record<
+  string,
+  string
+>;
 
-  titulo:
-    string;
+type ContenidoEstructurado = {
+  version?: number;
+  formato?: string;
+  secciones?: SeccionesEstructuradas;
+  citas?: unknown[];
+  [key: string]: unknown;
+};
 
-  mensaje?:
-    string;
+const visual: Record<
+  TipoTarea,
+  TipoVisual
+> = {
+  ENTREGA_ARCHIVOS: {
+    titulo: 'Entrega de archivos',
+    descripcion:
+      'Adjunta los documentos o evidencias solicitadas por el docente.',
+    accion: 'Subir archivos',
+    icono: Files,
+  },
+
+  RESPUESTA_ESCRITA: {
+    titulo: 'Respuesta escrita',
+    descripcion:
+      'Desarrolla tu respuesta directamente dentro de IusAcademy.',
+    accion: 'Escribir respuesta',
+    icono: FilePenLine,
+  },
+
+  DOCUMENTO_COLABORATIVO: {
+    titulo: 'Documento colaborativo',
+    descripcion:
+      'Tu equipo construirá un documento compartido con seguimiento de autoría.',
+    accion: 'Abrir documento',
+    icono: Workflow,
+  },
+
+  REDACCION_JURIDICA: {
+    titulo: 'Redacción jurídica',
+    descripcion:
+      'Redacta el documento jurídico siguiendo la estructura y consignas definidas.',
+    accion: 'Iniciar redacción',
+    icono: Scale,
+  },
+
+  EXPOSICION: {
+    titulo: 'Exposición',
+    descripcion:
+      'Prepara la presentación y el material de apoyo solicitado.',
+    accion: 'Subir presentación',
+    icono: Presentation,
+  },
+
+  CASO_PRACTICO: {
+    titulo: 'Caso práctico',
+    descripcion:
+      'Analiza el caso y desarrolla una respuesta jurídicamente fundamentada.',
+    accion: 'Resolver caso',
+    icono: BookOpenCheck,
+  },
+
+  MIXTA: {
+    titulo: 'Actividad mixta',
+    descripcion:
+      'Completa cada uno de los componentes configurados por el docente.',
+    accion: 'Comenzar actividad',
+    icono: ListChecks,
+  },
+
+  PRESENCIAL: {
+    titulo: 'Actividad presencial',
+    descripcion:
+      'Esta actividad se desarrolla principalmente en aula y será registrada por el docente.',
+    accion: 'Sin entrega digital',
+    icono: CheckCircle2,
+  },
+};
+
+const nombresEstado: Record<
+  EstadoEntregaTarea,
+  string
+> = {
+  BORRADOR: 'Borrador',
+  ENTREGADA: 'Entregada',
+  TARDIA: 'Entregada con retraso',
+  BLOQUEADA: 'Bloqueada',
+  ANULADA: 'Anulada',
+};
+
+const nombresSeccion: Record<
+  string,
+  string
+> = {
+  relacionJuridica:
+    'Relación jurídica',
+
+  normas:
+    'Normas aplicables',
+
+  argumentacion:
+    'Argumentación jurídica',
+
+  conclusion:
+    'Conclusión',
+
+  antecedentes:
+    'Antecedentes',
+
+  hechos:
+    'Hechos',
+
+  fundamentos:
+    'Fundamentos jurídicos',
+
+  petitorio:
+    'Petitorio',
+
+  contenido:
+    'Contenido',
+
+  desarrollo:
+    'Desarrollo',
+
+  respuesta:
+    'Respuesta',
+};
+
+type Props = {
+  tarea: TareaCurso;
+  disponible: boolean;
+  tardia: boolean;
+  onContextoGrupo?: (
+    contexto:
+      ContextoGrupoEntregaTarea | null,
+  ) => void;
 };
 
 function extension(
-  nombre:
-    string,
+  nombre: string,
 ) {
   return (
     nombre
-      .split(
-        '.',
-      )
+      .split('.')
       .pop()
       ?.toLowerCase() ??
     ''
@@ -263,20 +231,15 @@ function extension(
 }
 
 function tamanio(
-  bytes:
-    number,
+  bytes: number,
 ) {
-  if (
-    bytes <
-    1024
-  ) {
+  if (bytes < 1024) {
     return `${bytes} B`;
   }
 
   if (
     bytes <
-    1024 *
-      1024
+    1024 * 1024
   ) {
     return `${(
       bytes /
@@ -292,17 +255,14 @@ function tamanio(
 }
 
 function fecha(
-  valor?:
-    string | null,
+  valor?: string | null,
 ) {
   if (!valor) {
     return '—';
   }
 
   const objeto =
-    new Date(
-      valor,
-    );
+    new Date(valor);
 
   if (
     Number.isNaN(
@@ -315,27 +275,14 @@ function fecha(
   return new Intl.DateTimeFormat(
     'es-BO',
     {
-      day:
-        '2-digit',
-
-      month:
-        '2-digit',
-
-      year:
-        'numeric',
-
-      hour:
-        '2-digit',
-
-      minute:
-        '2-digit',
-
-      hour12:
-        false,
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
     },
-  ).format(
-    objeto,
-  );
+  ).format(objeto);
 }
 
 function esImagen(
@@ -375,19 +322,11 @@ function nombreTipoArchivo(
   archivo:
     ArchivoEntregaTarea,
 ) {
-  if (
-    esImagen(
-      archivo,
-    )
-  ) {
+  if (esImagen(archivo)) {
     return 'Imagen';
   }
 
-  if (
-    esPdf(
-      archivo,
-    )
-  ) {
+  if (esPdf(archivo)) {
     return 'Documento PDF';
   }
 
@@ -407,6 +346,80 @@ function nombreTipoArchivo(
     : 'Archivo';
 }
 
+function intentarContenidoEstructurado(
+  contenido?: string | null,
+): ContenidoEstructurado | null {
+  if (!contenido?.trim()) {
+    return null;
+  }
+
+  try {
+    const resultado =
+      JSON.parse(
+        contenido,
+      ) as unknown;
+
+    if (
+      !resultado ||
+      typeof resultado !==
+        'object' ||
+      Array.isArray(
+        resultado,
+      )
+    ) {
+      return null;
+    }
+
+    const objeto =
+      resultado as ContenidoEstructurado;
+
+    if (
+      !objeto.secciones ||
+      typeof objeto.secciones !==
+        'object' ||
+      Array.isArray(
+        objeto.secciones,
+      )
+    ) {
+      return null;
+    }
+
+    return objeto;
+  } catch {
+    return null;
+  }
+}
+
+function etiquetaSeccion(
+  clave: string,
+) {
+  if (
+    nombresSeccion[clave]
+  ) {
+    return nombresSeccion[
+      clave
+    ];
+  }
+
+  return clave
+    .replace(
+      /([A-Z])/g,
+      ' $1',
+    )
+    .replace(
+      /[_-]+/g,
+      ' ',
+    )
+    .trim()
+    .replace(
+      /^./,
+      (
+        letra,
+      ) =>
+        letra.toUpperCase(),
+    );
+}
+
 export default function ExperienciaTareaEstudiante({
   tarea,
   disponible,
@@ -419,9 +432,7 @@ export default function ExperienciaTareaEstudiante({
     useAuth();
 
   const configuracion =
-    visual[
-      tarea.tipo
-    ];
+    visual[tarea.tipo];
 
   const Icono =
     configuracion.icono;
@@ -447,9 +458,7 @@ export default function ExperienciaTareaEstudiante({
     modalEntrega,
     setModalEntrega,
   ] =
-    useState(
-      false,
-    );
+    useState(false);
 
   const [
     archivoDetalle,
@@ -471,9 +480,7 @@ export default function ExperienciaTareaEstudiante({
     cargandoVistaPrevia,
     setCargandoVistaPrevia,
   ] =
-    useState(
-      false,
-    );
+    useState(false);
 
   const [
     errorVistaPrevia,
@@ -487,25 +494,33 @@ export default function ExperienciaTareaEstudiante({
     contenido,
     setContenido,
   ] =
-    useState(
-      '',
-    );
+    useState('');
 
+  const [
+    estructura,
+    setEstructura,
+  ] =
+    useState<ContenidoEstructurado | null>(
+      null,
+    );
 
   const [
     toast,
     setToast,
   ] =
     useState<ToastActual>({
-      visible:
-        false,
-
-      tipo:
-        'informacion',
-
-      titulo:
-        '',
+      visible: false,
+      tipo: 'informacion',
+      titulo: '',
     });
+
+  const usaEditorEmbebido =
+    tarea.tipo ===
+      'RESPUESTA_ESCRITA' ||
+    tarea.tipo ===
+      'DOCUMENTO_COLABORATIVO' ||
+    tarea.tipo ===
+      'REDACCION_JURIDICA';
 
   const usaArchivos =
     tarea.capacidades.includes(
@@ -516,34 +531,37 @@ export default function ExperienciaTareaEstudiante({
     tarea.tipo ===
       'EXPOSICION';
 
-  const usaTexto =
+  const usaTextoModal =
     (
       tarea.capacidades.includes(
         'EDITOR_TEXTO',
       ) ||
       tarea.tipo ===
-        'RESPUESTA_ESCRITA' ||
-      tarea.tipo ===
-        'REDACCION_JURIDICA' ||
-      tarea.tipo ===
         'CASO_PRACTICO'
     ) &&
-    tarea.tipo !==
-      'DOCUMENTO_COLABORATIVO';
-
-  const esColaborativa =
-    tarea.tipo ===
-      'DOCUMENTO_COLABORATIVO';
+    !usaEditorEmbebido;
 
   const esPresencial =
     tarea.tipo ===
       'PRESENCIAL';
+
+  const esColaborativa =
+    tarea.tipo ===
+      'DOCUMENTO_COLABORATIVO';
 
   const entregaEnviada =
     entregaApi.entrega?.estado ===
       'ENTREGADA' ||
     entregaApi.entrega?.estado ===
       'TARDIA';
+
+  const puedeModificar =
+    disponible &&
+    entregaApi.permisos.puedeModificar &&
+    (
+      !entregaEnviada ||
+      tarea.permitirEditarEntrega
+    );
 
   const borradorVacio =
     entregaApi.entrega?.estado ===
@@ -557,34 +575,103 @@ export default function ExperienciaTareaEstudiante({
       ? null
       : entregaApi.entrega;
 
+  const mostrarEntregaRegistrada =
+    entregaVisible &&
+    entregaVisible.estado !==
+      'BORRADOR';
+
   const aceptar =
     useMemo(
       () =>
         tarea.extensionesPermitidas
           .map(
-            (
-              item,
-            ) =>
-              item.startsWith(
-                '.',
-              )
+            (item) =>
+              item.startsWith('.')
                 ? item
                 : `.${item}`,
           )
-          .join(
-            ',',
-          ),
+          .join(','),
       [
         tarea.extensionesPermitidas,
       ],
     );
 
+  const contenidoParaGuardar =
+    useMemo(
+      () => {
+        if (
+          estructura &&
+          estructura.secciones
+        ) {
+          return JSON.stringify({
+            ...estructura,
+            secciones:
+              estructura.secciones,
+          });
+        }
+
+        return contenido;
+      },
+      [
+        contenido,
+        estructura,
+      ],
+    );
+
+  const cantidadPalabras =
+    useMemo(
+      () => {
+        const texto =
+          estructura?.secciones
+            ? Object.values(
+                estructura.secciones,
+              ).join(' ')
+            : contenido;
+
+        const limpio =
+          texto.trim();
+
+        if (!limpio) {
+          return 0;
+        }
+
+        return limpio
+          .split(/\s+/)
+          .filter(Boolean)
+          .length;
+      },
+      [
+        contenido,
+        estructura,
+      ],
+    );
+
   useEffect(
     () => {
-      setContenido(
+      const contenidoServidor =
         entregaApi.entrega?.contenido ??
-        '',
-      );
+        '';
+
+      const estructurado =
+        intentarContenidoEstructurado(
+          contenidoServidor,
+        );
+
+      if (
+        estructurado
+      ) {
+        setEstructura(
+          estructurado,
+        );
+
+        setContenido('');
+      } else {
+        setEstructura(null);
+
+        setContenido(
+          contenidoServidor,
+        );
+      }
     },
     [
       entregaApi.entrega?.contenido,
@@ -595,25 +682,77 @@ export default function ExperienciaTareaEstudiante({
   useEffect(
     () => {
       return () => {
-        if (
-          urlVistaPrevia
-        ) {
+        if (urlVistaPrevia) {
           URL.revokeObjectURL(
             urlVistaPrevia,
           );
         }
       };
     },
+    [urlVistaPrevia],
+  );
+
+  useEffect(
+    () => {
+      if (
+        !usaEditorEmbebido ||
+        !puedeModificar ||
+        entregaApi.cargando ||
+        entregaApi.procesando ||
+        entregaApi.guardandoAutomatico
+      ) {
+        return;
+      }
+
+      const servidor =
+        entregaApi.entrega?.contenido ??
+        '';
+
+      if (
+        contenidoParaGuardar ===
+        servidor
+      ) {
+        return;
+      }
+
+      const temporizador =
+        window.setTimeout(
+          () => {
+            void entregaApi
+              .autoguardar(
+                contenidoParaGuardar,
+              )
+              .catch(
+                () => undefined,
+              );
+          },
+          1200,
+        );
+
+      return () => {
+        window.clearTimeout(
+          temporizador,
+        );
+      };
+    },
     [
-      urlVistaPrevia,
+      contenidoParaGuardar,
+      entregaApi.autoguardar,
+      entregaApi.cargando,
+      entregaApi.entrega?.contenido,
+      entregaApi.guardandoAutomatico,
+      entregaApi.procesando,
+      puedeModificar,
+      usaEditorEmbebido,
     ],
   );
 
   useEffect(
     () => {
       if (
+        usaEditorEmbebido ||
         !modalEntrega ||
-        !usaTexto ||
+        !usaTextoModal ||
         !disponible ||
         !entregaApi.permisos.puedeModificar ||
         entregaApi.cargando ||
@@ -622,13 +761,13 @@ export default function ExperienciaTareaEstudiante({
         return;
       }
 
-      const contenidoServidor =
+      const servidor =
         entregaApi.entrega?.contenido ??
         '';
 
       if (
         contenido ===
-        contenidoServidor
+        servidor
       ) {
         return;
       }
@@ -641,8 +780,7 @@ export default function ExperienciaTareaEstudiante({
                 contenido,
               )
               .catch(
-                () =>
-                  undefined,
+                () => undefined,
               );
           },
           1000,
@@ -663,29 +801,51 @@ export default function ExperienciaTareaEstudiante({
       entregaApi.permisos.puedeModificar,
       entregaApi.procesando,
       modalEntrega,
-      usaTexto,
+      usaEditorEmbebido,
+      usaTextoModal,
     ],
   );
 
   const mostrarToast =
     (
-      tipo:
-        TipoToast,
-      titulo:
-        string,
-      mensaje?:
-        string,
+      tipo: TipoToast,
+      titulo: string,
+      mensaje?: string,
     ) => {
       setToast({
-        visible:
-          true,
-
+        visible: true,
         tipo,
-
         titulo,
-
         mensaje,
       });
+    };
+
+  const actualizarSeccion =
+    (
+      clave: string,
+      valor: string,
+    ) => {
+      setEstructura(
+        (
+          actual,
+        ) => {
+          if (
+            !actual ||
+            !actual.secciones
+          ) {
+            return actual;
+          }
+
+          return {
+            ...actual,
+            secciones: {
+              ...actual.secciones,
+              [clave]:
+                valor,
+            },
+          };
+        },
+      );
     };
 
   const seleccionar =
@@ -716,22 +876,15 @@ export default function ExperienciaTareaEstudiante({
 
       const permitidas =
         tarea.extensionesPermitidas.map(
-          (
-            item,
-          ) =>
+          (item) =>
             item
-              .replace(
-                '.',
-                '',
-              )
+              .replace('.', '')
               .toLowerCase(),
         );
 
       const invalidos =
         nuevos.filter(
-          (
-            archivo,
-          ) =>
+          (archivo) =>
             !permitidas.includes(
               extension(
                 archivo.name,
@@ -754,9 +907,7 @@ export default function ExperienciaTareaEstudiante({
 
       const pesados =
         nuevos.filter(
-          (
-            archivo,
-          ) =>
+          (archivo) =>
             archivo.size >
             maximoBytes,
         );
@@ -778,12 +929,9 @@ export default function ExperienciaTareaEstudiante({
         entregaApi.entrega?.archivos.length ??
         0;
 
-      const total =
-        existentes +
-        nuevos.length;
-
       if (
-        total >
+        existentes +
+          nuevos.length >
         tarea.maximoArchivos
       ) {
         mostrarToast(
@@ -800,9 +948,11 @@ export default function ExperienciaTareaEstudiante({
           try {
             const preparada =
               await entregaApi.preparar(
-                usaTexto
-                  ? contenido
-                  : undefined,
+                usaEditorEmbebido
+                  ? contenidoParaGuardar
+                  : usaTextoModal
+                    ? contenido
+                    : undefined,
               );
 
             await entregaApi.subirArchivos(
@@ -812,15 +962,13 @@ export default function ExperienciaTareaEstudiante({
 
             mostrarToast(
               'exito',
-              'Borrador actualizado',
+              'Archivos guardados',
               nuevos.length ===
                 1
-                ? 'El archivo quedó guardado automáticamente.'
-                : 'Los archivos quedaron guardados automáticamente.',
+                ? 'El archivo quedó guardado en tu borrador.'
+                : 'Los archivos quedaron guardados en tu borrador.',
             );
-          } catch (
-            causa
-          ) {
+          } catch (causa) {
             mostrarToast(
               'error',
               'No se pudieron guardar los archivos',
@@ -835,11 +983,13 @@ export default function ExperienciaTareaEstudiante({
     };
 
   const validarAntesDeGuardar =
-    () => {
+    (
+      texto:
+        string,
+    ) => {
       if (
         tarea.exigirContenidoEditor &&
-        usaTexto &&
-        !contenido.trim()
+        !texto.trim()
       ) {
         mostrarToast(
           'advertencia',
@@ -872,10 +1022,40 @@ export default function ExperienciaTareaEstudiante({
       return true;
     };
 
-  const entregar =
+  const guardarBorradorEmbebido =
+    async () => {
+      if (!puedeModificar) {
+        return;
+      }
+
+      try {
+        await entregaApi.preparar(
+          contenidoParaGuardar,
+        );
+
+        mostrarToast(
+          'exito',
+          'Borrador guardado',
+          'Tu trabajo quedó guardado correctamente.',
+        );
+      } catch (causa) {
+        mostrarToast(
+          'error',
+          'No se pudo guardar el borrador',
+          causa instanceof Error
+            ? causa.message
+            : undefined,
+        );
+      }
+    };
+
+  const entregarEmbebido =
     async () => {
       if (
-        !validarAntesDeGuardar()
+        !puedeModificar ||
+        !validarAntesDeGuardar(
+          contenidoParaGuardar,
+        )
       ) {
         return;
       }
@@ -883,19 +1063,13 @@ export default function ExperienciaTareaEstudiante({
       try {
         const preparada =
           await entregaApi.preparar(
-            usaTexto
-              ? contenido
-              : undefined,
+            contenidoParaGuardar,
           );
 
         const enviada =
           await entregaApi.enviar(
             preparada.id,
           );
-
-        setModalEntrega(
-          false,
-        );
 
         mostrarToast(
           'exito',
@@ -906,9 +1080,54 @@ export default function ExperienciaTareaEstudiante({
             ? 'La entrega quedó registrada y se aplicará la penalización configurada.'
             : 'Tu entrega quedó registrada correctamente.',
         );
-      } catch (
-        causa
+      } catch (causa) {
+        mostrarToast(
+          'error',
+          'No se pudo entregar la tarea',
+          causa instanceof Error
+            ? causa.message
+            : undefined,
+        );
+      }
+    };
+
+  const entregarModal =
+    async () => {
+      if (
+        !validarAntesDeGuardar(
+          usaTextoModal
+            ? contenido
+            : 'OK',
+        )
       ) {
+        return;
+      }
+
+      try {
+        const preparada =
+          await entregaApi.preparar(
+            usaTextoModal
+              ? contenido
+              : undefined,
+          );
+
+        const enviada =
+          await entregaApi.enviar(
+            preparada.id,
+          );
+
+        setModalEntrega(false);
+
+        mostrarToast(
+          'exito',
+          enviada.entregadaTarde
+            ? 'Tarea entregada con retraso'
+            : 'Tarea entregada',
+          enviada.entregadaTarde
+            ? 'La entrega quedó registrada y se aplicará la penalización configurada.'
+            : 'Tu entrega quedó registrada correctamente.',
+        );
+      } catch (causa) {
         mostrarToast(
           'error',
           'No se pudo entregar la tarea',
@@ -934,9 +1153,7 @@ export default function ExperienciaTareaEstudiante({
           'Archivo eliminado',
           `${archivo.nombreOriginal} fue retirado de la entrega.`,
         );
-      } catch (
-        causa
-      ) {
+      } catch (causa) {
         mostrarToast(
           'error',
           'No se pudo eliminar',
@@ -949,29 +1166,16 @@ export default function ExperienciaTareaEstudiante({
 
   const cerrarDetalleArchivo =
     () => {
-      if (
-        urlVistaPrevia
-      ) {
+      if (urlVistaPrevia) {
         URL.revokeObjectURL(
           urlVistaPrevia,
         );
       }
 
-      setUrlVistaPrevia(
-        null,
-      );
-
-      setArchivoDetalle(
-        null,
-      );
-
-      setErrorVistaPrevia(
-        null,
-      );
-
-      setCargandoVistaPrevia(
-        false,
-      );
+      setUrlVistaPrevia(null);
+      setArchivoDetalle(null);
+      setErrorVistaPrevia(null);
+      setCargandoVistaPrevia(false);
     };
 
   const abrirDetalleArchivo =
@@ -979,40 +1183,25 @@ export default function ExperienciaTareaEstudiante({
       archivo:
         ArchivoEntregaTarea,
     ) => {
-      setArchivoDetalle(
-        archivo,
-      );
+      setArchivoDetalle(archivo);
+      setErrorVistaPrevia(null);
 
-      setErrorVistaPrevia(
-        null,
-      );
-
-      if (
-        urlVistaPrevia
-      ) {
+      if (urlVistaPrevia) {
         URL.revokeObjectURL(
           urlVistaPrevia,
         );
 
-        setUrlVistaPrevia(
-          null,
-        );
+        setUrlVistaPrevia(null);
       }
 
       if (
-        !esImagen(
-          archivo,
-        ) &&
-        !esPdf(
-          archivo,
-        )
+        !esImagen(archivo) &&
+        !esPdf(archivo)
       ) {
         return;
       }
 
-      if (
-        !accessToken
-      ) {
+      if (!accessToken) {
         setErrorVistaPrevia(
           'Tu sesión terminó. Inicia sesión nuevamente.',
         );
@@ -1020,9 +1209,7 @@ export default function ExperienciaTareaEstudiante({
         return;
       }
 
-      setCargandoVistaPrevia(
-        true,
-      );
+      setCargandoVistaPrevia(true);
 
       try {
         const respuesta =
@@ -1043,8 +1230,7 @@ export default function ExperienciaTareaEstudiante({
             await respuesta
               .json()
               .catch(
-                () =>
-                  null,
+                () => null,
               );
 
           const mensaje =
@@ -1078,18 +1264,14 @@ export default function ExperienciaTareaEstudiante({
             blob,
           ),
         );
-      } catch (
-        causa
-      ) {
+      } catch (causa) {
         setErrorVistaPrevia(
           causa instanceof Error
             ? causa.message
             : 'No fue posible cargar la vista previa.',
         );
       } finally {
-        setCargandoVistaPrevia(
-          false,
-        );
+        setCargandoVistaPrevia(false);
       }
     };
 
@@ -1102,9 +1284,7 @@ export default function ExperienciaTareaEstudiante({
         await entregaApi.descargarArchivo(
           archivo,
         );
-      } catch (
-        causa
-      ) {
+      } catch (causa) {
         mostrarToast(
           'error',
           'No se pudo descargar',
@@ -1125,7 +1305,7 @@ export default function ExperienciaTareaEstudiante({
       }
 
       if (
-        usaTexto &&
+        usaTextoModal &&
         entregaApi.permisos.puedeModificar
       ) {
         const contenidoServidor =
@@ -1140,9 +1320,7 @@ export default function ExperienciaTareaEstudiante({
             await entregaApi.autoguardar(
               contenido,
             );
-          } catch (
-            causa
-          ) {
+          } catch (causa) {
             mostrarToast(
               'error',
               'No se pudo guardar el borrador',
@@ -1156,16 +1334,12 @@ export default function ExperienciaTareaEstudiante({
         }
       }
 
-      setModalEntrega(
-        false,
-      );
+      setModalEntrega(false);
     };
 
-  const abrirEntrega =
+  const abrirEntregaModal =
     () => {
-      if (
-        !disponible
-      ) {
+      if (!disponible) {
         mostrarToast(
           'advertencia',
           'La tarea no admite entregas ahora',
@@ -1192,9 +1366,7 @@ export default function ExperienciaTareaEstudiante({
         '',
       );
 
-      setModalEntrega(
-        true,
-      );
+      setModalEntrega(true);
     };
 
   const textoEstadoEntrega =
@@ -1204,13 +1376,29 @@ export default function ExperienciaTareaEstudiante({
         ]
       : 'Pendiente';
 
+  const tituloEditor =
+    tarea.tipo ===
+      'DOCUMENTO_COLABORATIVO'
+      ? 'Documento del equipo'
+      : tarea.tipo ===
+          'REDACCION_JURIDICA'
+        ? 'Redacción del documento jurídico'
+        : 'Tu respuesta';
+
+  const placeholderEditor =
+    tarea.tipo ===
+      'DOCUMENTO_COLABORATIVO'
+      ? 'Comienza a desarrollar el documento del equipo...'
+      : tarea.tipo ===
+          'REDACCION_JURIDICA'
+        ? 'Comienza a redactar el documento jurídico...'
+        : 'Escribe aquí tu respuesta...';
+
   return (
     <section className="ete-experience">
       <header className="ete-experience__head">
         <span className="ete-experience__icon">
-          <Icono
-            size={22}
-          />
+          <Icono size={22} />
         </span>
 
         <div>
@@ -1219,15 +1407,11 @@ export default function ExperienciaTareaEstudiante({
           </small>
 
           <h3>
-            {
-              configuracion.titulo
-            }
+            {configuracion.titulo}
           </h3>
 
           <p>
-            {
-              configuracion.descripcion
-            }
+            {configuracion.descripcion}
           </p>
         </div>
       </header>
@@ -1236,19 +1420,13 @@ export default function ExperienciaTareaEstudiante({
         0 && (
         <div className="ete-experience__components">
           {tarea.componentes.map(
-            (
-              componente,
-            ) => (
+            (componente) => (
               <article
-                key={
-                  componente.id
-                }
+                key={componente.id}
               >
                 <div>
                   <strong>
-                    {
-                      componente.titulo
-                    }
+                    {componente.titulo}
                   </strong>
 
                   {componente.obligatorio && (
@@ -1259,10 +1437,8 @@ export default function ExperienciaTareaEstudiante({
                 </div>
 
                 <p>
-                  {
-                    componente.descripcion ||
-                    'Componente configurado por el docente.'
-                  }
+                  {componente.descripcion ||
+                    'Componente configurado por el docente.'}
                 </p>
               </article>
             ),
@@ -1272,23 +1448,17 @@ export default function ExperienciaTareaEstudiante({
 
       {entregaApi.error && (
         <div className="ete-inline-error">
-          <AlertTriangle
-            size={17}
-          />
+          <AlertTriangle size={17} />
 
           <span>
-            {
-              entregaApi.error
-            }
+            {entregaApi.error}
           </span>
         </div>
       )}
 
       {entregaApi.cargando ? (
         <div className="ete-loading">
-          <Loader2
-            size={20}
-          />
+          <Loader2 size={20} />
 
           <span>
             Consultando tu entrega…
@@ -1296,9 +1466,7 @@ export default function ExperienciaTareaEstudiante({
         </div>
       ) : entregaApi.requiereEquipoAfinidad ? (
         <section className="ete-group-required">
-          <UsersRound
-            size={22}
-          />
+          <UsersRound size={22} />
 
           <div>
             <small>
@@ -1310,7 +1478,7 @@ export default function ExperienciaTareaEstudiante({
             </strong>
 
             <p>
-              La tarea necesita un equipo por afinidad válido antes de habilitar la entrega. Una vez conformado el equipo, esta misma pantalla mostrará la entrega grupal oficial.
+              La tarea necesita un equipo por afinidad válido antes de habilitar la entrega.
             </p>
           </div>
         </section>
@@ -1318,9 +1486,7 @@ export default function ExperienciaTareaEstudiante({
         <section className="ete-delivery-card">
           <div className="ete-delivery-card__content">
             <span className="ete-delivery-card__icon">
-              <CheckCircle2
-                size={22}
-              />
+              <CheckCircle2 size={22} />
             </span>
 
             <div>
@@ -1338,30 +1504,457 @@ export default function ExperienciaTareaEstudiante({
             </div>
           </div>
         </section>
-      ) : esColaborativa ? (
-        <section className="ete-delivery-card">
-          <div className="ete-delivery-card__content">
-            <span className="ete-delivery-card__icon">
-              <Workflow
-                size={22}
-              />
-            </span>
+      ) : usaEditorEmbebido ? (
+        <>
+          <section
+            className={`ete-delivery-card ${
+              entregaEnviada
+                ? 'is-delivered'
+                : ''
+            }`}
+          >
+            <div className="ete-delivery-card__content">
+              <span className="ete-delivery-card__icon">
+                {entregaEnviada ? (
+                  <CheckCircle2 size={22} />
+                ) : esColaborativa ? (
+                  <Workflow size={22} />
+                ) : (
+                  <FilePenLine size={22} />
+                )}
+              </span>
 
-            <div>
-              <small>
-                Documento colaborativo
-              </small>
+              <div>
+                <small>
+                  Mi entrega
+                </small>
 
-              <strong>
-                Editor colaborativo reservado para la siguiente etapa
-              </strong>
+                <strong>
+                  {textoEstadoEntrega}
+                </strong>
 
-              <p>
-                Esta experiencia no utiliza una entrega de texto genérica porque necesita autoría por fragmentos, versiones y seguimiento de contribuciones.
-              </p>
+                <p>
+                  {entregaVisible?.enviadaEn
+                    ? `Registrada el ${fecha(
+                        entregaVisible.enviadaEn,
+                      )}.`
+                    : entregaApi.permisos.puedeModificar
+                      ? 'Trabaja en tu respuesta y realiza la entrega cuando esté lista.'
+                      : 'La entrega pertenece al grupo y debe ser registrada por el representante.'}
+                </p>
+              </div>
             </div>
-          </div>
-        </section>
+
+            <span
+              className={`ete-delivery-status ${
+                entregaEnviada
+                  ? 'is-success'
+                  : ''
+              }`}
+            >
+              {entregaApi.guardandoAutomatico ? (
+                <>
+                  <Loader2
+                    size={13}
+                    className="ete-spin"
+                  />
+
+                  Guardando…
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={13} />
+
+                  Autoguardado
+                </>
+              )}
+            </span>
+          </section>
+
+          <section className="ete-workspace">
+            <header className="ete-workspace__head">
+              <div>
+                <small>
+                  Área de trabajo
+                </small>
+
+                <h4>
+                  {tituloEditor}
+                </h4>
+
+                <p>
+                  {tarea.tipo ===
+                  'DOCUMENTO_COLABORATIVO'
+                    ? 'Desarrolla aquí el documento asignado al equipo.'
+                    : tarea.tipo ===
+                        'REDACCION_JURIDICA'
+                      ? 'Completa la estructura jurídica solicitada por el docente.'
+                      : 'Desarrolla tu respuesta de forma clara y fundamentada.'}
+                </p>
+              </div>
+
+              <div className="ete-workspace__counter">
+                <strong>
+                  {cantidadPalabras}
+                </strong>
+
+                <span>
+                  {cantidadPalabras ===
+                  1
+                    ? 'palabra'
+                    : 'palabras'}
+                </span>
+              </div>
+            </header>
+
+            {estructura?.secciones ? (
+              <div className="ete-structured-editor">
+                {Object.entries(
+                  estructura.secciones,
+                ).map(
+                  ([
+                    clave,
+                    valor,
+                  ]) => (
+                    <label
+                      key={clave}
+                      className="ete-structured-editor__field"
+                    >
+                      <span>
+                        {etiquetaSeccion(
+                          clave,
+                        )}
+                      </span>
+
+                      <textarea
+                        value={
+                          valor
+                        }
+                        rows={
+                          clave ===
+                            'argumentacion' ||
+                          clave ===
+                            'fundamentos' ||
+                          clave ===
+                            'desarrollo'
+                            ? 8
+                            : 5
+                        }
+                        disabled={
+                          !puedeModificar
+                        }
+                        placeholder={`Escribe ${etiquetaSeccion(
+                          clave,
+                        ).toLowerCase()}...`}
+                        onChange={(
+                          evento,
+                        ) =>
+                          actualizarSeccion(
+                            clave,
+                            evento.target.value,
+                          )
+                        }
+                      />
+                    </label>
+                  ),
+                )}
+              </div>
+            ) : (
+              <textarea
+                className="ete-workspace__textarea"
+                value={contenido}
+                disabled={
+                  !puedeModificar
+                }
+                placeholder={
+                  placeholderEditor
+                }
+                onChange={(
+                  evento,
+                ) =>
+                  setContenido(
+                    evento.target.value,
+                  )
+                }
+              />
+            )}
+
+            {usaArchivos && (
+              <div className="ete-workspace__attachments">
+                <div className="ete-workspace__attachments-head">
+                  <div>
+                    <strong>
+                      Archivos adjuntos
+                    </strong>
+
+                    <small>
+                      Hasta {tarea.maximoArchivos} archivo(s) · {tarea.tamanioMaximoArchivoMb} MB cada uno.
+                    </small>
+                  </div>
+
+                  <span>
+                    {entregaApi.entrega?.archivos.length ??
+                      0}
+                    /
+                    {tarea.maximoArchivos}
+                  </span>
+                </div>
+
+                {entregaApi.entrega?.archivos &&
+                  entregaApi.entrega.archivos.length >
+                    0 && (
+                    <div className="ete-upload__existing">
+                      {entregaApi.entrega.archivos.map(
+                        (archivo) => (
+                          <article
+                            key={archivo.id}
+                          >
+                            <Files size={17} />
+
+                            <div>
+                              <strong>
+                                {archivo.nombreOriginal}
+                              </strong>
+
+                              <small>
+                                {archivo.extension.toUpperCase()}
+                                {' · '}
+                                {tamanio(
+                                  archivo.tamanioBytes,
+                                )}
+                              </small>
+                            </div>
+
+                            <div className="ete-upload__file-actions">
+                              <button
+                                type="button"
+                                title="Ver detalles"
+                                onClick={() =>
+                                  void abrirDetalleArchivo(
+                                    archivo,
+                                  )
+                                }
+                              >
+                                <Eye size={14} />
+                              </button>
+
+                              {archivo.permiteDescarga && (
+                                <button
+                                  type="button"
+                                  title="Descargar"
+                                  onClick={() =>
+                                    void descargar(
+                                      archivo,
+                                    )
+                                  }
+                                >
+                                  <Download size={14} />
+                                </button>
+                              )}
+
+                              {puedeModificar && (
+                                <button
+                                  type="button"
+                                  className="danger"
+                                  title="Eliminar"
+                                  disabled={
+                                    entregaApi.procesando
+                                  }
+                                  onClick={() =>
+                                    void eliminarArchivoExistente(
+                                      archivo,
+                                    )
+                                  }
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          </article>
+                        ),
+                      )}
+                    </div>
+                  )}
+
+                {puedeModificar && (
+                  <label className="ete-upload__selector">
+                    <Upload size={21} />
+
+                    <div>
+                      <strong>
+                        Seleccionar archivos
+                      </strong>
+
+                      <span>
+                        {tarea.extensionesPermitidas.join(
+                          ', ',
+                        )}
+                      </span>
+                    </div>
+
+                    <input
+                      type="file"
+                      multiple={
+                        tarea.maximoArchivos >
+                        1
+                      }
+                      accept={aceptar}
+                      disabled={
+                        entregaApi.procesando ||
+                        entregaApi.guardandoAutomatico
+                      }
+                      onChange={
+                        seleccionar
+                      }
+                    />
+                  </label>
+                )}
+              </div>
+            )}
+
+            <footer className="ete-workspace__footer">
+              <div className="ete-workspace__save-info">
+                {entregaApi.guardandoAutomatico ? (
+                  <>
+                    <Loader2
+                      size={14}
+                      className="ete-spin"
+                    />
+
+                    Guardando cambios…
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck size={14} />
+
+                    Los cambios se guardan automáticamente.
+                  </>
+                )}
+              </div>
+
+              {puedeModificar && (
+                <div className="ete-workspace__actions">
+                  <button
+                    type="button"
+                    className="ete-secondary"
+                    disabled={
+                      entregaApi.procesando ||
+                      entregaApi.guardandoAutomatico
+                    }
+                    onClick={() =>
+                      void guardarBorradorEmbebido()
+                    }
+                  >
+                    {entregaApi.procesando ? (
+                      <Loader2
+                        size={15}
+                        className="ete-spin"
+                      />
+                    ) : (
+                      <Save size={15} />
+                    )}
+
+                    Guardar borrador
+                  </button>
+
+                  <button
+                    type="button"
+                    className="ete-primary"
+                    disabled={
+                      entregaApi.procesando ||
+                      entregaApi.guardandoAutomatico
+                    }
+                    onClick={() =>
+                      void entregarEmbebido()
+                    }
+                  >
+                    {entregaApi.procesando ? (
+                      <Loader2
+                        size={15}
+                        className="ete-spin"
+                      />
+                    ) : (
+                      <Send size={15} />
+                    )}
+
+                    {entregaEnviada
+                      ? 'Actualizar entrega'
+                      : tardia
+                        ? 'Entregar con retraso'
+                        : 'Entregar tarea'}
+                  </button>
+                </div>
+              )}
+            </footer>
+          </section>
+
+          {mostrarEntregaRegistrada && (
+            <section className="ete-current">
+              <div className="ete-current__head">
+                <div>
+                  <small>
+                    Entrega registrada
+                  </small>
+
+                  <strong>
+                    {nombresEstado[
+                      entregaVisible.estado
+                    ]}
+                  </strong>
+                </div>
+
+                {entregaVisible.entregadaTarde && (
+                  <span className="ete-current__late">
+                    <Clock3 size={13} />
+                    Con retraso
+                  </span>
+                )}
+              </div>
+
+              <div className="ete-current__meta">
+                <span>
+                  Enviada:{' '}
+                  <strong>
+                    {fecha(
+                      entregaVisible.enviadaEn,
+                    )}
+                  </strong>
+                </span>
+
+                {entregaVisible.entregadaTarde && (
+                  <>
+                    <span>
+                      Retraso:{' '}
+                      <strong>
+                        {entregaVisible.minutosRetraso}{' '}
+                        min
+                      </strong>
+                    </span>
+
+                    <span>
+                      Descuento:{' '}
+                      <strong>
+                        {Number(
+                          entregaVisible.descuentoCalculado,
+                        )}
+                      </strong>
+                    </span>
+                  </>
+                )}
+
+                {entregaVisible.autorEntrega && (
+                  <span>
+                    Registró:{' '}
+                    <strong>
+                      {entregaVisible.autorEntrega.nombres}{' '}
+                      {entregaVisible.autorEntrega.apellidoPaterno}
+                    </strong>
+                  </span>
+                )}
+              </div>
+            </section>
+          )}
+        </>
       ) : (
         <>
           <section
@@ -1374,13 +1967,9 @@ export default function ExperienciaTareaEstudiante({
             <div className="ete-delivery-card__content">
               <span className="ete-delivery-card__icon">
                 {entregaEnviada ? (
-                  <CheckCircle2
-                    size={22}
-                  />
+                  <CheckCircle2 size={22} />
                 ) : (
-                  <Upload
-                    size={22}
-                  />
+                  <Upload size={22} />
                 )}
               </span>
 
@@ -1390,9 +1979,7 @@ export default function ExperienciaTareaEstudiante({
                 </small>
 
                 <strong>
-                  {
-                    textoEstadoEntrega
-                  }
+                  {textoEstadoEntrega}
                 </strong>
 
                 <p>
@@ -1420,17 +2007,13 @@ export default function ExperienciaTareaEstudiante({
                   )
                 }
                 onClick={
-                  abrirEntrega
+                  abrirEntregaModal
                 }
               >
                 {entregaEnviada ? (
-                  <Pencil
-                    size={16}
-                  />
+                  <Pencil size={16} />
                 ) : (
-                  <Upload
-                    size={16}
-                  />
+                  <Upload size={16} />
                 )}
 
                 {entregaEnviada
@@ -1449,19 +2032,15 @@ export default function ExperienciaTareaEstudiante({
                   </small>
 
                   <strong>
-                    {
-                      nombresEstado[
-                        entregaVisible.estado
-                      ]
-                    }
+                    {nombresEstado[
+                      entregaVisible.estado
+                    ]}
                   </strong>
                 </div>
 
                 {entregaVisible.entregadaTarde && (
                   <span className="ete-current__late">
-                    <Clock3
-                      size={13}
-                    />
+                    <Clock3 size={13} />
                     Con retraso
                   </span>
                 )}
@@ -1469,8 +2048,7 @@ export default function ExperienciaTareaEstudiante({
 
               <div className="ete-current__meta">
                 <span>
-                  Enviada:
-                  {' '}
+                  Enviada:{' '}
                   <strong>
                     {fecha(
                       entregaVisible.enviadaEn,
@@ -1478,52 +2056,18 @@ export default function ExperienciaTareaEstudiante({
                   </strong>
                 </span>
 
-                {entregaVisible.entregadaTarde && (
-                  <>
-                    <span>
-                      Retraso:
-                      {' '}
-                      <strong>
-                        {
-                          entregaVisible.minutosRetraso
-                        }
-                        {' '}
-                        min
-                      </strong>
-                    </span>
-
-                    <span>
-                      Descuento:
-                      {' '}
-                      <strong>
-                        {
-                          Number(
-                            entregaVisible.descuentoCalculado,
-                          )
-                        }
-                      </strong>
-                    </span>
-                  </>
-                )}
-
                 {entregaVisible.autorEntrega && (
                   <span>
-                    Registró:
-                    {' '}
+                    Registró:{' '}
                     <strong>
-                      {
-                        entregaVisible.autorEntrega.nombres
-                      }
-                      {' '}
-                      {
-                        entregaVisible.autorEntrega.apellidoPaterno
-                      }
+                      {entregaVisible.autorEntrega.nombres}{' '}
+                      {entregaVisible.autorEntrega.apellidoPaterno}
                     </strong>
                   </span>
                 )}
               </div>
 
-              {usaTexto &&
+              {usaTextoModal &&
                 entregaVisible.contenido && (
                 <div className="ete-current__text">
                   <small>
@@ -1531,9 +2075,7 @@ export default function ExperienciaTareaEstudiante({
                   </small>
 
                   <p>
-                    {
-                      entregaVisible.contenido
-                    }
+                    {entregaVisible.contenido}
                   </p>
                 </div>
               )}
@@ -1542,67 +2084,50 @@ export default function ExperienciaTareaEstudiante({
                 0 && (
                 <div className="ete-current__files">
                   {entregaVisible.archivos.map(
-                    (
-                      archivo,
-                    ) => (
+                    (archivo) => (
                       <article
-                        key={
-                          archivo.id
-                        }
+                        key={archivo.id}
                       >
-                        <Files
-                          size={17}
-                        />
+                        <Files size={17} />
 
                         <div>
                           <strong>
-                            {
-                              archivo.nombreOriginal
-                            }
+                            {archivo.nombreOriginal}
                           </strong>
 
                           <small>
                             {archivo.extension.toUpperCase()}
                             {' · '}
-                            {
-                              tamanio(
-                                archivo.tamanioBytes,
-                              )
-                            }
+                            {tamanio(
+                              archivo.tamanioBytes,
+                            )}
                           </small>
                         </div>
 
                         <div className="ete-current__file-actions">
                           <button
                             type="button"
-                            className="ete-file-detail"
                             title="Ver detalles"
-                            aria-label={`Ver detalles de ${archivo.nombreOriginal}`}
                             onClick={() =>
                               void abrirDetalleArchivo(
                                 archivo,
                               )
                             }
                           >
-                            <Eye
-                              size={14}
-                            />
+                            <Eye size={14} />
                           </button>
 
                           {archivo.permiteDescarga && (
                             <button
                               type="button"
                               title="Descargar"
-                              aria-label={`Descargar ${archivo.nombreOriginal}`}
                               onClick={() =>
                                 void descargar(
                                   archivo,
                                 )
                               }
                             >
-                              <Download
-                                size={14}
-                              />
+                              <Download size={14} />
                             </button>
                           )}
                         </div>
@@ -1616,9 +2141,8 @@ export default function ExperienciaTareaEstudiante({
                 tarea.permitirEditarEntrega &&
                 !disponible && (
                 <div className="ete-current__locked">
-                  <ShieldCheck
-                    size={15}
-                  />
+                  <ShieldCheck size={15} />
+
                   La tarea permite edición, pero el período de entrega ya terminó.
                 </div>
               )}
@@ -1628,9 +2152,7 @@ export default function ExperienciaTareaEstudiante({
       )}
 
       <AulaModal
-        abierto={
-          modalEntrega
-        }
+        abierto={modalEntrega}
         ancho="amplio"
         titulo={
           entregaEnviada
@@ -1679,7 +2201,7 @@ export default function ExperienciaTareaEstudiante({
                 entregaApi.guardandoAutomatico
               }
               onClick={() =>
-                void entregar()
+                void entregarModal()
               }
             >
               {entregaApi.procesando ? (
@@ -1688,9 +2210,7 @@ export default function ExperienciaTareaEstudiante({
                   className="ete-spin"
                 />
               ) : (
-                <Send
-                  size={15}
-                />
+                <Send size={15} />
               )}
 
               {entregaEnviada
@@ -1724,9 +2244,7 @@ export default function ExperienciaTareaEstudiante({
               </>
             ) : (
               <>
-                <CheckCircle2
-                  size={15}
-                />
+                <CheckCircle2 size={15} />
 
                 <div>
                   <strong>
@@ -1734,55 +2252,36 @@ export default function ExperienciaTareaEstudiante({
                   </strong>
 
                   <p>
-                    Los archivos se guardan al seleccionarlos y el texto se guarda automáticamente mientras escribes.
+                    Los cambios se conservan mientras trabajas.
                   </p>
                 </div>
               </>
             )}
           </div>
 
-          {tardia && (
-            <div className="ete-editor__warning">
-              <AlertTriangle
-                size={16}
-              />
+          {usaTextoModal && (
+            <section className="ete-editor__section">
+              <div className="ete-editor__title">
+                <FilePenLine size={17} />
 
-              <div>
-                <strong>
-                  Estás entregando fuera de la fecha límite
-                </strong>
+                <div>
+                  <strong>
+                    Respuesta
+                  </strong>
 
-                <p>
-                  El backend calculará automáticamente el retraso y la penalización configurada por el docente.
-                </p>
+                  <small>
+                    Escribe el desarrollo solicitado.
+                  </small>
+                </div>
               </div>
-            </div>
-          )}
-
-          {usaTexto && (
-            <label className="ete-field">
-              <span>
-                {tarea.tipo ===
-                'REDACCION_JURIDICA'
-                  ? 'Redacción jurídica'
-                  : tarea.tipo ===
-                      'CASO_PRACTICO'
-                    ? 'Desarrollo del caso'
-                    : 'Respuesta'}
-                {tarea.exigirContenidoEditor
-                  ? ' *'
-                  : ''}
-              </span>
 
               <textarea
-                value={
-                  contenido
-                }
+                value={contenido}
                 rows={12}
-                maxLength={
-                  50000
+                disabled={
+                  entregaApi.procesando
                 }
-                placeholder="Escribe aquí tu desarrollo..."
+                placeholder="Escribe tu respuesta..."
                 onChange={(
                   evento,
                 ) =>
@@ -1791,26 +2290,17 @@ export default function ExperienciaTareaEstudiante({
                   )
                 }
               />
-
-              <small>
-                {
-                  contenido.length
-                }
-                {' '}
-                / 50000 caracteres
-              </small>
-            </label>
+            </section>
           )}
 
           {usaArchivos && (
-            <section className="ete-upload">
-              <div className="ete-upload__title">
+            <section className="ete-editor__section">
+              <div className="ete-editor__title">
+                <Files size={17} />
+
                 <div>
                   <strong>
-                    Archivos de la entrega
-                    {tarea.exigirArchivo
-                      ? ' *'
-                      : ''}
+                    Archivos
                   </strong>
 
                   <small>
@@ -1819,111 +2309,89 @@ export default function ExperienciaTareaEstudiante({
                 </div>
 
                 <span>
-                  {
-                    entregaApi.entrega?.archivos.length ??
-                    0
-                  }
+                  {entregaApi.entrega?.archivos.length ??
+                    0}
                   /
-                  {
-                    tarea.maximoArchivos
-                  }
+                  {tarea.maximoArchivos}
                 </span>
               </div>
 
               {entregaApi.entrega &&
                 entregaApi.entrega.archivos.length >
                   0 && (
-                <div className="ete-upload__existing">
-                  {entregaApi.entrega.archivos.map(
-                    (
-                      archivo,
-                    ) => (
-                      <article
-                        key={
-                          archivo.id
-                        }
-                      >
-                        <Files
-                          size={17}
-                        />
+                  <div className="ete-upload__existing">
+                    {entregaApi.entrega.archivos.map(
+                      (archivo) => (
+                        <article
+                          key={archivo.id}
+                        >
+                          <Files size={17} />
 
-                        <div>
-                          <strong>
-                            {
-                              archivo.nombreOriginal
-                            }
-                          </strong>
+                          <div>
+                            <strong>
+                              {archivo.nombreOriginal}
+                            </strong>
 
-                          <small>
-                            {archivo.extension.toUpperCase()}
-                            {' · '}
-                            {
-                              tamanio(
+                            <small>
+                              {archivo.extension.toUpperCase()}
+                              {' · '}
+                              {tamanio(
                                 archivo.tamanioBytes,
-                              )
-                            }
-                          </small>
-                        </div>
+                              )}
+                            </small>
+                          </div>
 
-                        <div className="ete-upload__file-actions">
-                          <button
-                            type="button"
-                            title="Ver detalles"
-                            onClick={() =>
-                              void abrirDetalleArchivo(
-                                archivo,
-                              )
-                            }
-                          >
-                            <Eye
-                              size={14}
-                            />
-                          </button>
-
-                          {archivo.permiteDescarga && (
+                          <div className="ete-upload__file-actions">
                             <button
                               type="button"
-                              title="Descargar"
+                              title="Ver detalles"
                               onClick={() =>
-                                void descargar(
+                                void abrirDetalleArchivo(
                                   archivo,
                                 )
                               }
                             >
-                              <Download
-                                size={14}
-                              />
+                              <Eye size={14} />
                             </button>
-                          )}
 
-                          <button
-                            type="button"
-                            className="danger"
-                            title="Eliminar"
-                            disabled={
-                              entregaApi.procesando
-                            }
-                            onClick={() =>
-                              void eliminarArchivoExistente(
-                                archivo,
-                              )
-                            }
-                          >
-                            <Trash2
-                              size={14}
-                            />
-                          </button>
-                        </div>
-                      </article>
-                    ),
-                  )}
-                </div>
-              )}
+                            {archivo.permiteDescarga && (
+                              <button
+                                type="button"
+                                title="Descargar"
+                                onClick={() =>
+                                  void descargar(
+                                    archivo,
+                                  )
+                                }
+                              >
+                                <Download size={14} />
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              className="danger"
+                              title="Eliminar"
+                              disabled={
+                                entregaApi.procesando
+                              }
+                              onClick={() =>
+                                void eliminarArchivoExistente(
+                                  archivo,
+                                )
+                              }
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </article>
+                      ),
+                    )}
+                  </div>
+                )}
 
               <label className="ete-upload__selector">
-                <Upload
-                  size={22}
-                />
+                <Upload size={22} />
 
                 <div>
                   <strong>
@@ -1943,59 +2411,21 @@ export default function ExperienciaTareaEstudiante({
                     tarea.maximoArchivos >
                     1
                   }
-                  accept={
-                    aceptar
-                  }
+                  accept={aceptar}
                   disabled={
                     entregaApi.procesando ||
                     entregaApi.guardandoAutomatico
                   }
-                  onChange={
-                    seleccionar
-                  }
+                  onChange={seleccionar}
                 />
               </label>
-
-              <div className="ete-upload__rules">
-                <span>
-                  Formatos:
-                  {' '}
-                  {
-                    tarea.extensionesPermitidas.join(
-                      ', ',
-                    )
-                  }
-                </span>
-
-                <span>
-                  Máximo:
-                  {' '}
-                  {
-                    tarea.maximoArchivos
-                  }
-                  {' '}
-                  archivo(s)
-                </span>
-
-                <span>
-                  Hasta
-                  {' '}
-                  {
-                    tarea.tamanioMaximoArchivoMb
-                  }
-                  {' '}
-                  MB c/u
-                </span>
-              </div>
             </section>
           )}
 
-          {!usaTexto &&
+          {!usaTextoModal &&
             !usaArchivos && (
             <div className="ete-editor__info">
-              <Info
-                size={16}
-              />
+              <Info size={16} />
 
               <p>
                 Esta actividad no tiene una evidencia digital estándar configurada.
@@ -2023,7 +2453,7 @@ export default function ExperienciaTareaEstudiante({
             archivoDetalle,
           )
             ? ImageIcon
-            : FileText
+            : Files
         }
         onCerrar={
           cerrarDetalleArchivo
@@ -2050,9 +2480,7 @@ export default function ExperienciaTareaEstudiante({
                   )
                 }
               >
-                <Download
-                  size={15}
-                />
+                <Download size={15} />
                 Descargar
               </button>
             )}
@@ -2068,11 +2496,9 @@ export default function ExperienciaTareaEstudiante({
                 </small>
 
                 <strong>
-                  {
-                    nombreTipoArchivo(
-                      archivoDetalle,
-                    )
-                  }
+                  {nombreTipoArchivo(
+                    archivoDetalle,
+                  )}
                 </strong>
               </article>
 
@@ -2082,9 +2508,7 @@ export default function ExperienciaTareaEstudiante({
                 </small>
 
                 <strong>
-                  {
-                    archivoDetalle.extension.toUpperCase()
-                  }
+                  {archivoDetalle.extension.toUpperCase()}
                 </strong>
               </article>
 
@@ -2094,11 +2518,9 @@ export default function ExperienciaTareaEstudiante({
                 </small>
 
                 <strong>
-                  {
-                    tamanio(
-                      archivoDetalle.tamanioBytes,
-                    )
-                  }
+                  {tamanio(
+                    archivoDetalle.tamanioBytes,
+                  )}
                 </strong>
               </article>
 
@@ -2108,11 +2530,9 @@ export default function ExperienciaTareaEstudiante({
                 </small>
 
                 <strong>
-                  {
-                    fecha(
-                      archivoDetalle.creadoEn,
-                    )
-                  }
+                  {fecha(
+                    archivoDetalle.creadoEn,
+                  )}
                 </strong>
               </article>
             </div>
@@ -2128,25 +2548,17 @@ export default function ExperienciaTareaEstudiante({
                   <strong>
                     Cargando vista previa…
                   </strong>
-
-                  <p>
-                    Espera un momento mientras se recupera el archivo protegido.
-                  </p>
                 </div>
               ) : errorVistaPrevia ? (
-                <div className="ete-file-modal__state ete-file-modal__state--error">
-                  <AlertTriangle
-                    size={22}
-                  />
+                <div className="ete-file-modal__state">
+                  <AlertTriangle size={22} />
 
                   <strong>
                     No se pudo mostrar la vista previa
                   </strong>
 
                   <p>
-                    {
-                      errorVistaPrevia
-                    }
+                    {errorVistaPrevia}
                   </p>
                 </div>
               ) : esImagen(
@@ -2154,9 +2566,7 @@ export default function ExperienciaTareaEstudiante({
                 ) &&
                 urlVistaPrevia ? (
                 <img
-                  src={
-                    urlVistaPrevia
-                  }
+                  src={urlVistaPrevia}
                   alt={
                     archivoDetalle.nombreOriginal
                   }
@@ -2166,23 +2576,19 @@ export default function ExperienciaTareaEstudiante({
                 ) &&
                 urlVistaPrevia ? (
                 <iframe
-                  src={
-                    urlVistaPrevia
-                  }
+                  src={urlVistaPrevia}
                   title={`Vista previa de ${archivoDetalle.nombreOriginal}`}
                 />
               ) : (
                 <div className="ete-file-modal__state">
-                  <FileText
-                    size={26}
-                  />
+                  <Files size={26} />
 
                   <strong>
                     Vista previa no disponible
                   </strong>
 
                   <p>
-                    Este formato no puede visualizarse directamente dentro de IusAcademy. Puedes descargarlo para abrirlo con la aplicación correspondiente.
+                    Puedes descargar el archivo para abrirlo con la aplicación correspondiente.
                   </p>
                 </div>
               )}
@@ -2192,27 +2598,15 @@ export default function ExperienciaTareaEstudiante({
       </AulaModal>
 
       <Toast
-        visible={
-          toast.visible
-        }
-        tipo={
-          toast.tipo
-        }
-        titulo={
-          toast.titulo
-        }
-        mensaje={
-          toast.mensaje
-        }
+        visible={toast.visible}
+        tipo={toast.tipo}
+        titulo={toast.titulo}
+        mensaje={toast.mensaje}
         onCerrar={() =>
           setToast(
-            (
-              actual,
-            ) => ({
+            (actual) => ({
               ...actual,
-
-              visible:
-                false,
+              visible: false,
             }),
           )
         }
@@ -2229,35 +2623,16 @@ const styles = `
   .ete-experience {
     display: grid;
     gap: 14px;
-
-    padding:
-      20px
-      22px;
-
-    border:
-      1px solid
-      var(--app-border);
-
-    border-radius:
-      20px;
-
-    background:
-      var(--app-surface);
-
-    box-shadow:
-      var(--app-shadow-sm);
+    padding: 20px 22px;
+    border: 1px solid var(--app-border);
+    border-radius: 20px;
+    background: var(--app-surface);
+    box-shadow: var(--app-shadow-sm);
   }
 
   .ete-experience__head {
     display: grid;
-
-    grid-template-columns:
-      48px
-      minmax(
-        0,
-        1fr
-      );
-
+    grid-template-columns: 48px minmax(0, 1fr);
     align-items: center;
     gap: 11px;
   }
@@ -2265,273 +2640,99 @@ const styles = `
   .ete-experience__icon {
     width: 48px;
     height: 48px;
-
     display: grid;
     place-items: center;
-
-    border-radius:
-      14px;
-
-    color:
-      var(
-        --dte-color,
-        var(--app-accent-dark)
-      );
-
-    background:
-      var(
-        --dte-fondo,
-        var(--app-accent-soft)
-      );
+    border-radius: 14px;
+    color: var(--dte-color, var(--app-accent-dark));
+    background: var(--dte-fondo, var(--app-accent-soft));
   }
 
   .ete-experience__head small {
-    color:
-      var(
-        --dte-color,
-        var(--app-accent-dark)
-      );
-
-    font-size:
-      12px;
-
-    font-weight:
-      850;
-
-    letter-spacing:
-      .06em;
-
-    text-transform:
-      uppercase;
+    color: var(--app-text-muted);
+    font-size: 11px;
   }
 
   .ete-experience__head h3 {
-    margin:
-      2px
-      0
-      0;
-
-    font-size:
-      16px;
+    margin: 2px 0 3px;
+    font-size: 16px;
   }
 
   .ete-experience__head p {
-    margin:
-      3px
-      0
-      0;
-
-    color:
-      var(--app-text-muted);
-
-    font-size:
-      11.5px;
+    margin: 0;
+    color: var(--app-text-secondary);
+    font-size: 11.5px;
+    line-height: 1.5;
   }
 
   .ete-experience__components {
     display: grid;
-
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(
-          0,
-          1fr
-        )
-      );
-
-    gap: 8px;
+    gap: 7px;
   }
 
   .ete-experience__components article {
-    min-width: 0;
-
-    padding:
-      10px
-      11px;
-
-    border:
-      1px solid
-      var(--app-border);
-
-    border-radius:
-      11px;
-
-    background:
-      var(--app-surface-alt);
+    padding: 10px 11px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: var(--app-surface-alt);
   }
 
   .ete-experience__components article > div {
     display: flex;
-    align-items: center;
     justify-content: space-between;
     gap: 8px;
   }
 
   .ete-experience__components strong {
-    font-size:
-      11.5px;
+    font-size: 11.5px;
   }
 
   .ete-experience__components span {
-    color:
-      var(--app-success);
-
-    font-size:
-      7.5px;
-
-    font-weight:
-      850;
+    color: var(--app-accent-dark);
+    font-size: 9px;
+    font-weight: 850;
   }
 
   .ete-experience__components p {
-    margin:
-      4px
-      0
-      0;
-
-    color:
-      var(--app-text-muted);
-
-    font-size:
-      10.5px;
-
-    line-height:
-      1.45;
+    margin: 4px 0 0;
+    color: var(--app-text-muted);
+    font-size: 10.5px;
   }
 
   .ete-inline-error,
-  .ete-loading,
-  .ete-group-required {
+  .ete-group-required,
+  .ete-loading {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 9px;
-
-    padding:
-      11px
-      12px;
-
-    border:
-      1px solid
-      var(--app-border);
-
-    border-radius:
-      12px;
-
-    background:
-      var(--app-surface-alt);
+    padding: 11px 12px;
+    border-radius: 11px;
+    font-size: 11px;
   }
 
   .ete-inline-error {
-    border-color:
-      var(--app-danger-border);
-
-    color:
-      var(--app-danger);
-
-    background:
-      var(--app-danger-bg);
-
-    font-size:
-      12.5px;
+    border: 1px solid var(--app-danger-border);
+    color: var(--app-danger);
+    background: var(--app-danger-bg);
   }
 
-  .ete-loading {
-    color:
-      var(--app-text-muted);
+  .ete-group-required {
+    border: 1px solid var(--app-warning-border);
+    color: var(--app-warning);
+    background: var(--app-warning-bg);
+  }
 
-    font-size:
-      12.5px;
+  .ete-group-required div {
+    display: grid;
+    gap: 3px;
+  }
+
+  .ete-group-required p {
+    margin: 0;
   }
 
   .ete-loading svg,
   .ete-spin {
-    animation:
-      eteRotar
-      .8s
-      linear
-      infinite;
-  }
-
-  .ete-group-required {
-    align-items:
-      flex-start;
-
-    border-color:
-      color-mix(
-        in srgb,
-        var(
-          --dte-color,
-          var(--app-accent)
-        ) 28%,
-        var(--app-border)
-      );
-
-    border-left:
-      4px solid
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-  }
-
-  .ete-group-required > svg {
-    flex:
-      0
-      0
-      auto;
-
-    color:
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-  }
-
-  .ete-group-required small,
-  .ete-group-required strong {
-    display: block;
-  }
-
-  .ete-group-required small {
-    color:
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-
-    font-size:
-      12px;
-
-    font-weight:
-      850;
-
-    text-transform:
-      uppercase;
-  }
-
-  .ete-group-required strong {
-    margin-top:
-      2px;
-
-    font-size:
-      12px;
-  }
-
-  .ete-group-required p {
-    margin:
-      3px
-      0
-      0;
-
-    color:
-      var(--app-text-secondary);
-
-    font-size:
-      10.5px;
-
-    line-height:
-      1.45;
+    animation: ete-spin .8s linear infinite;
   }
 
   .ete-delivery-card {
@@ -2539,88 +2740,36 @@ const styles = `
     align-items: center;
     justify-content: space-between;
     gap: 14px;
-
-    padding:
-      14px
-      15px;
-
-    border:
-      1px solid
-      color-mix(
-        in srgb,
-        var(
-          --dte-color,
-          var(--app-accent)
-        ) 28%,
-        var(--app-border)
-      );
-
-    border-left:
-      4px solid
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-
-    border-radius:
-      14px;
-
-    background:
-      color-mix(
-        in srgb,
-        var(
-          --dte-fondo,
-          var(--app-accent-soft)
-        ) 52%,
-        var(--app-surface)
-      );
+    padding: 13px 14px;
+    border: 1px solid var(--app-border);
+    border-radius: 13px;
+    background: var(--app-surface-alt);
   }
 
   .ete-delivery-card.is-delivered {
-    border-left-color:
-      var(--app-success);
+    border-color: var(--app-success-border);
   }
 
   .ete-delivery-card__content {
     min-width: 0;
-
     display: flex;
     align-items: center;
-    gap: 11px;
+    gap: 10px;
   }
 
   .ete-delivery-card__icon {
-    width: 44px;
-    height: 44px;
-
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
     display: grid;
     place-items: center;
-
-    flex:
-      0
-      0
-      44px;
-
-    border-radius:
-      13px;
-
-    color:
-      var(
-        --dte-color,
-        var(--app-accent-dark)
-      );
-
-    background:
-      var(--app-surface);
+    border-radius: 11px;
+    color: var(--dte-color, var(--app-accent-dark));
+    background: var(--dte-fondo, var(--app-accent-soft));
   }
 
-  .ete-delivery-card.is-delivered
-  .ete-delivery-card__icon {
-    color:
-      var(--app-success);
-
-    background:
-      var(--app-success-bg);
+  .ete-delivery-card__content div {
+    min-width: 0;
   }
 
   .ete-delivery-card__content small,
@@ -2629,146 +2778,267 @@ const styles = `
   }
 
   .ete-delivery-card__content small {
-    color:
-      var(
-        --dte-color,
-        var(--app-accent-dark)
-      );
-
-    font-size:
-      12px;
-
-    font-weight:
-      850;
-
-    text-transform:
-      uppercase;
+    color: var(--app-text-muted);
+    font-size: 10px;
   }
 
   .ete-delivery-card__content strong {
-    margin-top:
-      2px;
-
-    color:
-      var(--app-text);
-
-    font-size:
-      12.5px;
+    margin-top: 2px;
+    font-size: 12px;
   }
 
   .ete-delivery-card__content p {
-    margin:
-      3px
-      0
-      0;
+    margin: 3px 0 0;
+    color: var(--app-text-muted);
+    font-size: 10.5px;
+    line-height: 1.45;
+  }
 
-    color:
-      var(--app-text-secondary);
+  .ete-delivery-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex: 0 0 auto;
+    padding: 6px 9px;
+    border: 1px solid var(--app-border);
+    border-radius: 999px;
+    color: var(--app-text-muted);
+    background: var(--app-surface);
+    font-size: 9.5px;
+    font-weight: 800;
+  }
 
-    font-size:
-      10.5px;
-
-    line-height:
-      1.45;
+  .ete-delivery-status.is-success {
+    border-color: var(--app-success-border);
+    color: var(--app-success);
+    background: var(--app-success-bg);
   }
 
   .ete-delivery-card__action,
   .ete-primary,
   .ete-secondary {
-    min-height:
-      38px;
-
-    display:
-      inline-flex;
-
-    align-items:
-      center;
-
-    justify-content:
-      center;
-
-    gap:
-      6px;
-
-    padding:
-      8px
-      12px;
-
-    border-radius:
-      10px;
-
-    font:
-      inherit;
-
-    font-size:
-      12.5px;
-
-    font-weight:
-      850;
-
-    cursor:
-      pointer;
+    min-height: 35px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 11px;
+    border-radius: 9px;
+    font: inherit;
+    font-size: 10.5px;
+    font-weight: 850;
+    cursor: pointer;
   }
 
   .ete-delivery-card__action,
   .ete-primary {
-    border:
-      1px solid
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-
-    color:
-      #fff;
-
-    background:
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
+    border: 1px solid var(--dte-color, var(--app-accent));
+    color: #fff;
+    background: var(--dte-color, var(--app-accent));
   }
 
   .ete-secondary {
-    border:
-      1px solid
-      var(--app-border-strong);
-
-    color:
-      var(--app-text-secondary);
-
-    background:
-      var(--app-surface);
+    border: 1px solid var(--app-border-strong);
+    color: var(--app-text-secondary);
+    background: var(--app-surface);
   }
-
 
   .ete-delivery-card__action:disabled,
   .ete-primary:disabled,
   .ete-secondary:disabled {
-    opacity:
-      .5;
+    opacity: .5;
+    cursor: not-allowed;
+  }
 
-    cursor:
-      not-allowed;
+  .ete-workspace {
+    overflow: hidden;
+    border: 1px solid var(--app-border);
+    border-radius: 14px;
+    background: var(--app-surface);
+  }
+
+  .ete-workspace__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 15px 16px;
+    border-bottom: 1px solid var(--app-border);
+    background: var(--app-surface-alt);
+  }
+
+  .ete-workspace__head small {
+    color: var(--dte-color, var(--app-accent));
+    font-size: 9.5px;
+    font-weight: 850;
+    text-transform: uppercase;
+  }
+
+  .ete-workspace__head h4 {
+    margin: 3px 0 3px;
+    font-size: 14px;
+  }
+
+  .ete-workspace__head p {
+    margin: 0;
+    color: var(--app-text-muted);
+    font-size: 10.5px;
+    line-height: 1.45;
+  }
+
+  .ete-workspace__counter {
+    min-width: 78px;
+    display: grid;
+    place-items: center;
+    padding: 8px 10px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: var(--app-surface);
+  }
+
+  .ete-workspace__counter strong {
+    font-size: 14px;
+  }
+
+  .ete-workspace__counter span {
+    color: var(--app-text-muted);
+    font-size: 9px;
+  }
+
+  .ete-workspace__textarea {
+    width: 100%;
+    min-height: 430px;
+    display: block;
+    box-sizing: border-box;
+    padding: 18px;
+    border: 0;
+    outline: none;
+    resize: vertical;
+    color: var(--app-text);
+    background: var(--app-surface);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.75;
+  }
+
+  .ete-workspace__textarea:disabled,
+  .ete-structured-editor textarea:disabled {
+    opacity: .7;
+    cursor: not-allowed;
+  }
+
+  .ete-structured-editor {
+    display: grid;
+    gap: 0;
+  }
+
+  .ete-structured-editor__field {
+    display: grid;
+    gap: 7px;
+    padding: 15px 16px;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  .ete-structured-editor__field:last-child {
+    border-bottom: 0;
+  }
+
+  .ete-structured-editor__field > span {
+    color: var(--app-text-secondary);
+    font-size: 10.5px;
+    font-weight: 850;
+  }
+
+  .ete-structured-editor textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 12px;
+    border: 1px solid var(--app-border-strong);
+    border-radius: 10px;
+    outline: none;
+    resize: vertical;
+    color: var(--app-text);
+    background: var(--app-surface);
+    font: inherit;
+    font-size: 12px;
+    line-height: 1.65;
+  }
+
+  .ete-structured-editor textarea:focus,
+  .ete-editor textarea:focus {
+    border-color: var(--dte-color, var(--app-accent));
+    box-shadow: 0 0 0 3px var(--dte-fondo, var(--app-accent-soft));
+  }
+
+  .ete-workspace__attachments {
+    display: grid;
+    gap: 10px;
+    padding: 14px 16px;
+    border-top: 1px solid var(--app-border);
+    background: var(--app-surface-alt);
+  }
+
+  .ete-workspace__attachments-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .ete-workspace__attachments-head strong,
+  .ete-workspace__attachments-head small {
+    display: block;
+  }
+
+  .ete-workspace__attachments-head strong {
+    font-size: 11px;
+  }
+
+  .ete-workspace__attachments-head small {
+    margin-top: 2px;
+    color: var(--app-text-muted);
+    font-size: 9px;
+  }
+
+  .ete-workspace__attachments-head > span {
+    color: var(--app-text-muted);
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .ete-workspace__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--app-border);
+    background: var(--app-surface-alt);
+  }
+
+  .ete-workspace__save-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--app-text-muted);
+    font-size: 9.5px;
+  }
+
+  .ete-workspace__save-info svg {
+    color: var(--app-success);
+  }
+
+  .ete-workspace__actions {
+    display: flex;
+    gap: 7px;
   }
 
   .ete-current {
     display: grid;
     gap: 10px;
-
-    padding:
-      13px
-      14px;
-
-    border:
-      1px solid
-      var(--app-border);
-
-    border-radius:
-      13px;
-
-    background:
-      var(--app-surface-alt);
+    padding: 13px 14px;
+    border: 1px solid var(--app-border);
+    border-radius: 13px;
+    background: var(--app-surface-alt);
   }
 
   .ete-current__head {
@@ -2784,264 +3054,129 @@ const styles = `
   }
 
   .ete-current__head small {
-    color:
-      var(--app-text-muted);
-
-    font-size:
-      12px;
+    color: var(--app-text-muted);
+    font-size: 10px;
   }
 
   .ete-current__head strong {
-    margin-top:
-      2px;
-
-    font-size:
-      12.5px;
+    margin-top: 2px;
+    font-size: 11.5px;
   }
 
   .ete-current__late {
-    display:
-      inline-flex;
-
-    align-items:
-      center;
-
-    gap:
-      4px;
-
-    padding:
-      5px
-      8px;
-
-    border-radius:
-      999px;
-
-    color:
-      var(--app-warning);
-
-    background:
-      var(--app-warning-bg);
-
-    font-size:
-      12px;
-
-    font-weight:
-      850;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    color: var(--app-warning);
+    background: var(--app-warning-bg);
+    font-size: 10px;
+    font-weight: 850;
   }
 
   .ete-current__meta {
     display: flex;
     flex-wrap: wrap;
-    gap:
-      6px
-      14px;
-
-    color:
-      var(--app-text-muted);
-
-    font-size:
-      10.5px;
+    gap: 6px 13px;
+    color: var(--app-text-muted);
+    font-size: 10px;
   }
 
   .ete-current__meta strong {
-    color:
-      var(--app-text-secondary);
+    color: var(--app-text-secondary);
   }
 
   .ete-current__text {
-    padding:
-      10px
-      11px;
-
-    border:
-      1px solid
-      var(--app-border);
-
-    border-radius:
-      10px;
-
-    background:
-      var(--app-surface);
+    padding: 10px 11px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: var(--app-surface);
   }
 
   .ete-current__text small {
-    color:
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-
-    font-size:
-      12px;
-
-    font-weight:
-      850;
+    color: var(--dte-color, var(--app-accent));
+    font-size: 10px;
+    font-weight: 850;
   }
 
   .ete-current__text p {
-    margin:
-      5px
-      0
-      0;
-
-    color:
-      var(--app-text-secondary);
-
-    white-space:
-      pre-wrap;
-
-    font-size:
-      12.5px;
-
-    line-height:
-      1.5;
+    margin: 5px 0 0;
+    color: var(--app-text-secondary);
+    white-space: pre-wrap;
+    font-size: 11.5px;
+    line-height: 1.5;
   }
 
   .ete-current__files,
-  .ete-upload__existing,
-  .ete-upload__local {
+  .ete-upload__existing {
     display: grid;
     gap: 7px;
   }
 
   .ete-current__files article,
-  .ete-upload__existing article,
-  .ete-upload__local article {
+  .ete-upload__existing article {
     display: grid;
-
-    grid-template-columns:
-      30px
-      minmax(
-        0,
-        1fr
-      )
-      auto;
-
-    align-items:
-      center;
-
-    gap:
-      8px;
-
-    padding:
-      8px
-      9px;
-
-    border:
-      1px solid
-      var(--app-border);
-
-    border-radius:
-      10px;
-
-    background:
-      var(--app-surface);
-  }
-
-  .ete-current__files article > svg,
-  .ete-upload__existing article > svg,
-  .ete-upload__local article > svg {
-    color:
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-  }
-
-  .ete-current__files article > div,
-  .ete-upload__existing article > div,
-  .ete-upload__local article > div {
-    min-width:
-      0;
-
-    display:
-      grid;
-
-    gap:
-      2px;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    border: 1px solid var(--app-border);
+    border-radius: 9px;
+    background: var(--app-surface);
   }
 
   .ete-current__files strong,
-  .ete-upload__existing strong,
-  .ete-upload__local strong {
-    overflow:
-      hidden;
-
-    font-size:
-      10.5px;
-
-    white-space:
-      nowrap;
-
-    text-overflow:
-      ellipsis;
+  .ete-upload__existing strong {
+    display: block;
+    overflow: hidden;
+    font-size: 10.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .ete-current__files small,
-  .ete-upload__existing small,
-  .ete-upload__local small {
-    color:
-      var(--app-text-muted);
-
-    font-size:
-      7.5px;
+  .ete-upload__existing small {
+    display: block;
+    margin-top: 2px;
+    color: var(--app-text-muted);
+    font-size: 9px;
   }
 
-  .ete-current__files button,
-  .ete-upload__file-actions button,
-  .ete-upload__local article > button {
-    width:
-      30px;
+  .ete-current__file-actions,
+  .ete-upload__file-actions {
+    display: flex;
+    gap: 4px;
+  }
 
-    height:
-      30px;
+  .ete-current__file-actions button,
+  .ete-upload__file-actions button {
+    width: 29px;
+    height: 29px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--app-border);
+    border-radius: 8px;
+    color: var(--app-text-secondary);
+    background: var(--app-surface-alt);
+    cursor: pointer;
+  }
 
-    display:
-      grid;
-
-    place-items:
-      center;
-
-    padding:
-      0;
-
-    border:
-      1px solid
-      var(--app-border);
-
-    border-radius:
-      8px;
-
-    color:
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-
-    background:
-      var(--app-surface-alt);
-
-    cursor:
-      pointer;
+  .ete-upload__file-actions button.danger {
+    color: var(--app-danger);
   }
 
   .ete-current__locked {
     display: flex;
     align-items: center;
     gap: 6px;
-
-    color:
-      var(--app-text-muted);
-
-    font-size:
-      12px;
+    color: var(--app-text-muted);
+    font-size: 10px;
   }
 
-  .ete-modal-footer {
-    width: 100%;
-
+  .ete-modal-footer,
+  .ete-file-modal__footer {
     display: flex;
-    align-items: center;
     justify-content: flex-end;
     gap: 8px;
   }
@@ -3052,670 +3187,249 @@ const styles = `
   }
 
   .ete-autosave {
-    display:
-      flex;
-
-    align-items:
-      flex-start;
-
-    gap:
-      8px;
-
-    padding:
-      10px
-      11px;
-
-    border:
-      1px solid
-      color-mix(
-        in srgb,
-        var(--app-success) 25%,
-        var(--app-border)
-      );
-
-    border-radius:
-      11px;
-
-    color:
-      var(--app-success);
-
-    background:
-      color-mix(
-        in srgb,
-        var(--app-success-bg) 72%,
-        var(--app-surface)
-      );
-  }
-
-  .ete-autosave > svg {
-    flex:
-      0
-      0
-      auto;
-
-    margin-top:
-      1px;
-  }
-
-  .ete-autosave strong {
-    display:
-      block;
-
-    font-size:
-      12.5px;
-  }
-
-  .ete-autosave p {
-    margin:
-      2px
-      0
-      0;
-
-    color:
-      var(--app-text-secondary);
-
-    font-size:
-      10.5px;
-
-    line-height:
-      1.45;
-  }
-
-  .ete-editor__warning,
-  .ete-editor__info {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-
-    padding:
-      10px
-      11px;
-
-    border:
-      1px solid
-      var(--app-warning-border);
-
-    border-radius:
-      11px;
-
-    color:
-      var(--app-warning);
-
-    background:
-      var(--app-warning-bg);
+    padding: 10px 11px;
+    border: 1px solid var(--app-success-border);
+    border-radius: 10px;
+    color: var(--app-success);
+    background: var(--app-success-bg);
   }
 
-  .ete-editor__warning strong {
-    font-size:
-      12.5px;
+  .ete-autosave strong,
+  .ete-autosave p {
+    display: block;
+    margin: 0;
   }
 
-  .ete-editor__warning p,
-  .ete-editor__info p {
-    margin:
-      2px
-      0
-      0;
-
-    color:
-      var(--app-text-secondary);
-
-    font-size:
-      10.5px;
-
-    line-height:
-      1.45;
+  .ete-autosave strong {
+    font-size: 10.5px;
   }
 
-  .ete-field {
-    display: grid;
-    gap: 6px;
+  .ete-autosave p {
+    margin-top: 2px;
+    font-size: 9.5px;
   }
 
-  .ete-field > span {
-    color:
-      var(--app-text-secondary);
-
-    font-size:
-      12.5px;
-
-    font-weight:
-      850;
-  }
-
-  .ete-field textarea {
-    width: 100%;
-
-    min-height:
-      220px;
-
-    box-sizing:
-      border-box;
-
-    resize:
-      vertical;
-
-    padding:
-      11px
-      12px;
-
-    border:
-      1px solid
-      var(--app-border);
-
-    border-radius:
-      12px;
-
-    outline:
-      none;
-
-    color:
-      var(--app-text);
-
-    background:
-      var(--app-surface-alt);
-
-    font:
-      inherit;
-
-    font-size:
-      12px;
-
-    line-height:
-      1.55;
-  }
-
-  .ete-field textarea:focus {
-    border-color:
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-
-    box-shadow:
-      0 0 0 3px
-      color-mix(
-        in srgb,
-        var(
-          --dte-color,
-          var(--app-accent)
-        ) 12%,
-        transparent
-      );
-  }
-
-  .ete-field > small {
-    justify-self:
-      end;
-
-    color:
-      var(--app-text-muted);
-
-    font-size:
-      7.5px;
-  }
-
-  .ete-upload {
+  .ete-editor__section {
     display: grid;
     gap: 10px;
   }
 
-  .ete-upload__title {
+  .ete-editor__title {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
   }
 
-  .ete-upload__title > div {
-    display: grid;
-    gap: 2px;
+  .ete-editor__title > div {
+    min-width: 0;
+    flex: 1;
   }
 
-  .ete-upload__title strong {
-    font-size:
-      11.5px;
+  .ete-editor__title strong,
+  .ete-editor__title small {
+    display: block;
   }
 
-  .ete-upload__title small {
-    color:
-      var(--app-text-muted);
-
-    font-size:
-      12px;
+  .ete-editor__title strong {
+    font-size: 11.5px;
   }
 
-  .ete-upload__title > span {
-    min-width:
-      34px;
+  .ete-editor__title small {
+    margin-top: 2px;
+    color: var(--app-text-muted);
+    font-size: 9.5px;
+  }
 
-    padding:
-      5px
-      8px;
-
-    border-radius:
-      999px;
-
-    color:
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-
-    background:
-      var(
-        --dte-fondo,
-        var(--app-accent-soft)
-      );
-
-    font-size:
-      12px;
-
-    font-weight:
-      850;
-
-    text-align:
-      center;
+  .ete-editor textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid var(--app-border-strong);
+    border-radius: 10px;
+    outline: none;
+    resize: vertical;
+    color: var(--app-text);
+    background: var(--app-surface);
+    font: inherit;
+    font-size: 12px;
+    line-height: 1.6;
   }
 
   .ete-upload__selector {
-    min-height:
-      104px;
-
-    display: grid;
-    place-items: center;
-    align-content: center;
-    gap: 6px;
-
-    padding:
-      14px;
-
-    border:
-      1px dashed
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-
-    border-radius:
-      13px;
-
-    color:
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-
-    background:
-      color-mix(
-        in srgb,
-        var(
-          --dte-fondo,
-          var(--app-accent-soft)
-        ) 45%,
-        var(--app-surface)
-      );
-
-    text-align:
-      center;
-
-    cursor:
-      pointer;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 12px;
+    border: 1px dashed var(--app-border-strong);
+    border-radius: 10px;
+    background: var(--app-surface);
+    cursor: pointer;
   }
 
-  .ete-upload__selector > div {
+  .ete-upload__selector:hover {
+    border-color: var(--dte-color, var(--app-accent));
+  }
+
+  .ete-upload__selector div {
     display: grid;
     gap: 2px;
   }
 
   .ete-upload__selector strong {
-    font-size:
-      12px;
+    font-size: 10.5px;
   }
 
   .ete-upload__selector span {
-    color:
-      var(--app-text-muted);
-
-    font-size:
-      12px;
+    color: var(--app-text-muted);
+    font-size: 9px;
   }
 
   .ete-upload__selector input {
-    display:
-      none;
+    display: none;
   }
 
-  .ete-upload__rules {
+  .ete-editor__info {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .ete-upload__rules span {
-    padding:
-      5px
-      8px;
-
-    border-radius:
-      999px;
-
-    color:
-      var(--app-text-muted);
-
-    background:
-      var(--app-surface-alt);
-
-    font-size:
-      7.5px;
-  }
-
-  .ete-upload__file-actions {
-    display: flex !important;
     align-items: center;
-    gap: 5px;
-  }
-
-  .ete-upload__file-actions button.danger,
-  .ete-upload__local article > button.danger {
-    color:
-      var(--app-danger);
-
-    border-color:
-      var(--app-danger-border);
-
-    background:
-      var(--app-danger-bg);
-  }
-
-  .ete-current__file-actions,
-  .ete-file-modal__footer {
-    display:
-      flex;
-
-    align-items:
-      center;
-
-    gap:
-      6px;
-  }
-
-  .ete-current__file-actions button.ete-file-detail {
-    color:
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
-
-    background:
-      color-mix(
-        in srgb,
-        var(
-          --dte-fondo,
-          var(--app-accent-soft)
-        ) 65%,
-        var(--app-surface)
-      );
+    gap: 7px;
+    color: var(--app-text-muted);
+    font-size: 10px;
   }
 
   .ete-file-modal {
-    display:
-      grid;
-
-    gap:
-      12px;
+    display: grid;
+    gap: 12px;
   }
 
   .ete-file-modal__meta {
-    display:
-      grid;
-
-    grid-template-columns:
-      repeat(
-        4,
-        minmax(
-          0,
-          1fr
-        )
-      );
-
-    gap:
-      8px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .ete-file-modal__meta article {
-    padding:
-      10px
-      11px;
-
-    border:
-      1px solid
-      var(--app-border);
-
-    border-radius:
-      11px;
-
-    background:
-      var(--app-surface-alt);
+    padding: 9px 10px;
+    border: 1px solid var(--app-border);
+    border-radius: 9px;
+    background: var(--app-surface-alt);
   }
 
   .ete-file-modal__meta small,
   .ete-file-modal__meta strong {
-    display:
-      block;
+    display: block;
   }
 
   .ete-file-modal__meta small {
-    color:
-      var(--app-text-muted);
-
-    font-size:
-      10px;
+    color: var(--app-text-muted);
+    font-size: 9px;
   }
 
   .ete-file-modal__meta strong {
-    margin-top:
-      3px;
-
-    overflow:
-      hidden;
-
-    color:
-      var(--app-text-secondary);
-
-    font-size:
-      11.5px;
-
-    white-space:
-      nowrap;
-
-    text-overflow:
-      ellipsis;
+    margin-top: 3px;
+    font-size: 10.5px;
   }
 
   .ete-file-modal__preview {
-    min-height:
-      390px;
-
-    max-height:
-      58vh;
-
-    display:
-      grid;
-
-    place-items:
-      center;
-
-    overflow:
-      hidden;
-
-    border:
-      1px solid
-      var(--app-border);
-
-    border-radius:
-      13px;
-
-    background:
-      var(--app-surface-alt);
+    min-height: 360px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid var(--app-border);
+    border-radius: 12px;
+    background: var(--app-surface-alt);
   }
 
-  .ete-file-modal__preview img {
-    width:
-      100%;
-
-    height:
-      100%;
-
-    max-height:
-      58vh;
-
-    object-fit:
-      contain;
-
-    background:
-      var(--app-surface);
-  }
-
+  .ete-file-modal__preview img,
   .ete-file-modal__preview iframe {
-    width:
-      100%;
-
-    height:
-      58vh;
-
-    min-height:
-      390px;
-
-    border:
-      0;
-
-    background:
-      #fff;
+    width: 100%;
+    height: 520px;
+    border: 0;
+    object-fit: contain;
   }
 
   .ete-file-modal__state {
-    max-width:
-      420px;
-
-    display:
-      grid;
-
-    justify-items:
-      center;
-
-    gap:
-      6px;
-
-    padding:
-      28px;
-
-    color:
-      var(--app-text-muted);
-
-    text-align:
-      center;
-  }
-
-  .ete-file-modal__state > svg {
-    color:
-      var(
-        --dte-color,
-        var(--app-accent)
-      );
+    display: grid;
+    place-items: center;
+    gap: 6px;
+    max-width: 460px;
+    padding: 22px;
+    text-align: center;
+    color: var(--app-text-muted);
   }
 
   .ete-file-modal__state strong {
-    color:
-      var(--app-text);
-
-    font-size:
-      12px;
+    color: var(--app-text-secondary);
+    font-size: 11px;
   }
 
   .ete-file-modal__state p {
-    margin:
-      0;
-
-    color:
-      var(--app-text-muted);
-
-    font-size:
-      10.5px;
-
-    line-height:
-      1.5;
+    margin: 0;
+    font-size: 10px;
+    line-height: 1.5;
   }
 
-  .ete-file-modal__state--error > svg {
-    color:
-      var(--app-danger);
-  }
-
-  @media (
-    max-width:
-      700px
-  ) {
-    .ete-file-modal__meta {
-      grid-template-columns:
-        repeat(
-          2,
-          minmax(
-            0,
-            1fr
-          )
-        );
-    }
-
-    .ete-file-modal__preview,
-    .ete-file-modal__preview iframe {
-      min-height:
-        320px;
-    }
-  }
-
-  @keyframes eteRotar {
+  @keyframes ete-spin {
     to {
-      transform:
-        rotate(
-          360deg
-        );
+      transform: rotate(360deg);
     }
   }
 
-  @media (
-    max-width:
-      700px
-  ) {
-    .ete-experience__components {
-      grid-template-columns:
-        1fr;
+  @media (max-width: 760px) {
+    .ete-delivery-card,
+    .ete-workspace__head,
+    .ete-workspace__footer {
+      align-items: stretch;
+      flex-direction: column;
     }
 
-    .ete-delivery-card {
-      align-items:
-        stretch;
+    .ete-delivery-status {
+      width: fit-content;
+    }
 
-      flex-direction:
-        column;
+    .ete-workspace__counter {
+      width: fit-content;
+    }
+
+    .ete-workspace__actions {
+      width: 100%;
+    }
+
+    .ete-workspace__actions button {
+      flex: 1;
     }
 
     .ete-delivery-card__action {
-      width:
-        100%;
+      width: 100%;
     }
 
-    .ete-modal-footer {
-      align-items:
-        stretch;
+    .ete-file-modal__meta {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
 
-      flex-direction:
-        column;
+  @media (max-width: 520px) {
+    .ete-experience {
+      padding: 16px;
     }
 
-    .ete-modal-footer button {
-      width:
-        100%;
+    .ete-experience__head {
+      grid-template-columns: 42px minmax(0, 1fr);
+    }
+
+    .ete-experience__icon {
+      width: 42px;
+      height: 42px;
+    }
+
+    .ete-workspace__actions {
+      flex-direction: column;
+    }
+
+    .ete-file-modal__meta {
+      grid-template-columns: 1fr;
     }
   }
 `;

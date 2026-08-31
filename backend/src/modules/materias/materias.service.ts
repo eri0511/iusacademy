@@ -4,28 +4,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import {
-  EstadoMateria,
-} from '../../generated/prisma/client';
+import { EstadoMateria } from '../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-import {
-  ActualizarMateriaDto,
-} from './dto/actualizar-materia.dto';
+import { ActualizarMateriaDto } from './dto/actualizar-materia.dto';
 
-import {
-  CrearMateriaDto,
-} from './dto/crear-materia.dto';
+import { CrearMateriaDto } from './dto/crear-materia.dto';
 
 @Injectable()
 export class MateriasService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async obtenerTodas() {
     return this.prisma.materia.findMany({
@@ -40,196 +29,141 @@ export class MateriasService {
     });
   }
 
-  async obtenerPorId(
-    id: number,
-  ) {
-    const materia =
-      await this.prisma.materia.findUnique({
-        where: {
-          id,
-        },
-      });
+  async obtenerPorId(id: number) {
+    const materia = await this.prisma.materia.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!materia) {
-      throw new NotFoundException(
-        'La materia no existe',
-      );
+      throw new NotFoundException('La materia no existe');
     }
 
     return materia;
   }
 
-  async crear(
-    datos: CrearMateriaDto,
-  ) {
-    const nombreNormalizado =
-      datos.nombre.trim();
+  async crear(datos: CrearMateriaDto) {
+    const nombreNormalizado = datos.nombre.trim();
 
-    const codigoNormalizado =
-      datos.codigo
-        .trim()
-        .toUpperCase();
+    const codigoNormalizado = datos.codigo.trim().toUpperCase();
 
-    const materiaExistente =
-      await this.prisma.materia.findUnique({
-        where: {
-          codigo:
-            codigoNormalizado,
-        },
-      });
+    const materiaExistente = await this.prisma.materia.findUnique({
+      where: {
+        codigo: codigoNormalizado,
+      },
+    });
 
     if (materiaExistente) {
-      throw new ConflictException(
-        'Ya existe una materia con ese código',
-      );
+      throw new ConflictException('Ya existe una materia con ese código');
     }
 
-    const materia =
-      await this.prisma.materia.create({
-        data: {
-          nombre:
-            nombreNormalizado,
+    const materia = await this.prisma.materia.create({
+      data: {
+        nombre: nombreNormalizado,
 
-          codigo:
-            codigoNormalizado,
+        codigo: codigoNormalizado,
 
-          semestre:
-            datos.semestre,
+        semestre: datos.semestre,
 
-          descripcion:
-            datos.descripcion
-              ?.trim() ||
-            null,
-        },
-      });
+        descripcion: datos.descripcion?.trim() || null,
+      },
+    });
 
     return {
-      mensaje:
-        'Materia creada correctamente',
+      mensaje: 'Materia creada correctamente',
 
       materia,
     };
   }
 
-  async actualizar(
-    id: number,
-    datos: ActualizarMateriaDto,
-  ) {
+  async actualizar(id: number, datos: ActualizarMateriaDto) {
     await this.obtenerPorId(id);
 
-    const codigoNormalizado =
-      datos.codigo
-        ?.trim()
-        .toUpperCase();
+    const codigoNormalizado = datos.codigo?.trim().toUpperCase();
 
     if (codigoNormalizado) {
-      const materiaConMismoCodigo =
-        await this.prisma.materia.findFirst({
-          where: {
-            codigo:
-              codigoNormalizado,
+      const materiaConMismoCodigo = await this.prisma.materia.findFirst({
+        where: {
+          codigo: codigoNormalizado,
 
-            id: {
-              not: id,
-            },
+          id: {
+            not: id,
           },
-        });
+        },
+      });
 
       if (materiaConMismoCodigo) {
-        throw new ConflictException(
-          'Ya existe otra materia con ese código',
-        );
+        throw new ConflictException('Ya existe otra materia con ese código');
       }
     }
 
-    const materia =
-      await this.prisma.materia.update({
-        where: {
-          id,
-        },
+    const materia = await this.prisma.materia.update({
+      where: {
+        id,
+      },
 
-        data: {
-          ...(datos.nombre !==
-          undefined
-            ? {
-                nombre:
-                  datos.nombre.trim(),
-              }
-            : {}),
+      data: {
+        ...(datos.nombre !== undefined
+          ? {
+              nombre: datos.nombre.trim(),
+            }
+          : {}),
 
-          ...(codigoNormalizado !==
-          undefined
-            ? {
-                codigo:
-                  codigoNormalizado,
-              }
-            : {}),
+        ...(codigoNormalizado !== undefined
+          ? {
+              codigo: codigoNormalizado,
+            }
+          : {}),
 
-          ...(datos.semestre !==
-          undefined
-            ? {
-                semestre:
-                  datos.semestre,
-              }
-            : {}),
+        ...(datos.semestre !== undefined
+          ? {
+              semestre: datos.semestre,
+            }
+          : {}),
 
-          ...(datos.descripcion !==
-          undefined
-            ? {
-                descripcion:
-                  datos.descripcion.trim() ||
-                  null,
-              }
-            : {}),
-        },
-      });
+        ...(datos.descripcion !== undefined
+          ? {
+              descripcion: datos.descripcion.trim() || null,
+            }
+          : {}),
+      },
+    });
 
     return {
-      mensaje:
-        'Materia actualizada correctamente',
+      mensaje: 'Materia actualizada correctamente',
 
       materia,
     };
   }
 
-  async cambiarEstado(
-    id: number,
-    estado: EstadoMateria,
-  ) {
-    const materiaActual =
-      await this.obtenerPorId(id);
+  async cambiarEstado(id: number, estado: EstadoMateria) {
+    const materiaActual = await this.obtenerPorId(id);
 
-    if (
-      materiaActual.estado ===
-      estado
-    ) {
+    if (materiaActual.estado === estado) {
       return {
         mensaje:
-          estado ===
-          EstadoMateria.ACTIVA
+          estado === EstadoMateria.ACTIVA
             ? 'La materia ya se encuentra activa'
             : 'La materia ya se encuentra inactiva',
 
-        materia:
-          materiaActual,
+        materia: materiaActual,
       };
     }
 
-    const materia =
-      await this.prisma.materia.update({
-        where: {
-          id,
-        },
+    const materia = await this.prisma.materia.update({
+      where: {
+        id,
+      },
 
-        data: {
-          estado,
-        },
-      });
+      data: {
+        estado,
+      },
+    });
 
     return {
       mensaje:
-        estado ===
-        EstadoMateria.ACTIVA
+        estado === EstadoMateria.ACTIVA
           ? 'Materia reactivada correctamente'
           : 'Materia desactivada correctamente',
 

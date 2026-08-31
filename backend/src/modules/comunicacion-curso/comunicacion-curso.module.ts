@@ -1,40 +1,26 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import {
-  AuthModule,
-} from '../auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
-import {
-  ComentariosController,
-} from './comentarios/comentarios.controller';
+import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 
-import {
-  ComentariosService,
-} from './comentarios/comentarios.service';
+import { ComentariosController } from './comentarios/comentarios.controller';
+
+import { ComentariosService } from './comentarios/comentarios.service';
 
 import {
   DocenteLecturasController,
   EstudianteLecturasController,
 } from './lecturas/lecturas.controller';
 
-import {
-  LecturasService,
-} from './lecturas/lecturas.service';
+import { LecturasService } from './lecturas/lecturas.service';
 
-import {
-  PublicacionesController,
-} from './publicaciones/publicaciones.controller';
+import { PublicacionesController } from './publicaciones/publicaciones.controller';
 
-import {
-  PublicacionesService,
-} from './publicaciones/publicaciones.service';
+import { PublicacionesService } from './publicaciones/publicaciones.service';
 
 @Module({
-  imports: [
-    AuthModule,
-  ],
+  imports: [AuthModule, NotificacionesModule],
 
   controllers: [
     /*
@@ -54,16 +40,8 @@ import {
     DocenteLecturasController,
   ],
 
-  providers: [
-    PublicacionesService,
-    ComentariosService,
-    LecturasService,
-  ],
+  providers: [PublicacionesService, ComentariosService, LecturasService],
 
-  exports: [
-    PublicacionesService,
-    ComentariosService,
-    LecturasService,
-  ],
+  exports: [PublicacionesService, ComentariosService, LecturasService],
 })
 export class ComunicacionCursoModule {}

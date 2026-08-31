@@ -1,6 +1,4 @@
-import type {
-  ArchivoReporteGenerado,
-} from '../interfaces/reporte.interface';
+import type { ArchivoReporteGenerado } from '../interfaces/reporte.interface';
 
 export interface RespuestaDescargaReporte {
   setHeader(nombre: string, valor: string): unknown;

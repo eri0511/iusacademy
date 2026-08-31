@@ -4,7 +4,9 @@ import {
   Award,
   BookOpenCheck,
   CalendarDays,
+  CalendarClock,
   CheckCircle2,
+  ClipboardList,
   Clock3,
   Edit3,
   Eye,
@@ -58,8 +60,11 @@ import useDetalleTarea from '../../../hooks/tareas/useDetalleTarea';
 import useSeguimientoTareaDocente from '../../../hooks/tareas/useSeguimientoTareaDocente';
 
 import CalificacionesTareaDocente from '../../../components/tareas/docente/CalificacionesTareaDocente';
+import RegistroEvidenciaPresencial from '../../../components/tareas/docente/RegistroEvidenciaPresencial';
+import ConfiguracionRubricaTarea from '../../../components/tareas/docente/ConfiguracionRubricaTarea';
 import EquiposTareaDocente from '../../../components/tareas/docente/EquiposTareaDocente';
 import HistorialTareaDocente from '../../../components/tareas/docente/HistorialTareaDocente';
+import ExtensionPlazoTareaDocente from '../../../components/tareas/docente/ExtensionPlazoTareaDocente';
 
 
 import type {
@@ -833,6 +838,22 @@ export default function DetalleTarea() {
     );
 
   const [
+    rubricaAbierta,
+    setRubricaAbierta,
+  ] =
+    useState(
+      false,
+    );
+
+  const [
+    extensionAbierta,
+    setExtensionAbierta,
+  ] =
+    useState(
+      false,
+    );
+
+  const [
     detalleAbierto,
     setDetalleAbierto,
   ] =
@@ -1459,6 +1480,48 @@ export default function DetalleTarea() {
                   </span>
                 </button>
 
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRubricaAbierta(
+                      true,
+                    )
+                  }
+                >
+                  <ClipboardList />
+
+                  <span>
+                    <strong>
+                      Rúbrica de evaluación
+                    </strong>
+
+                    <small>
+                      Crear o importar la rúbrica de calificación
+                    </small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExtensionAbierta(
+                      true,
+                    )
+                  }
+                >
+                  <CalendarClock />
+
+                  <span>
+                    <strong>
+                      Extender plazo
+                    </strong>
+
+                    <small>
+                      Ampliar fechas para estudiantes o grupos
+                    </small>
+                  </span>
+                </button>
+
                 {tarea.estado ===
                   'BORRADOR' && (
                   <button
@@ -1720,45 +1783,88 @@ export default function DetalleTarea() {
         'calificaciones' &&
         tarea.esCalificable && (
         <div className="dt-calificaciones-vista">
-          {seguimiento.panel ? (
-            <CalificacionesTareaDocente
-              panel={
-                seguimiento.panel
+          {tarea.tipo ===
+          'PRESENCIAL' ? (
+            <RegistroEvidenciaPresencial
+              cursoId={
+                idCurso
               }
-              procesando={
-                seguimiento.procesando
+              tareaId={
+                idTarea
               }
-              onCalificar={(
-                entregaId,
-              ) =>
-                navigate(
-                  `/docente/cursos/${idCurso}/tareas/${idTarea}/entregas/${entregaId}`,
-                )
+              puntajeMaximo={
+                tarea.puntajeMaximo != null
+                  ? Number(tarea.puntajeMaximo)
+                  : null
               }
-              onPublicar={async () => {
-                try {
-                  await seguimiento.publicar();
-
-                  mostrarToast(
-                    'exito',
-                    'Notas publicadas',
-                    'Los estudiantes ya pueden consultar sus calificaciones.',
-                  );
-                } catch (
-                  causa
-                ) {
-                  mostrarToast(
-                    'error',
-                    'No se pudieron publicar las notas',
-                    causa instanceof Error
-                      ? causa.message
-                      : undefined,
-                  );
-
-                  throw causa;
-                }
-              }}
             />
+          ) : seguimiento.panel ? (
+            <>
+              <section className="dt-estadisticas">
+                <article>
+                  <CheckCircle2 size={20} />
+                  <strong>{seguimiento.panel.resumen.entregadas}</strong>
+                  <span>Entregadas</span>
+                </article>
+
+                <article>
+                  <Clock3 size={20} />
+                  <strong>{seguimiento.panel.resumen.pendientes}</strong>
+                  <span>Pendientes</span>
+                </article>
+
+                <article>
+                  <CalendarClock size={20} />
+                  <strong>{seguimiento.panel.resumen.puntuales}</strong>
+                  <span>Puntuales</span>
+                </article>
+
+                <article>
+                  <AlertCircle size={20} />
+                  <strong>{seguimiento.panel.resumen.fueraDePlazo}</strong>
+                  <span>Fuera de plazo</span>
+                </article>
+
+                <article>
+                  <Award size={20} />
+                  <strong>
+                    {seguimiento.panel.resumen.promedioNota === null
+                      ? '—'
+                      : `${seguimiento.panel.resumen.promedioNota.toFixed(1)}%`}
+                  </strong>
+                  <span>Promedio</span>
+                </article>
+              </section>
+
+              <CalificacionesTareaDocente
+                panel={seguimiento.panel}
+                procesando={seguimiento.procesando}
+                onCalificar={(entregaId) =>
+                  navigate(
+                    `/docente/cursos/${idCurso}/tareas/${idTarea}/entregas/${entregaId}`,
+                  )
+                }
+                onPublicar={async () => {
+                  try {
+                    await seguimiento.publicar();
+
+                    mostrarToast(
+                      'exito',
+                      'Notas publicadas',
+                      'Los estudiantes ya pueden consultar sus calificaciones.',
+                    );
+                  } catch (causa) {
+                    mostrarToast(
+                      'error',
+                      'No se pudieron publicar las notas',
+                      causa instanceof Error ? causa.message : undefined,
+                    );
+
+                    throw causa;
+                  }
+                }}
+              />
+            </>
           ) : (
             <AulaSkeleton
               cantidad={4}
@@ -2101,6 +2207,52 @@ export default function DetalleTarea() {
         />
       )}
 
+      <ConfiguracionRubricaTarea
+        cursoId={
+          idCurso
+        }
+        tareaId={
+          idTarea
+        }
+        abierto={
+          rubricaAbierta
+        }
+        onCerrar={() =>
+          setRubricaAbierta(
+            false,
+          )
+        }
+        onCambio={
+          detalle.cargar
+        }
+      />
+
+      <ExtensionPlazoTareaDocente
+        abierto={
+          extensionAbierta
+        }
+        cursoId={
+          idCurso
+        }
+        extensiones={
+          seguimiento.extensiones
+        }
+        procesando={
+          seguimiento.procesando
+        }
+        onCerrar={() =>
+          setExtensionAbierta(
+            false,
+          )
+        }
+        onExtender={
+          seguimiento.extenderPlazo
+        }
+        onRevocar={
+          seguimiento.revocarExtension
+        }
+      />
+
       <AulaModal
         abierto={
           Boolean(
@@ -2218,6 +2370,51 @@ const styles = `
   display: grid;
   gap: 12px;
   min-width: 0;
+}
+
+.dt-estadisticas {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dt-estadisticas article {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 15px;
+  background: var(--app-surface);
+}
+
+.dt-estadisticas article > svg {
+  grid-row: span 2;
+  color: var(--dt-type-color);
+}
+
+.dt-estadisticas strong {
+  color: var(--app-text);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.dt-estadisticas span {
+  color: var(--app-text-muted);
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .dt-estadisticas {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .dt-estadisticas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 

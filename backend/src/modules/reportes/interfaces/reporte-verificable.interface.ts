@@ -1,6 +1,4 @@
-import type {
-  FiltrosReporte,
-} from '../tipos/reportes.types';
+import type { FiltrosReporte } from '../tipos/reportes.types';
 
 export interface DatosRegistroReporte {
   tipo: string;

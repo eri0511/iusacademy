@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   ArrayMaxSize,
@@ -17,94 +15,62 @@ import {
 } from 'class-validator';
 
 export enum AccionMasivaCalificacionForo {
-  ASIGNAR_NOTA =
-    'ASIGNAR_NOTA',
+  ASIGNAR_NOTA = 'ASIGNAR_NOTA',
 
-  APLICAR_DESCUENTO =
-    'APLICAR_DESCUENTO',
+  APLICAR_DESCUENTO = 'APLICAR_DESCUENTO',
 
-  APLICAR_AJUSTE =
-    'APLICAR_AJUSTE',
+  APLICAR_AJUSTE = 'APLICAR_AJUSTE',
 
-  ASIGNAR_CERO =
-    'ASIGNAR_CERO',
+  ASIGNAR_CERO = 'ASIGNAR_CERO',
 
-  AGREGAR_RETROALIMENTACION =
-    'AGREGAR_RETROALIMENTACION',
+  AGREGAR_RETROALIMENTACION = 'AGREGAR_RETROALIMENTACION',
 }
 
 export enum FiltroMasivoCalificacionForo {
-  SELECCIONADOS =
-    'SELECCIONADOS',
+  SELECCIONADOS = 'SELECCIONADOS',
 
-  TODOS =
-    'TODOS',
+  TODOS = 'TODOS',
 
-  PENDIENTES =
-    'PENDIENTES',
+  PENDIENTES = 'PENDIENTES',
 
-  TARDIOS =
-    'TARDIOS',
+  TARDIOS = 'TARDIOS',
 
-  SIN_RESPUESTA =
-    'SIN_RESPUESTA',
+  SIN_RESPUESTA = 'SIN_RESPUESTA',
 
-  CALIFICADOS =
-    'CALIFICADOS',
+  CALIFICADOS = 'CALIFICADOS',
 }
 
 export class CalificarForoMasivamenteDto {
-  @IsEnum(
-    AccionMasivaCalificacionForo,
-  )
-  accion!:
-    AccionMasivaCalificacionForo;
+  @IsEnum(AccionMasivaCalificacionForo)
+  accion!: AccionMasivaCalificacionForo;
 
-  @IsEnum(
-    FiltroMasivoCalificacionForo,
-  )
-  filtro!:
-    FiltroMasivoCalificacionForo;
+  @IsEnum(FiltroMasivoCalificacionForo)
+  filtro!: FiltroMasivoCalificacionForo;
 
   @IsOptional()
   @IsArray()
   @ArrayUnique()
   @ArrayMaxSize(500)
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt({
-    each:
-      true,
+    each: true,
   })
-  @Min(
-    1,
-    {
-      each:
-        true,
-    },
-  )
-  estudiantesIds?:
-    number[];
+  @Min(1, {
+    each: true,
+  })
+  estudiantesIds?: number[];
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(-100)
   @Max(100)
-  valor?:
-    number;
+  valor?: number;
 
   @IsOptional()
   @IsString()
   @MaxLength(3000)
-  retroalimentacion?:
-    string;
+  retroalimentacion?: string;
 }

@@ -14,61 +14,34 @@ import {
   Rol,
 } from '../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-import {
-  AgregarIntegranteEquipoDto,
-} from './dto/agregar-integrante-equipo.dto';
+import { AgregarIntegranteEquipoDto } from './dto/agregar-integrante-equipo.dto';
 
-import {
-  CambiarEstadoEquipoDto,
-} from './dto/cambiar-estado-equipo.dto';
+import { CambiarEstadoEquipoDto } from './dto/cambiar-estado-equipo.dto';
 
-import {
-  CambiarRepresentanteEquipoDto,
-} from './dto/cambiar-representante-equipo.dto';
+import { CambiarRepresentanteEquipoDto } from './dto/cambiar-representante-equipo.dto';
 
-import {
-  CrearEquipoAfinidadDto,
-} from './dto/crear-equipo-afinidad.dto';
+import { CrearEquipoAfinidadDto } from './dto/crear-equipo-afinidad.dto';
 
-import {
-  ForoReglasService,
-} from '../foro/foro-reglas.service';
+import { ForoReglasService } from '../foro/foro-reglas.service';
 
-import type {
-  UsuarioAutenticado,
-} from '../foro/interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from '../foro/interfaces/usuario-autenticado.interface';
 
 @Injectable()
 export class EquiposAfinidadService {
   constructor(
-    private readonly prisma:
-      PrismaService,
+    private readonly prisma: PrismaService,
 
-    private readonly reglas:
-      ForoReglasService,
+    private readonly reglas: ForoReglasService,
   ) {}
 
-  private async validarForoAfinidad(
-    cursoId:
-      number,
-    foroId:
-      number,
-  ) {
-    const foro =
-      await this.reglas.obtenerForo(
-        cursoId,
-        foroId,
-      );
+  private async validarForoAfinidad(cursoId: number, foroId: number) {
+    const foro = await this.reglas.obtenerForo(cursoId, foroId);
 
     if (
-      foro.modalidadParticipacion !==
-        ModalidadParticipacionForo.GRUPAL ||
-      foro.origenGrupo !==
-        OrigenGrupoForo.AFINIDAD
+      foro.modalidadParticipacion !== ModalidadParticipacionForo.GRUPAL ||
+      foro.origenGrupo !== OrigenGrupoForo.AFINIDAD
     ) {
       throw new BadRequestException(
         'Este foro no utiliza equipos por afinidad',
@@ -79,41 +52,26 @@ export class EquiposAfinidadService {
   }
 
   private async validarEstudiantesCurso(
-    cursoId:
-      number,
-    estudiantesIds:
-      number[],
+    cursoId: number,
+    estudiantesIds: number[],
   ) {
-    const unicos =
-      [
-        ...new Set(
-          estudiantesIds,
-        ),
-      ];
+    const unicos = [...new Set(estudiantesIds)];
 
-    const total =
-      await this.prisma.inscripcionCurso.count({
-        where: {
-          cursoId,
-          estudianteId: {
-            in:
-              unicos,
-          },
-          estado:
-            EstadoInscripcion.ACTIVA,
-          estudiante: {
-            rol:
-              Rol.ESTUDIANTE,
-            estaActivo:
-              true,
-          },
+    const total = await this.prisma.inscripcionCurso.count({
+      where: {
+        cursoId,
+        estudianteId: {
+          in: unicos,
         },
-      });
+        estado: EstadoInscripcion.ACTIVA,
+        estudiante: {
+          rol: Rol.ESTUDIANTE,
+          estaActivo: true,
+        },
+      },
+    });
 
-    if (
-      total !==
-      unicos.length
-    ) {
+    if (total !== unicos.length) {
       throw new BadRequestException(
         'Uno o más integrantes no pertenecen al curso',
       );
@@ -123,68 +81,48 @@ export class EquiposAfinidadService {
   }
 
   private async validarSinOtroEquipo(
-    foroId:
-      number,
-    estudiantesIds:
-      number[],
-    excluirEquipoId?:
-      number,
+    foroId: number,
+    estudiantesIds: number[],
+    excluirEquipoId?: number,
   ) {
-    const existentes =
-      await this.prisma.integranteEquipoForo.findMany({
-        where: {
-          estudianteId: {
-            in:
-              estudiantesIds,
-          },
-          estaActivo:
-            true,
-          equipo: {
-            temaId:
-              foroId,
-            estaActivo:
-              true,
-            ...(excluirEquipoId
-              ? {
-                  id: {
-                    not:
-                      excluirEquipoId,
-                  },
-                }
-              : {}),
+    const existentes = await this.prisma.integranteEquipoForo.findMany({
+      where: {
+        estudianteId: {
+          in: estudiantesIds,
+        },
+        estaActivo: true,
+        equipo: {
+          temaId: foroId,
+          estaActivo: true,
+          ...(excluirEquipoId
+            ? {
+                id: {
+                  not: excluirEquipoId,
+                },
+              }
+            : {}),
+        },
+      },
+
+      select: {
+        estudianteId: true,
+
+        estudiante: {
+          select: {
+            nombres: true,
+            apellidoPaterno: true,
           },
         },
+      },
+    });
 
-        select: {
-          estudianteId:
-            true,
-
-          estudiante: {
-            select: {
-              nombres:
-                true,
-              apellidoPaterno:
-                true,
-            },
-          },
-        },
-      });
-
-    if (
-      existentes.length >
-      0
-    ) {
-      const nombres =
-        existentes
-          .map(
-            (
-              item,
-            ) =>
-              `${item.estudiante.nombres} ${item.estudiante.apellidoPaterno}`,
-          )
-          .join(
-            ', ',
-          );
+    if (existentes.length > 0) {
+      const nombres = existentes
+        .map(
+          (item) =>
+            `${item.estudiante.nombres} ${item.estudiante.apellidoPaterno}`,
+        )
+        .join(', ');
 
       throw new BadRequestException(
         `Uno o más estudiantes ya pertenecen a otro equipo de este foro: ${nombres}`,
@@ -193,251 +131,154 @@ export class EquiposAfinidadService {
   }
 
   async listarEstudiantesDisponibles(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    foroId:
-      number,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    foroId: number,
   ) {
-    await this.reglas.validarInscripcion(
-      usuario,
-      cursoId,
-    );
+    await this.reglas.validarInscripcion(usuario, cursoId);
 
-    const foro =
-      await this.validarForoAfinidad(
+    const foro = await this.validarForoAfinidad(cursoId, foroId);
+
+    const equipoActual = await this.prisma.equipoAfinidadForo.findFirst({
+      where: {
+        temaId: foro.id,
         cursoId,
-        foroId,
-      );
-
-    const equipoActual =
-      await this.prisma.equipoAfinidadForo.findFirst({
-        where: {
-          temaId:
-            foro.id,
-          cursoId,
-          estaActivo:
-            true,
-          integrantes: {
-            some: {
-              estudianteId:
-                usuario.id,
-              estaActivo:
-                true,
-            },
+        estaActivo: true,
+        integrantes: {
+          some: {
+            estudianteId: usuario.id,
+            estaActivo: true,
           },
         },
+      },
 
-        select: {
-          id:
-            true,
-          nombre:
-            true,
-        },
-      });
+      select: {
+        id: true,
+        nombre: true,
+      },
+    });
 
-    if (
-      equipoActual
-    ) {
+    if (equipoActual) {
       return {
-        yaTieneEquipo:
-          true,
+        yaTieneEquipo: true,
 
-        equipo:
-          equipoActual,
+        equipo: equipoActual,
 
-        minimoIntegrantes:
-          foro.cantidadMinimaIntegrantes ??
-          2,
+        minimoIntegrantes: foro.cantidadMinimaIntegrantes ?? 2,
 
-        maximoIntegrantes:
-          foro.cantidadMaximaIntegrantes ??
-          100,
+        maximoIntegrantes: foro.cantidadMaximaIntegrantes ?? 100,
 
-        estudiantes:
-          [],
+        estudiantes: [],
       };
     }
 
-    const ocupados =
-      await this.prisma.integranteEquipoForo.findMany({
-        where: {
-          estaActivo:
-            true,
+    const ocupados = await this.prisma.integranteEquipoForo.findMany({
+      where: {
+        estaActivo: true,
 
-          equipo: {
-            temaId:
-              foro.id,
-            cursoId,
-            estaActivo:
-              true,
-          },
-        },
-
-        select: {
-          estudianteId:
-            true,
-        },
-      });
-
-    const ocupadosIds =
-      [
-        ...new Set(
-          ocupados.map(
-            (
-              item,
-            ) =>
-              item.estudianteId,
-          ),
-        ),
-      ];
-
-    const estudiantes =
-      await this.prisma.inscripcionCurso.findMany({
-        where: {
+        equipo: {
+          temaId: foro.id,
           cursoId,
+          estaActivo: true,
+        },
+      },
 
-          estado:
-            EstadoInscripcion.ACTIVA,
+      select: {
+        estudianteId: true,
+      },
+    });
 
-          estudianteId: {
-            notIn: [
-              usuario.id,
-              ...ocupadosIds,
-            ],
-          },
+    const ocupadosIds = [...new Set(ocupados.map((item) => item.estudianteId))];
 
-          estudiante: {
-            rol:
-              Rol.ESTUDIANTE,
-            estaActivo:
-              true,
-          },
+    const estudiantes = await this.prisma.inscripcionCurso.findMany({
+      where: {
+        cursoId,
+
+        estado: EstadoInscripcion.ACTIVA,
+
+        estudianteId: {
+          notIn: [usuario.id, ...ocupadosIds],
         },
 
-        orderBy: [
-          {
-            estudiante: {
-              apellidoPaterno:
-                'asc',
-            },
-          },
-          {
-            estudiante: {
-              nombres:
-                'asc',
-            },
-          },
-        ],
+        estudiante: {
+          rol: Rol.ESTUDIANTE,
+          estaActivo: true,
+        },
+      },
 
-        select: {
+      orderBy: [
+        {
           estudiante: {
-            select: {
-              id:
-                true,
-              nombres:
-                true,
-              apellidoPaterno:
-                true,
-              apellidoMaterno:
-                true,
-              correo:
-                true,
-              fotoPerfilUrl:
-                true,
-            },
+            apellidoPaterno: 'asc',
           },
         },
-      });
+        {
+          estudiante: {
+            nombres: 'asc',
+          },
+        },
+      ],
+
+      select: {
+        estudiante: {
+          select: {
+            id: true,
+            nombres: true,
+            apellidoPaterno: true,
+            apellidoMaterno: true,
+            correo: true,
+            fotoPerfilUrl: true,
+          },
+        },
+      },
+    });
 
     return {
-      yaTieneEquipo:
-        false,
+      yaTieneEquipo: false,
 
-      equipo:
-        null,
+      equipo: null,
 
-      minimoIntegrantes:
-        foro.cantidadMinimaIntegrantes ??
-        2,
+      minimoIntegrantes: foro.cantidadMinimaIntegrantes ?? 2,
 
-      maximoIntegrantes:
-        foro.cantidadMaximaIntegrantes ??
-        100,
+      maximoIntegrantes: foro.cantidadMaximaIntegrantes ?? 100,
 
-      estudiantes:
-        estudiantes.map(
-          (
-            item,
-          ) =>
-            item.estudiante,
-        ),
+      estudiantes: estudiantes.map((item) => item.estudiante),
     };
   }
 
   async crearEquipo(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    foroId:
-      number,
-    datos:
-      CrearEquipoAfinidadDto,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    foroId: number,
+    datos: CrearEquipoAfinidadDto,
   ) {
-    await this.reglas.validarInscripcion(
-      usuario,
-      cursoId,
-    );
+    await this.reglas.validarInscripcion(usuario, cursoId);
 
-    const foro =
-      await this.reglas.obtenerForo(
-        cursoId,
-        foroId,
-      );
+    const foro = await this.reglas.obtenerForo(cursoId, foroId);
 
-    this.reglas.validarForoDisponible(
-      foro,
-    );
+    this.reglas.validarForoDisponible(foro);
 
     if (
-      foro.modalidadParticipacion !==
-        ModalidadParticipacionForo.GRUPAL ||
-      foro.origenGrupo !==
-        OrigenGrupoForo.AFINIDAD
+      foro.modalidadParticipacion !== ModalidadParticipacionForo.GRUPAL ||
+      foro.origenGrupo !== OrigenGrupoForo.AFINIDAD
     ) {
       throw new BadRequestException(
         'Este foro no utiliza equipos por afinidad',
       );
     }
 
-    const integrantesIds =
-      await this.validarEstudiantesCurso(
-        cursoId,
-        [
-          usuario.id,
-          ...datos.integrantesIds,
-        ],
-      );
+    const integrantesIds = await this.validarEstudiantesCurso(cursoId, [
+      usuario.id,
+      ...datos.integrantesIds,
+    ]);
 
-    const minimo =
-      foro.cantidadMinimaIntegrantes ??
-      2;
+    const minimo = foro.cantidadMinimaIntegrantes ?? 2;
 
-    const maximo =
-      foro.cantidadMaximaIntegrantes ??
-      100;
+    const maximo = foro.cantidadMaximaIntegrantes ?? 100;
 
-    if (
-      integrantesIds.length <
-        minimo ||
-      integrantesIds.length >
-        maximo
-    ) {
+    if (integrantesIds.length < minimo || integrantesIds.length > maximo) {
       const regla =
-        minimo ===
-        maximo
+        minimo === maximo
           ? `exactamente ${minimo}`
           : `entre ${minimo} y ${maximo}`;
 
@@ -446,10 +287,7 @@ export class EquiposAfinidadService {
       );
     }
 
-    await this.validarSinOtroEquipo(
-      foro.id,
-      integrantesIds,
-    );
+    await this.validarSinOtroEquipo(foro.id, integrantesIds);
 
     /*
      * Regla IusAcademy:
@@ -461,231 +299,145 @@ export class EquiposAfinidadService {
      * a otra persona como representante durante la creación.
      */
     if (
-      datos.representanteId !==
-        undefined &&
-      datos.representanteId !==
-        usuario.id
+      datos.representanteId !== undefined &&
+      datos.representanteId !== usuario.id
     ) {
       throw new BadRequestException(
         'El creador del grupo por afinidad debe ser su representante',
       );
     }
 
-    const representanteId =
-      usuario.id;
+    const representanteId = usuario.id;
 
     /*
      * Los equipos por afinidad son decisión de los estudiantes.
      * No requieren aprobación docente.
      */
-    const estado =
-      EstadoEquipoForo.APROBADO;
+    const estado = EstadoEquipoForo.APROBADO;
 
-    return this.prisma.$transaction(
-      async (
-        transaccion,
-      ) => {
-        const equiposExistentes =
-          await transaccion.equipoAfinidadForo.findMany({
-            where: {
-              temaId:
-                foro.id,
-              cursoId,
-              estaActivo:
-                true,
-            },
-
-            select: {
-              nombre:
-                true,
-            },
-          });
-
-        const numerosUsados =
-          new Set(
-            equiposExistentes
-              .map(
-                (
-                  item,
-                ) => {
-                  const coincidencia =
-                    /^Grupo\s+(\d+)$/i.exec(
-                      item.nombre.trim(),
-                    );
-
-                  return coincidencia
-                    ? Number(
-                        coincidencia[1],
-                      )
-                    : null;
-                },
-              )
-              .filter(
-                (
-                  numero,
-                ): numero is number =>
-                  Number.isInteger(
-                    numero,
-                  ) &&
-                  (
-                    numero ??
-                    0
-                  ) >
-                    0,
-              ),
-          );
-
-        let numeroGrupo =
-          1;
-
-        while (
-          numerosUsados.has(
-            numeroGrupo,
-          )
-        ) {
-          numeroGrupo +=
-            1;
-        }
-
-        const nombreEquipo =
-          `Grupo ${numeroGrupo}`;
-
-        const equipo =
-          await transaccion.equipoAfinidadForo.create({
-            data: {
-              temaId:
-                foro.id,
-              cursoId,
-              creadorId:
-                usuario.id,
-              nombre:
-                nombreEquipo,
-              descripcion:
-                datos.descripcion?.trim() ||
-                null,
-              estado,
-              aprobadoEn:
-                new Date(),
-              integrantes: {
-                create:
-                  integrantesIds.map(
-                    (
-                      estudianteId,
-                    ) => ({
-                      estudianteId,
-                      esRepresentante:
-                        estudianteId ===
-                        representanteId,
-                    }),
-                  ),
-              },
-            },
-
-            include: {
-              integrantes:
-                true,
-            },
-          });
-
-        await transaccion.historialForoCurso.create({
-          data: {
-            temaId:
-              foro.id,
-            equipoId:
-              equipo.id,
-            actorId:
-              usuario.id,
-            accion:
-              AccionHistorialForo.EQUIPO_CREADO,
-            detalle: {
-              integrantesIds,
-              representanteId,
-              estado,
-            },
-          },
-        });
-
-        return {
-          mensaje:
-            'Equipo por afinidad creado correctamente',
-          equipo,
-        };
-      },
-    );
-  }
-
-  private async obtenerEquipoGestionable(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    equipoId:
-      number,
-  ) {
-    const equipo =
-      await this.prisma.equipoAfinidadForo.findFirst({
+    return this.prisma.$transaction(async (transaccion) => {
+      const equiposExistentes = await transaccion.equipoAfinidadForo.findMany({
         where: {
-          id:
-            equipoId,
+          temaId: foro.id,
           cursoId,
-          estaActivo:
-            true,
+          estaActivo: true,
+        },
+
+        select: {
+          nombre: true,
+        },
+      });
+
+      const numerosUsados = new Set(
+        equiposExistentes
+          .map((item) => {
+            const coincidencia = /^Grupo\s+(\d+)$/i.exec(item.nombre.trim());
+
+            return coincidencia ? Number(coincidencia[1]) : null;
+          })
+          .filter(
+            (numero): numero is number =>
+              Number.isInteger(numero) && (numero ?? 0) > 0,
+          ),
+      );
+
+      let numeroGrupo = 1;
+
+      while (numerosUsados.has(numeroGrupo)) {
+        numeroGrupo += 1;
+      }
+
+      const nombreEquipo = `Grupo ${numeroGrupo}`;
+
+      const equipo = await transaccion.equipoAfinidadForo.create({
+        data: {
+          temaId: foro.id,
+          cursoId,
+          creadorId: usuario.id,
+          nombre: nombreEquipo,
+          descripcion: datos.descripcion?.trim() || null,
+          estado,
+          aprobadoEn: new Date(),
+          integrantes: {
+            create: integrantesIds.map((estudianteId) => ({
+              estudianteId,
+              esRepresentante: estudianteId === representanteId,
+            })),
+          },
         },
 
         include: {
-          tema:
-            true,
-          integrantes: {
-            where: {
-              estaActivo:
-                true,
-            },
+          integrantes: true,
+        },
+      });
+
+      await transaccion.historialForoCurso.create({
+        data: {
+          temaId: foro.id,
+          equipoId: equipo.id,
+          actorId: usuario.id,
+          accion: AccionHistorialForo.EQUIPO_CREADO,
+          detalle: {
+            integrantesIds,
+            representanteId,
+            estado,
           },
         },
       });
 
+      return {
+        mensaje: 'Equipo por afinidad creado correctamente',
+        equipo,
+      };
+    });
+  }
+
+  private async obtenerEquipoGestionable(
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    equipoId: number,
+  ) {
+    const equipo = await this.prisma.equipoAfinidadForo.findFirst({
+      where: {
+        id: equipoId,
+        cursoId,
+        estaActivo: true,
+      },
+
+      include: {
+        tema: true,
+        integrantes: {
+          where: {
+            estaActivo: true,
+          },
+        },
+      },
+    });
+
     if (!equipo) {
-      throw new NotFoundException(
-        'El equipo no existe',
-      );
+      throw new NotFoundException('El equipo no existe');
     }
 
     const esDocente =
-      usuario.rol ===
-      Rol.DOCENTE &&
-      (
-        await this.prisma.curso.count({
-          where: {
-            id:
-              cursoId,
-            docenteId:
-              usuario.id,
-          },
-        })
-      ) >
-        0;
+      usuario.rol === Rol.DOCENTE &&
+      (await this.prisma.curso.count({
+        where: {
+          id: cursoId,
+          docenteId: usuario.id,
+        },
+      })) > 0;
 
-    const esCreador =
-      equipo.creadorId ===
-      usuario.id;
+    const esCreador = equipo.creadorId === usuario.id;
 
-    if (
-      !esDocente &&
-      !esCreador
-    ) {
-      throw new ForbiddenException(
-        'No puedes administrar este equipo',
-      );
+    if (!esDocente && !esCreador) {
+      throw new ForbiddenException('No puedes administrar este equipo');
     }
 
     if (
-      equipo.estado ===
-        EstadoEquipoForo.BLOQUEADO ||
+      equipo.estado === EstadoEquipoForo.BLOQUEADO ||
       equipo.tema.estaCerrado
     ) {
-      throw new BadRequestException(
-        'El equipo ya está bloqueado',
-      );
+      throw new BadRequestException('El equipo ya está bloqueado');
     }
 
     return {
@@ -695,189 +447,117 @@ export class EquiposAfinidadService {
   }
 
   async agregarIntegrante(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    equipoId:
-      number,
-    datos:
-      AgregarIntegranteEquipoDto,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    equipoId: number,
+    datos: AgregarIntegranteEquipoDto,
   ) {
-    const {
-      equipo,
-    } =
-      await this.obtenerEquipoGestionable(
-        usuario,
-        cursoId,
-        equipoId,
-      );
-
-    await this.validarEstudiantesCurso(
+    const { equipo } = await this.obtenerEquipoGestionable(
+      usuario,
       cursoId,
-      [
-        datos.estudianteId,
-      ],
+      equipoId,
     );
+
+    await this.validarEstudiantesCurso(cursoId, [datos.estudianteId]);
 
     await this.validarSinOtroEquipo(
       equipo.temaId,
-      [
-        datos.estudianteId,
-      ],
+      [datos.estudianteId],
       equipo.id,
     );
 
-    const activos =
-      equipo.integrantes.filter(
-        (
-          integrante,
-        ) =>
-          integrante.estaActivo,
-      );
+    const activos = equipo.integrantes.filter(
+      (integrante) => integrante.estaActivo,
+    );
 
-    const maximo =
-      equipo.tema.cantidadMaximaIntegrantes ??
-      100;
+    const maximo = equipo.tema.cantidadMaximaIntegrantes ?? 100;
 
-    if (
-      activos.length >=
-      maximo
-    ) {
+    if (activos.length >= maximo) {
       throw new BadRequestException(
         'El equipo alcanzó el máximo de integrantes',
       );
     }
 
-    await this.prisma.$transaction(
-      async (
-        transaccion,
-      ) => {
-        await transaccion.integranteEquipoForo.upsert({
+    await this.prisma.$transaction(async (transaccion) => {
+      await transaccion.integranteEquipoForo.upsert({
+        where: {
+          equipoId_estudianteId: {
+            equipoId: equipo.id,
+            estudianteId: datos.estudianteId,
+          },
+        },
+
+        create: {
+          equipoId: equipo.id,
+          estudianteId: datos.estudianteId,
+          esRepresentante: datos.esRepresentante ?? false,
+        },
+
+        update: {
+          estaActivo: true,
+          retiradoEn: null,
+          agregadoEn: new Date(),
+          esRepresentante: datos.esRepresentante ?? false,
+        },
+      });
+
+      if (datos.esRepresentante) {
+        await transaccion.integranteEquipoForo.updateMany({
           where: {
-            equipoId_estudianteId: {
-              equipoId:
-                equipo.id,
-              estudianteId:
-                datos.estudianteId,
+            equipoId: equipo.id,
+            estudianteId: {
+              not: datos.estudianteId,
             },
           },
 
-          create: {
-            equipoId:
-              equipo.id,
-            estudianteId:
-              datos.estudianteId,
-            esRepresentante:
-              datos.esRepresentante ??
-              false,
-          },
-
-          update: {
-            estaActivo:
-              true,
-            retiradoEn:
-              null,
-            agregadoEn:
-              new Date(),
-            esRepresentante:
-              datos.esRepresentante ??
-              false,
-          },
-        });
-
-        if (
-          datos.esRepresentante
-        ) {
-          await transaccion.integranteEquipoForo.updateMany({
-            where: {
-              equipoId:
-                equipo.id,
-              estudianteId: {
-                not:
-                  datos.estudianteId,
-              },
-            },
-
-            data: {
-              esRepresentante:
-                false,
-            },
-          });
-        }
-
-        await transaccion.historialForoCurso.create({
           data: {
-            temaId:
-              equipo.temaId,
-            equipoId:
-              equipo.id,
-            actorId:
-              usuario.id,
-            accion:
-              AccionHistorialForo.INTEGRANTE_AGREGADO,
-            detalle: {
-              estudianteId:
-                datos.estudianteId,
-            },
+            esRepresentante: false,
           },
         });
-      },
-    );
+      }
+
+      await transaccion.historialForoCurso.create({
+        data: {
+          temaId: equipo.temaId,
+          equipoId: equipo.id,
+          actorId: usuario.id,
+          accion: AccionHistorialForo.INTEGRANTE_AGREGADO,
+          detalle: {
+            estudianteId: datos.estudianteId,
+          },
+        },
+      });
+    });
 
     return {
-      mensaje:
-        'Integrante agregado correctamente',
+      mensaje: 'Integrante agregado correctamente',
     };
   }
 
   async retirarIntegrante(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    equipoId:
-      number,
-    estudianteId:
-      number,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    equipoId: number,
+    estudianteId: number,
   ) {
-    const {
-      equipo,
-    } =
-      await this.obtenerEquipoGestionable(
-        usuario,
-        cursoId,
-        equipoId,
-      );
+    const { equipo } = await this.obtenerEquipoGestionable(
+      usuario,
+      cursoId,
+      equipoId,
+    );
 
-    const integrante =
-      equipo.integrantes.find(
-        (
-          item,
-        ) =>
-          item.estudianteId ===
-            estudianteId &&
-          item.estaActivo,
-      );
+    const integrante = equipo.integrantes.find(
+      (item) => item.estudianteId === estudianteId && item.estaActivo,
+    );
 
     if (!integrante) {
-      throw new NotFoundException(
-        'El estudiante no pertenece al equipo',
-      );
+      throw new NotFoundException('El estudiante no pertenece al equipo');
     }
 
-    const minimo =
-      equipo.tema.cantidadMinimaIntegrantes ??
-      2;
+    const minimo = equipo.tema.cantidadMinimaIntegrantes ?? 2;
 
     if (
-      equipo.integrantes.filter(
-        (
-          item,
-        ) =>
-          item.estaActivo,
-      ).length -
-        1 <
+      equipo.integrantes.filter((item) => item.estaActivo).length - 1 <
       minimo
     ) {
       throw new BadRequestException(
@@ -885,78 +565,52 @@ export class EquiposAfinidadService {
       );
     }
 
-    await this.prisma.$transaction(
-      async (
-        transaccion,
-      ) => {
-        await transaccion.integranteEquipoForo.update({
-          where: {
-            id:
-              integrante.id,
-          },
+    await this.prisma.$transaction(async (transaccion) => {
+      await transaccion.integranteEquipoForo.update({
+        where: {
+          id: integrante.id,
+        },
 
-          data: {
-            estaActivo:
-              false,
-            retiradoEn:
-              new Date(),
-            esRepresentante:
-              false,
-          },
-        });
+        data: {
+          estaActivo: false,
+          retiradoEn: new Date(),
+          esRepresentante: false,
+        },
+      });
 
-        await transaccion.historialForoCurso.create({
-          data: {
-            temaId:
-              equipo.temaId,
-            equipoId:
-              equipo.id,
-            actorId:
-              usuario.id,
-            accion:
-              AccionHistorialForo.INTEGRANTE_RETIRADO,
-            detalle: {
-              estudianteId,
-            },
+      await transaccion.historialForoCurso.create({
+        data: {
+          temaId: equipo.temaId,
+          equipoId: equipo.id,
+          actorId: usuario.id,
+          accion: AccionHistorialForo.INTEGRANTE_RETIRADO,
+          detalle: {
+            estudianteId,
           },
-        });
-      },
-    );
+        },
+      });
+    });
 
     return {
-      mensaje:
-        'Integrante retirado correctamente',
+      mensaje: 'Integrante retirado correctamente',
     };
   }
 
   async cambiarRepresentante(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    equipoId:
-      number,
-    datos:
-      CambiarRepresentanteEquipoDto,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    equipoId: number,
+    datos: CambiarRepresentanteEquipoDto,
   ) {
-    const {
-      equipo,
-    } =
-      await this.obtenerEquipoGestionable(
-        usuario,
-        cursoId,
-        equipoId,
-      );
+    const { equipo } = await this.obtenerEquipoGestionable(
+      usuario,
+      cursoId,
+      equipoId,
+    );
 
-    const integrante =
-      equipo.integrantes.find(
-        (
-          item,
-        ) =>
-          item.estudianteId ===
-            datos.estudianteId &&
-          item.estaActivo,
-      );
+    const integrante = equipo.integrantes.find(
+      (item) => item.estudianteId === datos.estudianteId && item.estaActivo,
+    );
 
     if (!integrante) {
       throw new BadRequestException(
@@ -964,92 +618,67 @@ export class EquiposAfinidadService {
       );
     }
 
-    await this.prisma.$transaction(
-      async (
-        transaccion,
-      ) => {
-        await transaccion.integranteEquipoForo.updateMany({
-          where: {
-            equipoId:
-              equipo.id,
-          },
+    await this.prisma.$transaction(async (transaccion) => {
+      await transaccion.integranteEquipoForo.updateMany({
+        where: {
+          equipoId: equipo.id,
+        },
 
-          data: {
-            esRepresentante:
-              false,
-          },
-        });
+        data: {
+          esRepresentante: false,
+        },
+      });
 
-        await transaccion.integranteEquipoForo.update({
-          where: {
-            id:
-              integrante.id,
-          },
+      await transaccion.integranteEquipoForo.update({
+        where: {
+          id: integrante.id,
+        },
 
-          data: {
-            esRepresentante:
-              true,
-          },
-        });
+        data: {
+          esRepresentante: true,
+        },
+      });
 
-        await transaccion.historialForoCurso.create({
-          data: {
-            temaId:
-              equipo.temaId,
-            equipoId:
-              equipo.id,
-            actorId:
-              usuario.id,
-            accion:
-              AccionHistorialForo.REPRESENTANTE_ASIGNADO,
-            detalle: {
-              estudianteId:
-                datos.estudianteId,
-            },
+      await transaccion.historialForoCurso.create({
+        data: {
+          temaId: equipo.temaId,
+          equipoId: equipo.id,
+          actorId: usuario.id,
+          accion: AccionHistorialForo.REPRESENTANTE_ASIGNADO,
+          detalle: {
+            estudianteId: datos.estudianteId,
           },
-        });
-      },
-    );
+        },
+      });
+    });
 
     return {
-      mensaje:
-        'Representante actualizado correctamente',
+      mensaje: 'Representante actualizado correctamente',
     };
   }
 
   async cambiarEstado(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    equipoId:
-      number,
-    datos:
-      CambiarEstadoEquipoDto,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    equipoId: number,
+    datos: CambiarEstadoEquipoDto,
   ) {
-    if (
-      usuario.rol !==
-      Rol.DOCENTE
-    ) {
+    if (usuario.rol !== Rol.DOCENTE) {
       throw new ForbiddenException(
         'Solo el docente puede aprobar o rechazar equipos',
       );
     }
 
-    const curso =
-      await this.prisma.curso.findFirst({
-        where: {
-          id:
-            cursoId,
-          docenteId:
-            usuario.id,
-        },
+    const curso = await this.prisma.curso.findFirst({
+      where: {
+        id: cursoId,
+        docenteId: usuario.id,
+      },
 
-        select: {
-          id:
-            true,
-        },
-      });
+      select: {
+        id: true,
+      },
+    });
 
     if (!curso) {
       throw new ForbiddenException(
@@ -1057,129 +686,86 @@ export class EquiposAfinidadService {
       );
     }
 
-    const estadosPermitidos:
-      EstadoEquipoForo[] = [
-        EstadoEquipoForo.APROBADO,
-        EstadoEquipoForo.RECHAZADO,
-      ];
+    const estadosPermitidos: EstadoEquipoForo[] = [
+      EstadoEquipoForo.APROBADO,
+      EstadoEquipoForo.RECHAZADO,
+    ];
 
-    if (
-      !estadosPermitidos.includes(
-        datos.estado,
-      )
-    ) {
-      throw new BadRequestException(
-        'Solo puedes aprobar o rechazar un equipo',
-      );
+    if (!estadosPermitidos.includes(datos.estado)) {
+      throw new BadRequestException('Solo puedes aprobar o rechazar un equipo');
     }
 
-    const equipo =
-      await this.prisma.equipoAfinidadForo.findFirst({
-        where: {
-          id:
-            equipoId,
-          cursoId,
-          estaActivo:
-            true,
-        },
-      });
+    const equipo = await this.prisma.equipoAfinidadForo.findFirst({
+      where: {
+        id: equipoId,
+        cursoId,
+        estaActivo: true,
+      },
+    });
 
     if (!equipo) {
-      throw new NotFoundException(
-        'El equipo no existe',
-      );
+      throw new NotFoundException('El equipo no existe');
     }
 
     const accion =
-      datos.estado ===
-      EstadoEquipoForo.APROBADO
+      datos.estado === EstadoEquipoForo.APROBADO
         ? AccionHistorialForo.EQUIPO_APROBADO
         : AccionHistorialForo.EQUIPO_RECHAZADO;
 
-    const actualizado =
-      await this.prisma.$transaction(
-        async (
-          transaccion,
-        ) => {
-          const registro =
-            await transaccion.equipoAfinidadForo.update({
-              where: {
-                id:
-                  equipo.id,
-              },
-
-              data: {
-                estado:
-                  datos.estado,
-                aprobadoEn:
-                  datos.estado ===
-                  EstadoEquipoForo.APROBADO
-                    ? new Date()
-                    : null,
-              },
-            });
-
-          await transaccion.historialForoCurso.create({
-            data: {
-              temaId:
-                equipo.temaId,
-              equipoId:
-                equipo.id,
-              actorId:
-                usuario.id,
-              accion,
-            },
-          });
-
-          return registro;
+    const actualizado = await this.prisma.$transaction(async (transaccion) => {
+      const registro = await transaccion.equipoAfinidadForo.update({
+        where: {
+          id: equipo.id,
         },
-      );
+
+        data: {
+          estado: datos.estado,
+          aprobadoEn:
+            datos.estado === EstadoEquipoForo.APROBADO ? new Date() : null,
+        },
+      });
+
+      await transaccion.historialForoCurso.create({
+        data: {
+          temaId: equipo.temaId,
+          equipoId: equipo.id,
+          actorId: usuario.id,
+          accion,
+        },
+      });
+
+      return registro;
+    });
 
     return {
       mensaje:
-        datos.estado ===
-        EstadoEquipoForo.APROBADO
+        datos.estado === EstadoEquipoForo.APROBADO
           ? 'Equipo aprobado correctamente'
           : 'Equipo rechazado correctamente',
-      equipo:
-        actualizado,
+      equipo: actualizado,
     };
   }
 
   async listarEquipos(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    foroId:
-      number,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    foroId: number,
   ) {
-    if (
-      usuario.rol ===
-      Rol.ESTUDIANTE
-    ) {
-      await this.reglas.validarInscripcion(
-        usuario,
-        cursoId,
-      );
+    if (usuario.rol === Rol.ESTUDIANTE) {
+      await this.reglas.validarInscripcion(usuario, cursoId);
     }
 
     return this.prisma.equipoAfinidadForo.findMany({
       where: {
-        temaId:
-          foroId,
+        temaId: foroId,
         cursoId,
-        estaActivo:
-          true,
-        ...(usuario.rol ===
-        Rol.ESTUDIANTE
+        estaActivo: true,
+        ...(usuario.rol === Rol.ESTUDIANTE
           ? {
               integrantes: {
                 some: {
-                  estudianteId:
-                    usuario.id,
-                  estaActivo:
-                    true,
+                  estudianteId: usuario.id,
+                  estaActivo: true,
                 },
               },
             }
@@ -1187,39 +773,29 @@ export class EquiposAfinidadService {
       },
 
       orderBy: {
-        creadoEn:
-          'asc',
+        creadoEn: 'asc',
       },
 
       include: {
         creador: {
           select: {
-            id:
-              true,
-            nombres:
-              true,
-            apellidoPaterno:
-              true,
+            id: true,
+            nombres: true,
+            apellidoPaterno: true,
           },
         },
         integrantes: {
           where: {
-            estaActivo:
-              true,
+            estaActivo: true,
           },
           include: {
             estudiante: {
               select: {
-                id:
-                  true,
-                nombres:
-                  true,
-                apellidoPaterno:
-                  true,
-                apellidoMaterno:
-                  true,
-                fotoPerfilUrl:
-                  true,
+                id: true,
+                nombres: true,
+                apellidoPaterno: true,
+                apellidoMaterno: true,
+                fotoPerfilUrl: true,
               },
             },
           },

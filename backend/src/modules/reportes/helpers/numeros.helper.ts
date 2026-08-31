@@ -1,6 +1,4 @@
-import {
-  REPORTES_CONFIG,
-} from '../constants/reportes.constants';
+import { REPORTES_CONFIG } from '../constants/reportes.constants';
 
 export interface OpcionesNumeroReporte {
   locale?: string;
@@ -14,7 +12,10 @@ function validarNumero(valor: number): void {
   }
 }
 
-function normalizarDecimales(valor: number | undefined, defecto: number): number {
+function normalizarDecimales(
+  valor: number | undefined,
+  defecto: number,
+): number {
   if (valor === undefined) {
     return defecto;
   }
@@ -45,13 +46,10 @@ export function formatearNumeroReporte(
     normalizarDecimales(opciones.maximoDecimales, 2),
   );
 
-  return new Intl.NumberFormat(
-    opciones.locale ?? REPORTES_CONFIG.locale,
-    {
-      minimumFractionDigits: minimo,
-      maximumFractionDigits: maximo,
-    },
-  ).format(valor);
+  return new Intl.NumberFormat(opciones.locale ?? REPORTES_CONFIG.locale, {
+    minimumFractionDigits: minimo,
+    maximumFractionDigits: maximo,
+  }).format(valor);
 }
 
 export function formatearPorcentajeReporte(
@@ -101,6 +99,8 @@ export function calcularPromedio(valores: number[]): number | null {
     return null;
   }
 
-  return numerosValidos.reduce((total, valor) => total + valor, 0)
-    / numerosValidos.length;
+  return (
+    numerosValidos.reduce((total, valor) => total + valor, 0) /
+    numerosValidos.length
+  );
 }

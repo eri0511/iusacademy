@@ -12,9 +12,7 @@ import {
 } from '../../generated/prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
-import type {
-  ListarForosQueryDto,
-} from './dto/listar-foros-query.dto';
+import type { ListarForosQueryDto } from './dto/listar-foros-query.dto';
 import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
 type ForoListado = {
@@ -24,9 +22,7 @@ type ForoListado = {
   [clave: string]: unknown;
 };
 
-function esFechaValida(
-  fecha: Date | null | undefined,
-): fecha is Date {
+function esFechaValida(fecha: Date | null | undefined): fecha is Date {
   return fecha instanceof Date;
 }
 
@@ -46,7 +42,9 @@ export class ForoLecturasService {
       });
 
       if (!curso) {
-        throw new ForbiddenException('El curso no pertenece al docente autenticado');
+        throw new ForbiddenException(
+          'El curso no pertenece al docente autenticado',
+        );
       }
     } else if (usuario.rol === Rol.ESTUDIANTE) {
       const inscripcion = await this.prisma.inscripcionCurso.findFirst({
@@ -60,10 +58,14 @@ export class ForoLecturasService {
       });
 
       if (!inscripcion) {
-        throw new ForbiddenException('No tienes una inscripción activa en este curso');
+        throw new ForbiddenException(
+          'No tienes una inscripción activa en este curso',
+        );
       }
     } else {
-      throw new ForbiddenException('No tienes permisos para consultar lecturas del foro');
+      throw new ForbiddenException(
+        'No tienes permisos para consultar lecturas del foro',
+      );
     }
 
     if (foroId === undefined) return;
@@ -84,7 +86,10 @@ export class ForoLecturasService {
       select: { id: true },
     });
 
-    if (!foro) throw new NotFoundException('El foro no existe o todavía no está disponible');
+    if (!foro)
+      throw new NotFoundException(
+        'El foro no existe o todavía no está disponible',
+      );
   }
 
   async registrarLectura(
@@ -135,67 +140,78 @@ export class ForoLecturasService {
     if (foros.length === 0) return [];
 
     const ids = foros.map((foro) => foro.id);
-    const [
-      lecturasUsuario,
-      lecturas,
-      respuestas,
-      comentarios,
-      inscripciones,
-    ] = await Promise.all([
-      this.prisma.lecturaTemaForo.findMany({
-        where: { temaId: { in: ids }, usuarioId: usuario.id },
-        select: { temaId: true, ultimaLecturaEn: true, cantidadVisitas: true },
-      }),
-      this.prisma.lecturaTemaForo.findMany({
-        where: { temaId: { in: ids } },
-        select: { temaId: true, usuarioId: true, cantidadVisitas: true },
-      }),
-      this.prisma.respuestaForoCurso.findMany({
-        where: {
-          temaId: { in: ids },
-          estaActiva: true,
-          estado: { in: [EstadoRespuestaForo.PUBLICADA, EstadoRespuestaForo.TARDIA] },
-        },
-        select: { id: true, temaId: true, autorId: true, publicadoEn: true, actualizadoEn: true },
-      }),
-      this.prisma.comentarioRespuestaForo.findMany({
-        where: {
-          estaActivo: true,
-          estaOculto: false,
-          respuesta: { temaId: { in: ids }, estaActiva: true },
-        },
-        select: {
-          autorId: true,
-          publicadoEn: true,
-          actualizadoEn: true,
-          respuesta: { select: { temaId: true } },
-        },
-      }),
-      this.prisma.inscripcionCurso.findMany({
-        where: {
-          cursoId,
-          estado: EstadoInscripcion.ACTIVA,
-          estudiante: {
-            estaActivo: true,
-            rol: Rol.ESTUDIANTE,
+    const [lecturasUsuario, lecturas, respuestas, comentarios, inscripciones] =
+      await Promise.all([
+        this.prisma.lecturaTemaForo.findMany({
+          where: { temaId: { in: ids }, usuarioId: usuario.id },
+          select: {
+            temaId: true,
+            ultimaLecturaEn: true,
+            cantidadVisitas: true,
           },
-        },
-        select: { estudianteId: true },
-      }),
-    ]);
+        }),
+        this.prisma.lecturaTemaForo.findMany({
+          where: { temaId: { in: ids } },
+          select: { temaId: true, usuarioId: true, cantidadVisitas: true },
+        }),
+        this.prisma.respuestaForoCurso.findMany({
+          where: {
+            temaId: { in: ids },
+            estaActiva: true,
+            estado: {
+              in: [EstadoRespuestaForo.PUBLICADA, EstadoRespuestaForo.TARDIA],
+            },
+          },
+          select: {
+            id: true,
+            temaId: true,
+            autorId: true,
+            publicadoEn: true,
+            actualizadoEn: true,
+          },
+        }),
+        this.prisma.comentarioRespuestaForo.findMany({
+          where: {
+            estaActivo: true,
+            estaOculto: false,
+            respuesta: { temaId: { in: ids }, estaActiva: true },
+          },
+          select: {
+            autorId: true,
+            publicadoEn: true,
+            actualizadoEn: true,
+            respuesta: { select: { temaId: true } },
+          },
+        }),
+        this.prisma.inscripcionCurso.findMany({
+          where: {
+            cursoId,
+            estado: EstadoInscripcion.ACTIVA,
+            estudiante: {
+              estaActivo: true,
+              rol: Rol.ESTUDIANTE,
+            },
+          },
+          select: { estudianteId: true },
+        }),
+      ]);
 
-    const lecturaPropia = new Map(lecturasUsuario.map((item) => [item.temaId, item]));
+    const lecturaPropia = new Map(
+      lecturasUsuario.map((item) => [item.temaId, item]),
+    );
     const estudiantesIds = new Set(
       inscripciones.map((item) => item.estudianteId),
     );
 
     return foros.map((foro) => {
-      const respuestasForo = respuestas.filter((item) => item.temaId === foro.id);
-      const comentariosForo = comentarios.filter((item) => item.respuesta.temaId === foro.id);
+      const respuestasForo = respuestas.filter(
+        (item) => item.temaId === foro.id,
+      );
+      const comentariosForo = comentarios.filter(
+        (item) => item.respuesta.temaId === foro.id,
+      );
       const lecturasForo = lecturas.filter(
-        (item) =>
-          item.temaId === foro.id &&
-          estudiantesIds.has(item.usuarioId),
+        (item) => item.temaId === foro.id && estudiantesIds.has(item.usuarioId),
       );
       const cantidadLectores = new Set(
         lecturasForo.map((item) => item.usuarioId),
@@ -207,10 +223,18 @@ export class ForoLecturasService {
       const fechasActividad = [
         foro.actualizadoEn,
         foro.publicadoEn,
-        ...respuestasForo.flatMap((item) => [item.publicadoEn, item.actualizadoEn]),
-        ...comentariosForo.flatMap((item) => [item.publicadoEn, item.actualizadoEn]),
+        ...respuestasForo.flatMap((item) => [
+          item.publicadoEn,
+          item.actualizadoEn,
+        ]),
+        ...comentariosForo.flatMap((item) => [
+          item.publicadoEn,
+          item.actualizadoEn,
+        ]),
       ].filter(esFechaValida);
-      const ultimaActividadEn = new Date(Math.max(...fechasActividad.map((fecha) => fecha.getTime())));
+      const ultimaActividadEn = new Date(
+        Math.max(...fechasActividad.map((fecha) => fecha.getTime())),
+      );
       const propia = lecturaPropia.get(foro.id);
 
       return {
@@ -238,17 +262,19 @@ export class ForoLecturasService {
   }
 
   filtrarOrdenarPaginar(
-    foros: Array<ForoListado & {
-      titulo?: string;
-      creadoEn?: Date;
-      estaFijado?: boolean;
-      indicadores: {
-        leido: boolean;
-        tieneNovedades: boolean;
-        cantidadRespuestas: number;
-        ultimaActividadEn: Date;
-      };
-    }>,
+    foros: Array<
+      ForoListado & {
+        titulo?: string;
+        creadoEn?: Date;
+        estaFijado?: boolean;
+        indicadores: {
+          leido: boolean;
+          tieneNovedades: boolean;
+          cantidadRespuestas: number;
+          ultimaActividadEn: Date;
+        };
+      }
+    >,
     filtros: ListarForosQueryDto,
   ) {
     const pagina = filtros.pagina ?? 1;
@@ -275,26 +301,26 @@ export class ForoLecturasService {
     filtrados.sort((a, b) => {
       // Los fijados permanecen arriba con cualquier orden seleccionado.
       const diferenciaFijado =
-        Number(Boolean(b.estaFijado)) -
-        Number(Boolean(a.estaFijado));
+        Number(Boolean(b.estaFijado)) - Number(Boolean(a.estaFijado));
 
       if (diferenciaFijado !== 0) {
         return diferenciaFijado;
       }
 
       if (orden.startsWith('TITULO_')) {
-        return (a.titulo ?? '').localeCompare(
-          b.titulo ?? '',
-          'es',
-          { sensitivity: 'base' },
-        ) * direccion;
+        return (
+          (a.titulo ?? '').localeCompare(b.titulo ?? '', 'es', {
+            sensitivity: 'base',
+          }) * direccion
+        );
       }
 
       if (orden.startsWith('RESPUESTAS_')) {
         return (
-          a.indicadores.cantidadRespuestas -
-          b.indicadores.cantidadRespuestas
-        ) * direccion;
+          (a.indicadores.cantidadRespuestas -
+            b.indicadores.cantidadRespuestas) *
+          direccion
+        );
       }
 
       if (orden.startsWith('CREACION_')) {
@@ -304,16 +330,14 @@ export class ForoLecturasService {
       }
 
       return (
-        a.indicadores.ultimaActividadEn.getTime() -
-        b.indicadores.ultimaActividadEn.getTime()
-      ) * direccion;
+        (a.indicadores.ultimaActividadEn.getTime() -
+          b.indicadores.ultimaActividadEn.getTime()) *
+        direccion
+      );
     });
 
     const totalRegistros = filtrados.length;
-    const totalPaginas = Math.max(
-      1,
-      Math.ceil(totalRegistros / limite),
-    );
+    const totalPaginas = Math.max(1, Math.ceil(totalRegistros / limite));
     const inicio = (pagina - 1) * limite;
 
     return {
@@ -344,12 +368,18 @@ export class ForoLecturasService {
     foroId: number,
   ) {
     if (usuario.rol !== Rol.DOCENTE) {
-      throw new ForbiddenException('Solo el docente puede consultar el resumen de lecturas');
+      throw new ForbiddenException(
+        'Solo el docente puede consultar el resumen de lecturas',
+      );
     }
     await this.validarAcceso(usuario, cursoId, foroId);
 
     const estudiantes = await this.prisma.inscripcionCurso.findMany({
-      where: { cursoId, estado: EstadoInscripcion.ACTIVA, estudiante: { estaActivo: true } },
+      where: {
+        cursoId,
+        estado: EstadoInscripcion.ACTIVA,
+        estudiante: { estaActivo: true },
+      },
       select: {
         estudianteId: true,
         estudiante: {
@@ -366,8 +396,16 @@ export class ForoLecturasService {
     });
 
     const lecturas = await this.prisma.lecturaTemaForo.findMany({
-      where: { temaId: foroId, usuarioId: { in: estudiantes.map((item) => item.estudianteId) } },
-      select: { usuarioId: true, primeraLecturaEn: true, ultimaLecturaEn: true, cantidadVisitas: true },
+      where: {
+        temaId: foroId,
+        usuarioId: { in: estudiantes.map((item) => item.estudianteId) },
+      },
+      select: {
+        usuarioId: true,
+        primeraLecturaEn: true,
+        ultimaLecturaEn: true,
+        cantidadVisitas: true,
+      },
     });
     const porUsuario = new Map(lecturas.map((item) => [item.usuarioId, item]));
     const detalle = estudiantes.map(({ estudiante }) => ({
@@ -383,9 +421,15 @@ export class ForoLecturasService {
       totalEstudiantes: detalle.length,
       totalLectores: detalle.filter((item) => item.leido).length,
       totalSinLeer: detalle.filter((item) => !item.leido).length,
-      porcentajeLectura: detalle.length === 0
-        ? 0
-        : Number(((detalle.filter((item) => item.leido).length / detalle.length) * 100).toFixed(2)),
+      porcentajeLectura:
+        detalle.length === 0
+          ? 0
+          : Number(
+              (
+                (detalle.filter((item) => item.leido).length / detalle.length) *
+                100
+              ).toFixed(2),
+            ),
       estudiantes: detalle,
     };
   }

@@ -1,238 +1,119 @@
-import {
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
-import {
-  execFile,
-} from 'node:child_process';
+import { execFile } from 'node:child_process';
 
-import {
-  mkdtemp,
-  readFile,
-  rm,
-  writeFile,
-} from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 
-import {
-  tmpdir,
-} from 'node:os';
+import { tmpdir } from 'node:os';
 
-import {
-  join,
-} from 'node:path';
+import { join } from 'node:path';
 
-import {
-  promisify,
-} from 'node:util';
+import { promisify } from 'node:util';
 
-import {
-  createWorker,
-} from 'tesseract.js';
+import { createWorker } from 'tesseract.js';
 
-export type CallbackProgresoPdf = (
-  progreso:
-    number,
-) => void |
-  Promise<void>;
+export type CallbackProgresoPdf = (progreso: number) => void | Promise<void>;
 
-const execFileAsync =
-  promisify(
-    execFile,
-  );
+const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class OcrPdfService {
-  private readonly logger =
-    new Logger(
-      OcrPdfService.name,
-    );
+  private readonly logger = new Logger(OcrPdfService.name);
 
   private readonly pdfInfoPath =
-    process.env.POPPLER_PDFINFO_PATH?.trim() ||
-    'pdfinfo';
+    process.env.POPPLER_PDFINFO_PATH?.trim() || 'pdfinfo';
 
   private readonly pdfToPpmPath =
-    process.env.POPPLER_PDFTOPPM_PATH?.trim() ||
-    'pdftoppm';
+    process.env.POPPLER_PDFTOPPM_PATH?.trim() || 'pdftoppm';
 
-  private limpiarTexto(
-    texto:
-      string,
-  ): string {
+  private limpiarTexto(texto: string): string {
     return texto
-      .replace(
-        /\u0000/g,
-        '',
-      )
-      .replace(
-        /\r\n/g,
-        '\n',
-      )
-      .replace(
-        /\r/g,
-        '\n',
-      )
-      .replace(
-        /[ \t]+/g,
-        ' ',
-      )
-      .replace(
-        / *\n */g,
-        '\n',
-      )
-      .replace(
-        /\n{3,}/g,
-        '\n\n',
-      )
+      .replace(/\u0000/g, '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/ *\n */g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
       .trim();
   }
 
-  private convertirError(
-    error:
-      unknown,
-  ): Error {
-    if (
-      error instanceof Error
-    ) {
-      const codigo =
-        (
-          error as Error & {
-            code?: string;
-          }
-        ).code;
+  private convertirError(error: unknown): Error {
+    if (error instanceof Error) {
+      const codigo = (
+        error as Error & {
+          code?: string;
+        }
+      ).code;
 
-      if (
-        codigo ===
-        'ENOENT'
-      ) {
+      if (codigo === 'ENOENT') {
         return new Error(
           [
             'No se encontró Poppler en el sistema.',
             'Verifica que pdfinfo y pdftoppm estén disponibles en PATH',
             'o configura POPPLER_PDFINFO_PATH y POPPLER_PDFTOPPM_PATH.',
-          ].join(
-            ' ',
-          ),
+          ].join(' '),
         );
       }
 
       return error;
     }
 
-    return new Error(
-      String(
-        error,
-      ),
-    );
+    return new Error(String(error));
   }
 
-  private async obtenerNumeroPaginas(
-    rutaPdf:
-      string,
-  ): Promise<number> {
+  private async obtenerNumeroPaginas(rutaPdf: string): Promise<number> {
     try {
-      const {
-        stdout,
-      } =
-        await execFileAsync(
-          this.pdfInfoPath,
-          [
-            rutaPdf,
-          ],
-          {
-            windowsHide:
-              true,
+      const { stdout } = await execFileAsync(this.pdfInfoPath, [rutaPdf], {
+        windowsHide: true,
 
-            timeout:
-              60_000,
+        timeout: 60_000,
 
-            maxBuffer:
-              5 *
-              1024 *
-              1024,
-          },
-        );
+        maxBuffer: 5 * 1024 * 1024,
+      });
 
-      const coincidencia =
-        stdout.match(
-          /^Pages:\s+(\d+)/im,
-        );
+      const coincidencia = stdout.match(/^Pages:\s+(\d+)/im);
 
-      if (
-        !coincidencia
-      ) {
-        throw new Error(
-          'Poppler no devolvió la cantidad de páginas del PDF.',
-        );
+      if (!coincidencia) {
+        throw new Error('Poppler no devolvió la cantidad de páginas del PDF.');
       }
 
-      const paginas =
-        Number(
-          coincidencia[
-            1
-          ],
-        );
+      const paginas = Number(coincidencia[1]);
 
-      if (
-        !Number.isInteger(
-          paginas,
-        ) ||
-        paginas <=
-          0
-      ) {
+      if (!Number.isInteger(paginas) || paginas <= 0) {
         throw new Error(
           'La cantidad de páginas obtenida del PDF no es válida.',
         );
       }
 
       return paginas;
-    } catch (
-      error
-    ) {
-      throw this.convertirError(
-        error,
-      );
+    } catch (error) {
+      throw this.convertirError(error);
     }
   }
 
   private async rasterizarPagina(
-    rutaPdf:
-      string,
+    rutaPdf: string,
 
-    directorio:
-      string,
+    directorio: string,
 
-    pagina:
-      number,
+    pagina: number,
   ): Promise<Buffer> {
-    const prefijo =
-      join(
-        directorio,
-        `pagina-${String(
-          pagina,
-        ).padStart(
-          4,
-          '0',
-        )}`,
-      );
+    const prefijo = join(
+      directorio,
+      `pagina-${String(pagina).padStart(4, '0')}`,
+    );
 
-    const rutaPng =
-      `${prefijo}.png`;
+    const rutaPng = `${prefijo}.png`;
 
     try {
       await execFileAsync(
         this.pdfToPpmPath,
         [
           '-f',
-          String(
-            pagina,
-          ),
+          String(pagina),
 
           '-l',
-          String(
-            pagina,
-          ),
+          String(pagina),
 
           '-singlefile',
 
@@ -247,193 +128,94 @@ export class OcrPdfService {
           prefijo,
         ],
         {
-          windowsHide:
-            true,
+          windowsHide: true,
 
-          timeout:
-            120_000,
+          timeout: 120_000,
 
-          maxBuffer:
-            10 *
-            1024 *
-            1024,
+          maxBuffer: 10 * 1024 * 1024,
         },
       );
 
-      return await readFile(
-        rutaPng,
-      );
-    } catch (
-      error
-    ) {
-      throw this.convertirError(
-        error,
-      );
+      return await readFile(rutaPng);
+    } catch (error) {
+      throw this.convertirError(error);
     }
   }
 
   async extraerTexto(
-    buffer:
-      Buffer,
+    buffer: Buffer,
 
-    onProgreso?:
-      CallbackProgresoPdf,
+    onProgreso?: CallbackProgresoPdf,
   ): Promise<string | null> {
-    if (
-      !buffer ||
-      buffer.length ===
-        0
-    ) {
+    if (!buffer || buffer.length === 0) {
       return null;
     }
 
-    const directorio =
-      await mkdtemp(
-        join(
-          tmpdir(),
-          'iusacademy-ocr-',
-        ),
-      );
+    const directorio = await mkdtemp(join(tmpdir(), 'iusacademy-ocr-'));
 
-    const rutaPdf =
-      join(
-        directorio,
-        'documento.pdf',
-      );
+    const rutaPdf = join(directorio, 'documento.pdf');
 
-    let worker:
-      Awaited<
-        ReturnType<
-          typeof createWorker
-        >
-      > |
-      null =
-      null;
+    let worker: Awaited<ReturnType<typeof createWorker>> | null = null;
 
     try {
-      await onProgreso?.(
-        30,
-      );
+      await onProgreso?.(30);
 
-      await writeFile(
-        rutaPdf,
-        buffer,
-      );
+      await writeFile(rutaPdf, buffer);
 
-      const totalPaginas =
-        await this.obtenerNumeroPaginas(
-          rutaPdf,
-        );
+      const totalPaginas = await this.obtenerNumeroPaginas(rutaPdf);
 
       this.logger.log(
         `OCR con Poppler iniciado para PDF de ${totalPaginas} página(s).`,
       );
 
-      await onProgreso?.(
-        32,
-      );
+      await onProgreso?.(32);
 
-      worker =
-        await createWorker(
-          'spa',
-          1,
-      );
+      worker = await createWorker('spa', 1);
 
-      const paginasTexto:
-        string[] =
-        [];
+      const paginasTexto: string[] = [];
 
-      for (
-        let pagina =
-          1;
-        pagina <=
-        totalPaginas;
-        pagina +=
-          1
-      ) {
+      for (let pagina = 1; pagina <= totalPaginas; pagina += 1) {
         this.logger.log(
           `Rasterizando y procesando OCR página ${pagina} de ${totalPaginas}.`,
         );
 
         try {
-          const imagen =
-            await this.rasterizarPagina(
-              rutaPdf,
-              directorio,
-              pagina,
-            );
+          const imagen = await this.rasterizarPagina(
+            rutaPdf,
+            directorio,
+            pagina,
+          );
 
-          const resultado =
-            await worker.recognize(
-              imagen,
-            );
+          const resultado = await worker.recognize(imagen);
 
-          const textoPagina =
-            this.limpiarTexto(
-              resultado.data.text ??
-                '',
-            );
+          const textoPagina = this.limpiarTexto(resultado.data.text ?? '');
 
-          if (
-            textoPagina
-          ) {
+          if (textoPagina) {
             paginasTexto.push(
-              [
-                `--- Página ${pagina} ---`,
-                textoPagina,
-              ].join(
-                '\n',
-              ),
+              [`--- Página ${pagina} ---`, textoPagina].join('\n'),
             );
           } else {
             this.logger.warn(
               `La página ${pagina} no produjo texto OCR utilizable.`,
             );
           }
-        } catch (
-          error
-        ) {
+        } catch (error) {
           const mensaje =
-            error instanceof Error
-              ? error.message
-              : String(
-                  error,
-                );
+            error instanceof Error ? error.message : String(error);
 
           this.logger.warn(
             `No fue posible procesar la página ${pagina}: ${mensaje}`,
           );
         }
 
-        const progreso =
-          32 +
-          Math.round(
-            (
-              pagina /
-              totalPaginas
-            ) *
-              58,
-          );
+        const progreso = 32 + Math.round((pagina / totalPaginas) * 58);
 
-        await onProgreso?.(
-          Math.min(
-            90,
-            progreso,
-          ),
-        );
+        await onProgreso?.(Math.min(90, progreso));
       }
 
-      const texto =
-        this.limpiarTexto(
-          paginasTexto.join(
-            '\n\n',
-          ),
-        );
+      const texto = this.limpiarTexto(paginasTexto.join('\n\n'));
 
-      if (
-        texto.length <
-        10
-      ) {
+      if (texto.length < 10) {
         this.logger.warn(
           'El OCR con Poppler terminó, pero no pudo obtener texto utilizable.',
         );
@@ -446,31 +228,19 @@ export class OcrPdfService {
           'OCR con Poppler finalizado.',
           `Páginas con texto: ${paginasTexto.length}/${totalPaginas}.`,
           `Caracteres extraídos: ${texto.length}.`,
-        ].join(
-          ' ',
-        ),
+        ].join(' '),
       );
 
-      await onProgreso?.(
-        92,
-      );
+      await onProgreso?.(92);
 
       return texto;
     } finally {
-      if (
-        worker
-      ) {
+      if (worker) {
         try {
           await worker.terminate();
-        } catch (
-          error
-        ) {
+        } catch (error) {
           const mensaje =
-            error instanceof Error
-              ? error.message
-              : String(
-                  error,
-                );
+            error instanceof Error ? error.message : String(error);
 
           this.logger.warn(
             `No fue posible cerrar limpiamente Tesseract: ${mensaje}`,
@@ -479,25 +249,13 @@ export class OcrPdfService {
       }
 
       try {
-        await rm(
-          directorio,
-          {
-            recursive:
-              true,
+        await rm(directorio, {
+          recursive: true,
 
-            force:
-              true,
-          },
-        );
-      } catch (
-        error
-      ) {
-        const mensaje =
-          error instanceof Error
-            ? error.message
-            : String(
-                error,
-              );
+          force: true,
+        });
+      } catch (error) {
+        const mensaje = error instanceof Error ? error.message : String(error);
 
         this.logger.warn(
           `No fue posible limpiar el directorio temporal del OCR: ${mensaje}`,

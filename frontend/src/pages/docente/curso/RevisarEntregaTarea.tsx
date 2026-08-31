@@ -30,15 +30,34 @@ import {
 
 import AulaEmptyState from '../../../components/aula/AulaEmptyState';
 import AulaLoadingOverlay from '../../../components/aula/AulaLoadingOverlay';
+import MatrizRubricaEvaluacion from '../../../components/tareas/docente/MatrizRubricaEvaluacion';
+import VistaRespuestaEscrita from '../../../components/tareas/VistaRespuestaEscrita';
+import VistaCasoPractico from '../../../components/tareas/VistaCasoPractico';
+import VistaRedaccionJuridica from '../../../components/tareas/VistaRedaccionJuridica';
+import VistaExposicion from '../../../components/tareas/VistaExposicion';
+import EvaluacionExposicionDocente from '../../../components/tareas/EvaluacionExposicionDocente';
+import RevisionDocumentoColaborativo from '../../../components/tareas/RevisionDocumentoColaborativo';
+
+import {
+  leerConfiguracionExposicion,
+} from '../../../utils/tareas/exposicion';
 import Toast, {
   type TipoToast,
 } from '../../../components/shared/Toast';
 
 import useRevisionEntregaTareaDocente from '../../../hooks/tareas/useRevisionEntregaTareaDocente';
 
+import {
+  calificarEntregaConRubrica,
+} from '../../../services/tareas/tareas-rubricas.service';
+
 import type {
   ArchivoEntregaDocente,
 } from '../../../types/tareas/tarea-docente-seguimiento.types';
+
+import type {
+  RubricaItemCalificacion,
+} from '../../../types/tareas/rubricas.types';
 
 const API_URL =
   import.meta.env.VITE_API_URL ??
@@ -246,6 +265,24 @@ export default function RevisarEntregaTarea() {
     );
 
   const [
+    itemsRubrica,
+    setItemsRubrica,
+  ] =
+    useState<
+      RubricaItemCalificacion[]
+    >(
+      [],
+    );
+
+  const [
+    utilizaRubrica,
+    setUtilizaRubrica,
+  ] =
+    useState(
+      false,
+    );
+
+  const [
     archivoActivoId,
     setArchivoActivoId,
   ] =
@@ -324,6 +361,23 @@ export default function RevisarEntregaTarea() {
 
   const datos =
     revision.datos;
+
+  const configuracionExposicion =
+    useMemo(
+      () =>
+        datos?.tarea.tipo ===
+          'EXPOSICION'
+          ? leerConfiguracionExposicion(
+              datos.tarea
+                .configuracionTipo,
+            )
+          : null,
+      [
+        datos?.tarea.tipo,
+        datos?.tarea
+          .configuracionTipo,
+      ],
+    );
 
   const archivosVista =
     useMemo(
@@ -685,6 +739,55 @@ export default function RevisarEntregaTarea() {
       if (
         !datos
       ) {
+        return;
+      }
+
+      if (
+        utilizaRubrica
+      ) {
+        if (
+          itemsRubrica.length ===
+          0
+        ) {
+          mostrarToast(
+            'advertencia',
+            'Selecciona al menos un criterio',
+            'Marca un nivel en la rúbrica antes de calificar.',
+          );
+
+          return;
+        }
+
+        try {
+          await calificarEntregaConRubrica(
+            cursoId,
+            tareaId,
+            entregaId,
+            {
+              items:
+                itemsRubrica,
+              retroalimentacion,
+            },
+            accessToken ?? '',
+          );
+
+          mostrarToast(
+            'exito',
+            'Calificación guardada',
+            'La evaluación por rúbrica se registró correctamente.',
+          );
+        } catch (
+          causa
+        ) {
+          mostrarToast(
+            'error',
+            'No se pudo guardar',
+            causa instanceof Error
+              ? causa.message
+              : undefined,
+          );
+        }
+
         return;
       }
 
@@ -1083,11 +1186,61 @@ export default function RevisarEntregaTarea() {
                 Respuesta escrita
               </span>
 
-              <p>
-                {
-                  datos.entrega.contenido
-                }
-              </p>
+              {datos.tarea.tipo ===
+              'RESPUESTA_ESCRITA' ? (
+                <VistaRespuestaEscrita
+                  contenido={
+                    datos.entrega.contenido
+                  }
+                />
+              ) : datos.tarea.tipo ===
+                  'CASO_PRACTICO' ? (
+                <VistaCasoPractico
+                  contenido={
+                    datos.entrega.contenido
+                  }
+                />
+              ) : datos.tarea.tipo ===
+                  'REDACCION_JURIDICA' ? (
+                <VistaRedaccionJuridica
+                  contenido={
+                    datos.entrega.contenido
+                  }
+                />
+              ) : datos.tarea.tipo ===
+                  'EXPOSICION' ? (
+                <VistaExposicion
+                  contenido={
+                    datos.entrega.contenido
+                  }
+                />
+              ) : datos.tarea.tipo ===
+                  'DOCUMENTO_COLABORATIVO' ? (
+                <RevisionDocumentoColaborativo
+                  contenido={
+                    datos.entrega.contenido
+                  }
+                  cursoId={
+                    cursoId
+                  }
+                  tareaId={
+                    tareaId
+                  }
+                  entregaId={
+                    entregaId
+                  }
+                  token={
+                    accessToken ??
+                    ''
+                  }
+                />
+              ) : (
+                <p>
+                  {
+                    datos.entrega.contenido
+                  }
+                </p>
+              )}
             </section>
           )}
 
@@ -1415,6 +1568,68 @@ export default function RevisarEntregaTarea() {
                 La evidencia permanece visible mientras registras la nota.
               </p>
             </header>
+
+            <MatrizRubricaEvaluacion
+              cursoId={
+                cursoId
+              }
+              tareaId={
+                tareaId
+              }
+              entregaId={
+                entregaId
+              }
+              accessToken={
+                accessToken ?? ''
+              }
+              onDatos={(
+                items,
+                nota,
+              ) => {
+                setItemsRubrica(
+                  items,
+                );
+
+                setUtilizaRubrica(
+                  items.length >
+                    0,
+                );
+
+                if (
+                  nota !==
+                  null
+                ) {
+                  setNotaBase(
+                    String(
+                      nota,
+                    ),
+                  );
+                }
+              }}
+            />
+
+            {configuracionExposicion && (
+              <EvaluacionExposicionDocente
+                config={
+                  configuracionExposicion
+                }
+                contenido={
+                  datos.entrega.contenido ?? ''
+                }
+                puntajeMaximo={
+                  datos.tarea.puntajeMaximo
+                }
+                onSugerida={(
+                  nota,
+                ) =>
+                  setNotaBase(
+                    String(
+                      nota,
+                    ),
+                  )
+                }
+              />
+            )}
 
             <label className="rtd-field">
               <span>

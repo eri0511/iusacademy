@@ -1,9 +1,5 @@
-import {
-  ColumnaReporte,
-} from '../interfaces/columna-reporte.interface';
-import {
-  FilaReporte,
-} from '../tipos/reportes.types';
+import { ColumnaReporte } from '../interfaces/columna-reporte.interface';
+import { FilaReporte } from '../tipos/reportes.types';
 import {
   escaparFormulaHojaCalculo,
   normalizarTextoReporte,

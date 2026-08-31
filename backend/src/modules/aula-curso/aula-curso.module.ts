@@ -1,35 +1,19 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import {
-  AuthModule,
-} from '../auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
-import {
-  AulaCursoController,
-} from './aula-curso.controller';
+import { AulaCursoController } from './aula-curso.controller';
 
-import {
-  AulaInicioDocenteService,
-} from './aula-inicio-docente.service';
+import { AulaInicioDocenteService } from './aula-inicio-docente.service';
 
-import {
-  AulaInicioEstudianteService,
-} from './aula-inicio-estudiante.service';
+import { AulaInicioEstudianteService } from './aula-inicio-estudiante.service';
 
-import {
-  AulaCursoService,
-} from './aula-curso.service';
+import { AulaCursoService } from './aula-curso.service';
 
 @Module({
-  imports: [
-    AuthModule,
-  ],
+  imports: [AuthModule],
 
-  controllers: [
-    AulaCursoController,
-  ],
+  controllers: [AulaCursoController],
 
   providers: [
     AulaCursoService,
@@ -37,8 +21,6 @@ import {
     AulaInicioEstudianteService,
   ],
 
-  exports: [
-    AulaCursoService,
-  ],
+  exports: [AulaCursoService],
 })
 export class AulaCursoModule {}

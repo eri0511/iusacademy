@@ -1,7 +1,4 @@
-import {
-  Transform,
-  Type,
-} from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 import {
   IsEnum,
@@ -14,9 +11,7 @@ import {
   Min,
 } from 'class-validator';
 
-import {
-  EstadoForo,
-} from '../../../generated/prisma/client';
+import { EstadoForo } from '../../../generated/prisma/client';
 
 export const ESTADOS_LECTURA_FORO = [
   'LEIDOS',
@@ -25,8 +20,7 @@ export const ESTADOS_LECTURA_FORO = [
   'SIN_NOVEDADES',
 ] as const;
 
-export type EstadoLecturaForo =
-  (typeof ESTADOS_LECTURA_FORO)[number];
+export type EstadoLecturaForo = (typeof ESTADOS_LECTURA_FORO)[number];
 
 export const ORDENES_LISTADO_FORO = [
   'CREACION_DESC',
@@ -39,16 +33,11 @@ export const ORDENES_LISTADO_FORO = [
   'TITULO_DESC',
 ] as const;
 
-export type OrdenListadoForo =
-  (typeof ORDENES_LISTADO_FORO)[number];
+export type OrdenListadoForo = (typeof ORDENES_LISTADO_FORO)[number];
 
 export class ListarForosQueryDto {
   @IsOptional()
-  @Transform(({ value }) =>
-    typeof value === 'string'
-      ? value.trim()
-      : value,
-  )
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @MaxLength(150)
   busqueda?: string;
@@ -81,8 +70,7 @@ export class ListarForosQueryDto {
 
   @IsOptional()
   @IsIn(ORDENES_LISTADO_FORO)
-  orden?: OrdenListadoForo =
-    'ULTIMA_ACTIVIDAD_DESC';
+  orden?: OrdenListadoForo = 'ULTIMA_ACTIVIDAD_DESC';
 
   @IsOptional()
   @Type(() => Number)

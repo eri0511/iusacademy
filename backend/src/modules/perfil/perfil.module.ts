@@ -1,34 +1,18 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import {
-  AuthModule,
-} from '../auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
-import {
-  PerfilController,
-} from './perfil.controller';
+import { PerfilController } from './perfil.controller';
 
-import {
-  PerfilService,
-} from './perfil.service';
+import { PerfilService } from './perfil.service';
 
 @Module({
-  imports: [
-    AuthModule,
-  ],
+  imports: [AuthModule],
 
-  controllers: [
-    PerfilController,
-  ],
+  controllers: [PerfilController],
 
-  providers: [
-    PerfilService,
-  ],
+  providers: [PerfilService],
 
-  exports: [
-    PerfilService,
-  ],
+  exports: [PerfilService],
 })
 export class PerfilModule {}

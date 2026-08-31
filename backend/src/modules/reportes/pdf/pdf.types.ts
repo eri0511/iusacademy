@@ -1,11 +1,7 @@
 import type PDFKit from 'pdfkit';
 
-import {
-  FilaReporte,
-} from '../tipos/reportes.types';
-import {
-  ColumnaReporte,
-} from '../interfaces/columna-reporte.interface';
+import { FilaReporte } from '../tipos/reportes.types';
+import { ColumnaReporte } from '../interfaces/columna-reporte.interface';
 
 export interface ContextoPaginaPdf {
   documento: PDFKit.PDFDocument;

@@ -1,7 +1,4 @@
-import {
-  Transform,
-  Type,
-} from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 import {
   ArrayMaxSize,
@@ -13,60 +10,32 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import {
-  FechaHitoDto,
-} from './crear-planificacion.dto';
+import { FechaHitoDto } from './crear-planificacion.dto';
 
 export class ActualizarPlanificacionDto {
   @IsOptional()
-  @Transform(
-    ({
-      value,
-    }) =>
-      typeof value ===
-      'string'
-        ? value.trim()
-        : value,
-  )
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString({
-    message:
-      'La descripción debe ser un texto',
+    message: 'La descripción debe ser un texto',
   })
-  @MaxLength(
-    500,
-    {
-      message:
-        'La descripción no puede superar los 500 caracteres',
-    },
-  )
+  @MaxLength(500, {
+    message: 'La descripción no puede superar los 500 caracteres',
+  })
   descripcion?: string;
 
   @IsOptional()
   @IsArray({
-    message:
-      'Los hitos deben enviarse en una lista',
+    message: 'Los hitos deben enviarse en una lista',
   })
-  @ArrayMinSize(
-    5,
-    {
-      message:
-        'Debes registrar exactamente los cinco hitos',
-    },
-  )
-  @ArrayMaxSize(
-    5,
-    {
-      message:
-        'Debes registrar exactamente los cinco hitos',
-    },
-  )
+  @ArrayMinSize(5, {
+    message: 'Debes registrar exactamente los cinco hitos',
+  })
+  @ArrayMaxSize(5, {
+    message: 'Debes registrar exactamente los cinco hitos',
+  })
   @ValidateNested({
-    each:
-      true,
+    each: true,
   })
-  @Type(
-    () =>
-      FechaHitoDto,
-  )
+  @Type(() => FechaHitoDto)
   hitos?: FechaHitoDto[];
 }

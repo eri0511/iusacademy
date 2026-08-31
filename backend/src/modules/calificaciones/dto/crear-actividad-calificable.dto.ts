@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   IsBoolean,
@@ -20,57 +18,39 @@ import {
 } from '../../../generated/prisma/client';
 
 export class CrearActividadCalificableDto {
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  hitoId!:
-    number;
+  hitoId!: number;
 
-  @IsEnum(
-    TipoOrigenActividad,
-  )
-  origen!:
-    TipoOrigenActividad;
+  @IsEnum(TipoOrigenActividad)
+  origen!: TipoOrigenActividad;
 
-  @IsEnum(
-    ComponenteEvaluacion,
-  )
-  componente!:
-    ComponenteEvaluacion;
+  @IsEnum(ComponenteEvaluacion)
+  componente!: ComponenteEvaluacion;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(160)
-  titulo!:
-    string;
+  titulo!: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(1200)
-  descripcion?:
-    string;
+  descripcion?: string;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(10000)
-  orden?:
-    number;
+  orden?: number;
 
   @IsOptional()
   @IsBoolean()
-  participaEnPromedio?:
-    boolean;
+  participaEnPromedio?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  visibleParaEstudiantes?:
-    boolean;
+  visibleParaEstudiantes?: boolean;
 }

@@ -48,6 +48,13 @@ import {
 
 import useTareasCurso from '../../../hooks/tareas/useTareasCurso';
 
+import {
+  crearRubricaTarea,
+  importarRubricaExcel,
+  rubricaPredeterminada,
+} from '../../../services/tareas/tareas-rubricas.service';
+import { subirArchivoConsigna } from '../../../services/tareas/tareas-archivos.service';
+
 import type {
   CrearTareaDatos,
   EstadoTarea,
@@ -753,6 +760,15 @@ export default function TareasCurso() {
         boolean,
     ) => {
       try {
+        const {
+          archivosConsigna = [],
+          archivoRubrica,
+          modoRubrica = 'PREDETERMINADA',
+          ...datosTarea
+        } = datos;
+
+        let tareaId: number;
+
         if (
           tareaEditar
         ) {
@@ -760,8 +776,7 @@ export default function TareasCurso() {
             hitoId: _,
             publicar: __,
             ...actualizacion
-          } =
-            datos;
+          } = datosTarea;
 
           void _;
           void __;
@@ -770,6 +785,8 @@ export default function TareasCurso() {
             tareaEditar.id,
             actualizacion,
           );
+
+          tareaId = tareaEditar.id;
 
           if (
             publicarAhora &&
@@ -787,11 +804,13 @@ export default function TareasCurso() {
             'Los cambios se guardaron correctamente.',
           );
         } else {
-          await crear({
-            ...datos,
+          const respuesta = await crear({
+            ...datosTarea,
             publicar:
               publicarAhora,
           });
+
+          tareaId = respuesta.tarea.id;
 
           mostrarToast(
             'exito',
@@ -802,6 +821,46 @@ export default function TareasCurso() {
               ? 'La actividad ya forma parte del hito seleccionado.'
               : 'Podrás continuar configurándola antes de publicarla.',
           );
+        }
+
+        if (accessToken) {
+          await Promise.all(
+            archivosConsigna.map((archivo) =>
+              subirArchivoConsigna(
+                curso.id,
+                tareaId,
+                archivo,
+                accessToken,
+              ),
+            ),
+          );
+
+          if (archivoRubrica) {
+            const datosRubrica = await importarRubricaExcel(
+              curso.id,
+              tareaId,
+              archivoRubrica,
+              accessToken,
+            );
+
+            await crearRubricaTarea(
+              curso.id,
+              tareaId,
+              datosRubrica,
+              accessToken,
+            );
+          } else if (
+            !tareaEditar &&
+            datosTarea.esCalificable &&
+            modoRubrica === 'PREDETERMINADA'
+          ) {
+            await crearRubricaTarea(
+              curso.id,
+              tareaId,
+              rubricaPredeterminada(),
+              accessToken,
+            );
+          }
         }
 
         setFormularioAbierto(

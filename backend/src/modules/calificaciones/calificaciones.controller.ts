@@ -13,102 +13,56 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import type {
-  Request,
-  Response,
-} from 'express';
+import type { Request, Response } from 'express';
 
-import {
-  Rol,
-} from '../../generated/prisma/client';
+import { Rol } from '../../generated/prisma/client';
 
-import {
-  Roles,
-} from '../auth/decorators/roles.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-import {
-  JwtAuthGuard,
-} from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-import {
-  RolesGuard,
-} from '../auth/guards/roles.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
-import {
-  ActualizarActividadCalificableDto,
-} from './dto/actualizar-actividad-calificable.dto';
+import { ActualizarActividadCalificableDto } from './dto/actualizar-actividad-calificable.dto';
 
-import {
-  CrearActividadCalificableDto,
-} from './dto/crear-actividad-calificable.dto';
+import { CrearActividadCalificableDto } from './dto/crear-actividad-calificable.dto';
 
-import {
-  GuardarCalificacionDto,
-} from './dto/guardar-calificacion.dto';
+import { GuardarCalificacionDto } from './dto/guardar-calificacion.dto';
 
-import {
-  PublicarCalificacionesDto,
-} from './dto/publicar-calificaciones.dto';
+import { PublicarCalificacionesDto } from './dto/publicar-calificaciones.dto';
 
-import {
-  CalificacionesService,
-} from './calificaciones.service';
+import { CalificacionesService } from './calificaciones.service';
 
-import {
-  CalificacionesReportesService,
-} from './calificaciones-reportes.service';
+import { CalificacionesReportesService } from './calificaciones-reportes.service';
 
-import {
-  enviarArchivoReporte,
-} from '../reportes';
+import { enviarArchivoReporte } from '../reportes';
 
-import type {
-  UsuarioAutenticado,
-} from './interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
-type RequestAutenticada =
-  Request & {
-    user:
-      UsuarioAutenticado;
-  };
+type RequestAutenticada = Request & {
+  user: UsuarioAutenticado;
+};
 
-@Controller(
-  'calificaciones',
-)
-@UseGuards(
-  JwtAuthGuard,
-  RolesGuard,
-)
+@Controller('calificaciones')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class CalificacionesController {
   constructor(
-    private readonly calificacionesService:
-      CalificacionesService,
+    private readonly calificacionesService: CalificacionesService,
 
-    private readonly calificacionesReportesService:
-      CalificacionesReportesService,
+    private readonly calificacionesReportesService: CalificacionesReportesService,
   ) {}
 
-  @Post(
-    'cursos/:cursoId/actividades',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Post('cursos/:cursoId/actividades')
+  @Roles(Rol.DOCENTE)
   crearActividad(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
     @Body()
-    datos:
-      CrearActividadCalificableDto,
+    datos: CrearActividadCalificableDto,
   ) {
     return this.calificacionesService.crearActividad(
       request.user,
@@ -117,34 +71,20 @@ export class CalificacionesController {
     );
   }
 
-  @Put(
-    'cursos/:cursoId/actividades/:actividadId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Put('cursos/:cursoId/actividades/:actividadId')
+  @Roles(Rol.DOCENTE)
   actualizarActividad(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'actividadId',
-      ParseIntPipe,
-    )
-    actividadId:
-      number,
+    @Param('actividadId', ParseIntPipe)
+    actividadId: number,
 
     @Body()
-    datos:
-      ActualizarActividadCalificableDto,
+    datos: ActualizarActividadCalificableDto,
   ) {
     return this.calificacionesService.actualizarActividad(
       request.user,
@@ -154,30 +94,17 @@ export class CalificacionesController {
     );
   }
 
-  @Get(
-    'cursos/:cursoId/libro',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('cursos/:cursoId/libro')
+  @Roles(Rol.DOCENTE)
   obtenerLibroDocente(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Query(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Query('hitoId', ParseIntPipe)
+    hitoId: number,
   ) {
     return this.calificacionesService.obtenerLibroDocente(
       request.user,
@@ -186,90 +113,51 @@ export class CalificacionesController {
     );
   }
 
-  @Get(
-    'cursos/:cursoId/libro/exportar/:formato',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('cursos/:cursoId/libro/exportar/:formato')
+  @Roles(Rol.DOCENTE)
   async exportarLibro(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'formato',
-    )
-    formato:
-      string,
+    @Param('formato')
+    formato: string,
 
-    @Query(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Query('hitoId', ParseIntPipe)
+    hitoId: number,
 
     @Res()
-    response:
-      Response,
+    response: Response,
   ) {
-    const archivo =
-      await this.calificacionesReportesService.generarLibro(
-        request.user,
-        cursoId,
-        hitoId,
-        formato,
-      );
-
-    enviarArchivoReporte(
-      response,
-      archivo,
+    const archivo = await this.calificacionesReportesService.generarLibro(
+      request.user,
+      cursoId,
+      hitoId,
+      formato,
     );
+
+    enviarArchivoReporte(response, archivo);
   }
 
-  @Put(
-    'cursos/:cursoId/actividades/:actividadId/estudiantes/:estudianteId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Put('cursos/:cursoId/actividades/:actividadId/estudiantes/:estudianteId')
+  @Roles(Rol.DOCENTE)
   guardarCalificacion(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'actividadId',
-      ParseIntPipe,
-    )
-    actividadId:
-      number,
+    @Param('actividadId', ParseIntPipe)
+    actividadId: number,
 
-    @Param(
-      'estudianteId',
-      ParseIntPipe,
-    )
-    estudianteId:
-      number,
+    @Param('estudianteId', ParseIntPipe)
+    estudianteId: number,
 
     @Body()
-    datos:
-      GuardarCalificacionDto,
+    datos: GuardarCalificacionDto,
   ) {
     return this.calificacionesService.guardarCalificacion(
       request.user,
@@ -280,34 +168,20 @@ export class CalificacionesController {
     );
   }
 
-  @Patch(
-    'cursos/:cursoId/actividades/:actividadId/publicar',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Patch('cursos/:cursoId/actividades/:actividadId/publicar')
+  @Roles(Rol.DOCENTE)
   publicarCalificaciones(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'actividadId',
-      ParseIntPipe,
-    )
-    actividadId:
-      number,
+    @Param('actividadId', ParseIntPipe)
+    actividadId: number,
 
     @Body()
-    datos:
-      PublicarCalificacionesDto,
+    datos: PublicarCalificacionesDto,
   ) {
     return this.calificacionesService.publicarCalificaciones(
       request.user,
@@ -317,30 +191,17 @@ export class CalificacionesController {
     );
   }
 
-  @Get(
-    'cursos/:cursoId/estudiantes/:estudianteId/resumen',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('cursos/:cursoId/estudiantes/:estudianteId/resumen')
+  @Roles(Rol.DOCENTE)
   obtenerResumenEstudianteDocente(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'estudianteId',
-      ParseIntPipe,
-    )
-    estudianteId:
-      number,
+    @Param('estudianteId', ParseIntPipe)
+    estudianteId: number,
   ) {
     return this.calificacionesService.obtenerResumenEstudianteDocente(
       request.user,
@@ -349,30 +210,17 @@ export class CalificacionesController {
     );
   }
 
-  @Get(
-    'estudiante/cursos/:cursoId',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Get('estudiante/cursos/:cursoId')
+  @Roles(Rol.ESTUDIANTE)
   obtenerMisCalificaciones(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Query(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Query('hitoId', ParseIntPipe)
+    hitoId: number,
   ) {
     return this.calificacionesService.obtenerMisCalificaciones(
       request.user,

@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   IsIn,
@@ -22,7 +20,7 @@ export const TIPOS_BUSQUEDA_DATASET_QUIZ = [
 ] as const;
 
 export type TipoBusquedaDatasetQuiz =
-  typeof TIPOS_BUSQUEDA_DATASET_QUIZ[number];
+  (typeof TIPOS_BUSQUEDA_DATASET_QUIZ)[number];
 
 export class BuscarDatasetQuizDto {
   @IsOptional()
@@ -31,9 +29,7 @@ export class BuscarDatasetQuizDto {
   q?: string;
 
   @IsOptional()
-  @IsIn(
-    TIPOS_BUSQUEDA_DATASET_QUIZ,
-  )
+  @IsIn(TIPOS_BUSQUEDA_DATASET_QUIZ)
   tipo?: TipoBusquedaDatasetQuiz;
 
   @IsOptional()

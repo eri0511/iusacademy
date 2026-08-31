@@ -1,42 +1,19 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import {
-  AuthModule,
-} from '../auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
-import {
-  ReportesModule,
-} from '../reportes/reportes.module';
+import { ReportesModule } from '../reportes/reportes.module';
 
-import {
-  UsuariosController,
-} from './usuarios.controller';
+import { UsuariosController } from './usuarios.controller';
 
-import {
-  UsuariosReportesService,
-} from './reportes/usuarios-reportes.service';
+import { UsuariosReportesService } from './reportes/usuarios-reportes.service';
 
-import {
-  UsuariosService,
-} from './usuarios.service';
+import { UsuariosService } from './usuarios.service';
 
 @Module({
-  imports: [
-    AuthModule,
-    ReportesModule,
-  ],
-  controllers: [
-    UsuariosController,
-  ],
-  providers: [
-    UsuariosService,
-    UsuariosReportesService,
-  ],
-  exports: [
-    UsuariosService,
-    UsuariosReportesService,
-  ],
+  imports: [AuthModule, ReportesModule],
+  controllers: [UsuariosController],
+  providers: [UsuariosService, UsuariosReportesService],
+  exports: [UsuariosService, UsuariosReportesService],
 })
 export class UsuariosModule {}

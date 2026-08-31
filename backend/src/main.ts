@@ -1,47 +1,29 @@
-import {
-  ValidationPipe,
-} from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 
-import {
-  NestFactory,
-} from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 
-import {
-  NestExpressApplication,
-} from '@nestjs/platform-express';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
-import {
-  join,
-} from 'node:path';
+import { join } from 'node:path';
 
-import {
-  AppModule,
-} from './app.module';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app =
-    await NestFactory.create<NestExpressApplication>(
-      AppModule,
-    );
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.enableCors({
-    origin:
-      'http://localhost:5173',
+    origin: 'http://localhost:5173',
 
-    credentials:
-      true,
+    credentials: true,
   });
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist:
-        true,
+      whitelist: true,
 
-      forbidNonWhitelisted:
-        true,
+      forbidNonWhitelisted: true,
 
-      transform:
-        true,
+      transform: true,
     }),
   );
 
@@ -58,17 +40,9 @@ async function bootstrap() {
    *
    *   http://localhost:3000/uploads/perfiles/...
    */
-  app.useStaticAssets(
-    join(
-      process.cwd(),
-      'uploads',
-      'perfiles',
-    ),
-    {
-      prefix:
-        '/uploads/perfiles/',
-    },
-  );
+  app.useStaticAssets(join(process.cwd(), 'uploads', 'perfiles'), {
+    prefix: '/uploads/perfiles/',
+  });
 
   /*
    * ============================================================
@@ -89,18 +63,9 @@ async function bootstrap() {
    * IMPORTANTE:
    * No publicamos toda la carpeta /uploads.
    */
-  app.useStaticAssets(
-    join(
-      process.cwd(),
-      'uploads',
-      'foro',
-      'respuestas',
-    ),
-    {
-      prefix:
-        '/uploads/foro/respuestas/',
-    },
-  );
+  app.useStaticAssets(join(process.cwd(), 'uploads', 'foro', 'respuestas'), {
+    prefix: '/uploads/foro/respuestas/',
+  });
 
   /*
    * ============================================================
@@ -124,17 +89,11 @@ async function bootstrap() {
    * acceder a una entrega ajena simplemente conociendo su URL.
    */
 
-  const puerto =
-    process.env.PORT ??
-    3000;
+  const puerto = process.env.PORT ?? 3000;
 
-  await app.listen(
-    puerto,
-  );
+  await app.listen(puerto);
 
-  console.log(
-    `🚀 Servidor ejecutándose en http://localhost:${puerto}`,
-  );
+  console.log(`🚀 Servidor ejecutándose en http://localhost:${puerto}`);
 
   console.log(
     `🖼️ Fotografías disponibles en http://localhost:${puerto}/uploads/perfiles`,

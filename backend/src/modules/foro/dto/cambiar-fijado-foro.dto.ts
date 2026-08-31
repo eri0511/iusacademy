@@ -1,9 +1,6 @@
-import {
-  IsBoolean,
-} from 'class-validator';
+import { IsBoolean } from 'class-validator';
 
 export class CambiarFijadoForoDto {
   @IsBoolean()
-  estaFijado!:
-    boolean;
+  estaFijado!: boolean;
 }

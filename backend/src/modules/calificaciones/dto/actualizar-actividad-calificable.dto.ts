@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   IsBoolean,
@@ -22,44 +20,33 @@ export class ActualizarActividadCalificableDto {
   @IsOptional()
   @IsString()
   @MaxLength(160)
-  titulo?:
-    string;
+  titulo?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(1200)
-  descripcion?:
-    string;
+  descripcion?: string;
 
   @IsOptional()
-  @IsEnum(
-    ComponenteEvaluacion,
-  )
-  componente?:
-    ComponenteEvaluacion;
+  @IsEnum(ComponenteEvaluacion)
+  componente?: ComponenteEvaluacion;
 
   @IsOptional()
-  @IsEnum(
-    EstadoActividadCalificable,
-  )
-  estado?:
-    EstadoActividadCalificable;
+  @IsEnum(EstadoActividadCalificable)
+  estado?: EstadoActividadCalificable;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(10000)
-  orden?:
-    number;
+  orden?: number;
 
   @IsOptional()
   @IsBoolean()
-  participaEnPromedio?:
-    boolean;
+  participaEnPromedio?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  visibleParaEstudiantes?:
-    boolean;
+  visibleParaEstudiantes?: boolean;
 }

@@ -10,81 +10,44 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import type {
-  Request,
-} from 'express';
+import type { Request } from 'express';
 
-import {
-  Rol,
-} from '../../generated/prisma/client';
+import { Rol } from '../../generated/prisma/client';
 
-import {
-  Roles,
-} from '../auth/decorators/roles.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-import {
-  JwtAuthGuard,
-} from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-import {
-  RolesGuard,
-} from '../auth/guards/roles.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
-import {
-  GuardarEntregaTareaDto,
-} from './dto/guardar-entrega-tarea.dto';
+import { GuardarEntregaTareaDto } from './dto/guardar-entrega-tarea.dto';
 
-import type {
-  UsuarioAutenticado,
-} from './interfaces/usuario-autenticado.interface';
+import { RegistrarSesionEdicionDto } from './dto/registrar-sesion-edicion.dto';
 
-import {
-  TareasEntregasService,
-} from './tareas-entregas.service';
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
-type RequestAutenticada =
-  Request & {
-    user:
-      UsuarioAutenticado;
-  };
+import { TareasEntregasService } from './tareas-entregas.service';
 
-@Controller(
-  'tareas',
-)
-@UseGuards(
-  JwtAuthGuard,
-  RolesGuard,
-)
+type RequestAutenticada = Request & {
+  user: UsuarioAutenticado;
+};
+
+@Controller('tareas')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class TareasEntregasController {
-  constructor(
-    private readonly entregasService:
-      TareasEntregasService,
-  ) {}
+  constructor(private readonly entregasService: TareasEntregasService) {}
 
-  @Get(
-    'estudiante/cursos/:cursoId/:tareaId/entrega',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Get('estudiante/cursos/:cursoId/:tareaId/entrega')
+  @Roles(Rol.ESTUDIANTE)
   obtenerMiEntrega(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'tareaId',
-      ParseIntPipe,
-    )
-    tareaId:
-      number,
+    @Param('tareaId', ParseIntPipe)
+    tareaId: number,
   ) {
     return this.entregasService.obtenerMiEntrega(
       request.user,
@@ -93,74 +56,38 @@ export class TareasEntregasController {
     );
   }
 
-  @Post(
-    'estudiante/cursos/:cursoId/:tareaId/entrega',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Post('estudiante/cursos/:cursoId/:tareaId/entrega')
+  @Roles(Rol.ESTUDIANTE)
   preparar(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'tareaId',
-      ParseIntPipe,
-    )
-    tareaId:
-      number,
+    @Param('tareaId', ParseIntPipe)
+    tareaId: number,
 
     @Body()
-    datos:
-      GuardarEntregaTareaDto,
+    datos: GuardarEntregaTareaDto,
   ) {
-    return this.entregasService.preparar(
-      request.user,
-      cursoId,
-      tareaId,
-      datos,
-    );
+    return this.entregasService.preparar(request.user, cursoId, tareaId, datos);
   }
 
-  @Patch(
-    'estudiante/cursos/:cursoId/:tareaId/entregas/:entregaId/enviar',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Patch('estudiante/cursos/:cursoId/:tareaId/entregas/:entregaId/enviar')
+  @Roles(Rol.ESTUDIANTE)
   enviar(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'tareaId',
-      ParseIntPipe,
-    )
-    tareaId:
-      number,
+    @Param('tareaId', ParseIntPipe)
+    tareaId: number,
 
-    @Param(
-      'entregaId',
-      ParseIntPipe,
-    )
-    entregaId:
-      number,
+    @Param('entregaId', ParseIntPipe)
+    entregaId: number,
   ) {
     return this.entregasService.enviar(
       request.user,
@@ -170,35 +97,68 @@ export class TareasEntregasController {
     );
   }
 
-  @Get(
-    'docente/cursos/:cursoId/:tareaId/entregas',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('docente/cursos/:cursoId/:tareaId/entregas')
+  @Roles(Rol.DOCENTE)
   listarDocente(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'tareaId',
-      ParseIntPipe,
-    )
-    tareaId:
-      number,
+    @Param('tareaId', ParseIntPipe)
+    tareaId: number,
   ) {
-    return this.entregasService.listarDocente(
+    return this.entregasService.listarDocente(request.user, cursoId, tareaId);
+  }
+
+  @Get('docente/cursos/:cursoId/:tareaId/entregas/:entregaId/sesiones')
+  @Roles(Rol.DOCENTE)
+  obtenerSesionesEntrega(
+    @Req()
+    request: RequestAutenticada,
+
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
+
+    @Param('tareaId', ParseIntPipe)
+    tareaId: number,
+
+    @Param('entregaId', ParseIntPipe)
+    entregaId: number,
+  ) {
+    return this.entregasService.obtenerSesionesEntrega(
       request.user,
       cursoId,
       tareaId,
+      entregaId,
+    );
+  }
+
+  @Post('estudiante/cursos/:cursoId/:tareaId/entregas/:entregaId/sesiones')
+  @Roles(Rol.ESTUDIANTE)
+  registrarSesionEdicion(
+    @Req()
+    request: RequestAutenticada,
+
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
+
+    @Param('tareaId', ParseIntPipe)
+    tareaId: number,
+
+    @Param('entregaId', ParseIntPipe)
+    entregaId: number,
+
+    @Body()
+    datos: RegistrarSesionEdicionDto,
+  ) {
+    return this.entregasService.registrarSesionEdicion(
+      request.user,
+      cursoId,
+      tareaId,
+      entregaId,
+      datos,
     );
   }
 }

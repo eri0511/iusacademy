@@ -1,11 +1,8 @@
-import {
-  IsBoolean,
-} from 'class-validator';
+import { IsBoolean } from 'class-validator';
 
 export class CambiarVisibilidadPublicacionDto {
   @IsBoolean({
-    message:
-      'La visibilidad para estudiantes debe ser verdadera o falsa',
+    message: 'La visibilidad para estudiantes debe ser verdadera o falsa',
   })
   visibleParaEstudiantes!: boolean;
 }

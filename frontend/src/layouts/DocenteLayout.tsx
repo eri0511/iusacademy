@@ -138,7 +138,6 @@ const menuPrincipal: MenuItem[] = [
     to: '/docente/notificaciones',
     label: 'Notificaciones',
     icon: Bell,
-    disabled: true,
   },
 ];
 

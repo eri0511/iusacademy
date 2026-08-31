@@ -1,7 +1,4 @@
-import {
-  IsIn,
-  IsOptional,
-} from 'class-validator';
+import { IsIn, IsOptional } from 'class-validator';
 
 export const AVATARES_QUIZ = [
   'BALANZA',
@@ -14,15 +11,10 @@ export const AVATARES_QUIZ = [
   'BIRRETE',
 ] as const;
 
-export type AvatarQuizCodigo =
-  typeof AVATARES_QUIZ[number];
+export type AvatarQuizCodigo = (typeof AVATARES_QUIZ)[number];
 
 export class SeleccionarAvatarQuizDto {
   @IsOptional()
-  @IsIn(
-    AVATARES_QUIZ,
-  )
-  avatarCodigo?:
-    AvatarQuizCodigo |
-    null;
+  @IsIn(AVATARES_QUIZ)
+  avatarCodigo?: AvatarQuizCodigo | null;
 }

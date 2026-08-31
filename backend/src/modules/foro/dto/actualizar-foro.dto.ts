@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   ArrayMaxSize,
@@ -33,420 +31,288 @@ import {
 
 export class ActualizarForoDto {
   @IsOptional()
-  @IsEnum(
-    ComponenteEvaluacion,
-  )
-  componente?:
-    ComponenteEvaluacion;
+  @IsEnum(ComponenteEvaluacion)
+  componente?: ComponenteEvaluacion;
 
   @IsOptional()
   @IsString()
   @MaxLength(180)
-  titulo?:
-    string;
+  titulo?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(15000)
-  contenido?:
-    string;
+  contenido?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(8000)
-  instrucciones?:
-    string;
+  instrucciones?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(4000)
-  objetivo?:
-    string | null;
+  objetivo?: string | null;
 
   @IsOptional()
   @IsBoolean()
-  esCalificable?:
-    boolean;
+  esCalificable?: boolean;
 
   @IsOptional()
-  @IsEnum(
-    ModalidadParticipacionForo,
-  )
-  modalidadParticipacion?:
-    ModalidadParticipacionForo;
+  @IsEnum(ModalidadParticipacionForo)
+  modalidadParticipacion?: ModalidadParticipacionForo;
 
   @IsOptional()
-  @IsEnum(
-    OrigenGrupoForo,
-  )
-  origenGrupo?:
-    OrigenGrupoForo;
+  @IsEnum(OrigenGrupoForo)
+  origenGrupo?: OrigenGrupoForo;
 
   @IsOptional()
-  @IsEnum(
-    DinamicaGrupalForo,
-  )
-  dinamicaGrupal?:
-    DinamicaGrupalForo;
+  @IsEnum(DinamicaGrupalForo)
+  dinamicaGrupal?: DinamicaGrupalForo;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  conjuntoGrupoId?:
-    number | null;
+  conjuntoGrupoId?: number | null;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(2)
   @Max(100)
-  cantidadMinimaIntegrantes?:
-    number | null;
+  cantidadMinimaIntegrantes?: number | null;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(2)
   @Max(100)
-  cantidadMaximaIntegrantes?:
-    number | null;
+  cantidadMaximaIntegrantes?: number | null;
 
   @IsOptional()
   @IsBoolean()
-  requiereAprobacionEquipos?:
-    boolean;
+  requiereAprobacionEquipos?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  requiereRepresentante?:
-    boolean;
+  requiereRepresentante?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  bloquearEquipoAlResponder?:
-    boolean;
+  bloquearEquipoAlResponder?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirComentarios?:
-    boolean;
+  permitirComentarios?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirEditarRespuestas?:
-    boolean;
+  permitirEditarRespuestas?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirEliminarRespuestas?:
-    boolean;
+  permitirEliminarRespuestas?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirEditarComentarios?:
-    boolean;
+  permitirEditarComentarios?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirEliminarComentarios?:
-    boolean;
+  permitirEliminarComentarios?: boolean;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(100)
-  minimoComentariosPorEstudiante?:
-    number;
+  minimoComentariosPorEstudiante?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(100)
-  maximoComentariosPorEstudiante?:
-    number | null;
+  maximoComentariosPorEstudiante?: number | null;
 
   @IsOptional()
   @IsBoolean()
-  penalizarIncumplimientoComentarios?:
-    boolean;
+  penalizarIncumplimientoComentarios?: boolean;
 
   @IsOptional()
-  @IsEnum(
-    TipoPenalizacionComentarios,
-  )
-  tipoPenalizacionComentarios?:
-    TipoPenalizacionComentarios;
+  @IsEnum(TipoPenalizacionComentarios)
+  tipoPenalizacionComentarios?: TipoPenalizacionComentarios;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0.01)
   @Max(100)
-  valorPenalizacionComentarios?:
-    number | null;
+  valorPenalizacionComentarios?: number | null;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(50000)
-  palabrasMinimasRespuesta?:
-    number | null;
+  palabrasMinimasRespuesta?: number | null;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(50000)
-  palabrasMaximasRespuesta?:
-    number | null;
+  palabrasMaximasRespuesta?: number | null;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(10000)
-  palabrasMinimasComentario?:
-    number | null;
+  palabrasMinimasComentario?: number | null;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(10000)
-  palabrasMaximasComentario?:
-    number | null;
+  palabrasMaximasComentario?: number | null;
 
   @IsOptional()
-  @IsIn(
-    [
-      TipoEvaluacionForo.MANUAL,
-      TipoEvaluacionForo.AUTOMATICA,
-    ],
-    {
-      message:
-        'La evaluación por rúbrica estará disponible en una próxima versión. Selecciona MANUAL o AUTOMATICA.',
-    },
-  )
-  tipoEvaluacion?:
-    TipoEvaluacionForo;
+  @IsIn([TipoEvaluacionForo.MANUAL, TipoEvaluacionForo.AUTOMATICA], {
+    message:
+      'La evaluación por rúbrica estará disponible en una próxima versión. Selecciona MANUAL o AUTOMATICA.',
+  })
+  tipoEvaluacion?: TipoEvaluacionForo;
 
   @IsOptional()
-  @IsEnum(
-    ModalidadNotaForo,
-  )
-  modalidadNota?:
-    ModalidadNotaForo;
+  @IsEnum(ModalidadNotaForo)
+  modalidadNota?: ModalidadNotaForo;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0)
   @Max(100)
-  porcentajeNotaGrupal?:
-    number | null;
+  porcentajeNotaGrupal?: number | null;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0)
   @Max(100)
-  porcentajeNotaIndividual?:
-    number | null;
+  porcentajeNotaIndividual?: number | null;
 
   @IsOptional()
   @IsBoolean()
-  calificacionAutomaticaAlCumplir?:
-    boolean;
+  calificacionAutomaticaAlCumplir?: boolean;
 
   @IsOptional()
   @IsDateString()
-  fechaApertura?:
-    string;
+  fechaApertura?: string;
 
   @IsOptional()
   @IsDateString()
-  fechaLimite?:
-    string;
+  fechaLimite?: string;
 
   @IsOptional()
   @IsDateString()
-  fechaCierre?:
-    string;
+  fechaCierre?: string;
 
   @IsOptional()
   @IsBoolean()
-  visibleAntesDeApertura?:
-    boolean;
+  visibleAntesDeApertura?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirRetrasos?:
-    boolean;
+  permitirRetrasos?: boolean;
 
   @IsOptional()
   @IsDateString()
-  fechaMaximaRetraso?:
-    string | null;
+  fechaMaximaRetraso?: string | null;
 
   @IsOptional()
-  @IsEnum(
-    TipoDescuentoRetraso,
-  )
-  tipoDescuentoRetraso?:
-    TipoDescuentoRetraso;
+  @IsEnum(TipoDescuentoRetraso)
+  tipoDescuentoRetraso?: TipoDescuentoRetraso;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0)
   @Max(100)
-  valorDescuentoRetraso?:
-    number | null;
+  valorDescuentoRetraso?: number | null;
 
   @IsOptional()
-  @IsEnum(
-    VisibilidadRespuestasForo,
-  )
-  visibilidadRespuestas?:
-    VisibilidadRespuestasForo;
+  @IsEnum(VisibilidadRespuestasForo)
+  visibilidadRespuestas?: VisibilidadRespuestasForo;
 
   @IsOptional()
   @IsBoolean()
-  permitirAdjuntosTema?:
-    boolean;
+  permitirAdjuntosTema?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirAdjuntosRespuesta?:
-    boolean;
+  permitirAdjuntosRespuesta?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirAdjuntosComentario?:
-    boolean;
+  permitirAdjuntosComentario?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  exigirAdjuntoRespuesta?:
-    boolean;
+  exigirAdjuntoRespuesta?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  permitirDescargaAdjuntos?:
-    boolean;
+  permitirDescargaAdjuntos?: boolean;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(20)
-  maximoArchivosTema?:
-    number;
+  maximoArchivosTema?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(20)
-  maximoArchivosRespuesta?:
-    number;
+  maximoArchivosRespuesta?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(10)
-  maximoArchivosComentario?:
-    number;
+  maximoArchivosComentario?: number;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)
-  tamanioMaximoArchivoMb?:
-    number;
+  tamanioMaximoArchivoMb?: number;
 
   @IsOptional()
   @IsArray()
   @ArrayUnique()
   @ArrayMaxSize(12)
   @IsString({
-    each:
-      true,
+    each: true,
   })
-  extensionesPermitidas?:
-    string[];
+  extensionesPermitidas?: string[];
 
   @IsOptional()
   @IsBoolean()
-  participaEnPromedio?:
-    boolean;
-} 
+  participaEnPromedio?: boolean;
+}

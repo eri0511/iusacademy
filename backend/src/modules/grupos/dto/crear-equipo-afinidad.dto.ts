@@ -14,8 +14,7 @@ export class CrearEquipoAfinidadDto {
   @IsOptional()
   @IsString()
   @MaxLength(800)
-  descripcion?:
-    string;
+  descripcion?: string;
 
   /*
    * Se envían únicamente los compañeros elegidos.
@@ -27,22 +26,15 @@ export class CrearEquipoAfinidadDto {
   @ArrayMinSize(1)
   @ArrayMaxSize(100)
   @IsInt({
-    each:
-      true,
+    each: true,
   })
-  @Min(
-    1,
-    {
-      each:
-        true,
-    },
-  )
-  integrantesIds!:
-    number[];
+  @Min(1, {
+    each: true,
+  })
+  integrantesIds!: number[];
 
   @IsOptional()
   @IsInt()
   @Min(1)
-  representanteId?:
-    number;
+  representanteId?: number;
 }

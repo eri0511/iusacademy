@@ -1,24 +1,10 @@
-import {
-  Injectable,
-} from '@nestjs/common';
-import ExcelJS, {
-  Row,
-  Worksheet,
-} from 'exceljs';
+import { Injectable } from '@nestjs/common';
+import ExcelJS, { Row, Worksheet } from 'exceljs';
 
-import {
-  MIME_REPORTE,
-  REPORTES_CONFIG,
-} from '../constants/reportes.constants';
-import {
-  construirNombreArchivoReporte,
-} from '../helpers/archivos.helper';
-import {
-  generarCodigoUnicoReporte,
-} from '../helpers/codigos.helper';
-import {
-  formatearFechaHoraReporte,
-} from '../helpers/fechas.helper';
+import { MIME_REPORTE, REPORTES_CONFIG } from '../constants/reportes.constants';
+import { construirNombreArchivoReporte } from '../helpers/archivos.helper';
+import { generarCodigoUnicoReporte } from '../helpers/codigos.helper';
+import { formatearFechaHoraReporte } from '../helpers/fechas.helper';
 import {
   normalizarNombreHojaExcel,
   normalizarTextoReporte,
@@ -62,27 +48,31 @@ export class ExcelService {
     validarDefinicionReporte(definicion);
 
     const generadoEn = definicion.metadatos.fechaGeneracion ?? new Date();
-    const codigoUnico = definicion.metadatos.codigoUnico ?? generarCodigoUnicoReporte();
+    const codigoUnico =
+      definicion.metadatos.codigoUnico ?? generarCodigoUnicoReporte();
     const libro = new ExcelJS.Workbook();
 
     libro.creator = REPORTES_CONFIG.nombreAplicacion;
-    libro.company = definicion.metadatos.institucion ?? REPORTES_CONFIG.nombreInstitucion;
+    libro.company =
+      definicion.metadatos.institucion ?? REPORTES_CONFIG.nombreInstitucion;
     libro.title = definicion.metadatos.titulo;
     libro.subject = definicion.metadatos.subtitulo ?? 'Reporte académico';
     libro.created = generadoEn;
     libro.modified = generadoEn;
 
     definicion.secciones.forEach((seccion, indice) => {
-      const nombreBase = seccion.titulo
-        ?? (indice === 0 ? definicion.opciones?.nombreHojaExcel : undefined)
-        ?? `Sección ${indice + 1}`;
+      const nombreBase =
+        seccion.titulo ??
+        (indice === 0 ? definicion.opciones?.nombreHojaExcel : undefined) ??
+        `Sección ${indice + 1}`;
       const nombreHoja = this.obtenerNombreHojaUnico(libro, nombreBase);
       const hoja = libro.addWorksheet(nombreHoja, {
         properties: { defaultRowHeight: 20 },
         pageSetup: {
-          orientation: definicion.opciones?.orientacion === 'HORIZONTAL'
-            ? 'landscape'
-            : 'portrait',
+          orientation:
+            definicion.opciones?.orientacion === 'HORIZONTAL'
+              ? 'landscape'
+              : 'portrait',
           fitToPage: true,
           fitToWidth: 1,
           fitToHeight: 0,
@@ -97,13 +87,7 @@ export class ExcelService {
         },
       });
 
-      this.construirHoja(
-        hoja,
-        definicion,
-        seccion,
-        codigoUnico,
-        generadoEn,
-      );
+      this.construirHoja(hoja, definicion, seccion, codigoUnico, generadoEn);
     });
 
     const datos = await libro.xlsx.writeBuffer();
@@ -131,15 +115,29 @@ export class ExcelService {
     codigoUnico: string,
     generadoEn: Date,
   ): void {
-    const columnas = seccion.columnas.filter((columna) => columna.visible !== false);
+    const columnas = seccion.columnas.filter(
+      (columna) => columna.visible !== false,
+    );
     const incluyeNumero = seccion.mostrarNumeroFila === true;
-    const totalColumnas = Math.max(1, columnas.length + (incluyeNumero ? 1 : 0));
+    const totalColumnas = Math.max(
+      1,
+      columnas.length + (incluyeNumero ? 1 : 0),
+    );
 
     hoja.mergeCells(1, 1, 1, totalColumnas);
     const celdaMarca = hoja.getCell(1, 1);
     celdaMarca.value = `${REPORTES_CONFIG.nombreAplicacion} · ${definicion.metadatos.institucion ?? REPORTES_CONFIG.nombreInstitucion}`;
-    celdaMarca.font = { name: 'Aptos', size: 10, bold: true, color: { argb: EXCEL_COLORES.acentoOscuro } };
-    celdaMarca.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORES.crema } };
+    celdaMarca.font = {
+      name: 'Aptos',
+      size: 10,
+      bold: true,
+      color: { argb: EXCEL_COLORES.acentoOscuro },
+    };
+    celdaMarca.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: EXCEL_COLORES.crema },
+    };
     celdaMarca.alignment = { vertical: 'middle', horizontal: 'left' };
     hoja.getRow(1).height = 25;
 
@@ -155,25 +153,48 @@ export class ExcelService {
       hoja.mergeCells(filaActual, 1, filaActual, totalColumnas);
       const celda = hoja.getCell(filaActual, 1);
       celda.value = definicion.metadatos.subtitulo;
-      celda.font = { name: 'Aptos', size: 11, color: { argb: EXCEL_COLORES.textoSecundario } };
+      celda.font = {
+        name: 'Aptos',
+        size: 11,
+        color: { argb: EXCEL_COLORES.textoSecundario },
+      };
       filaActual += 1;
     }
 
     hoja.mergeCells(filaActual, 1, filaActual, totalColumnas);
     const celdaMeta = hoja.getCell(filaActual, 1);
     celdaMeta.value = `Código: ${codigoUnico}  ·  Generado: ${formatearFechaHoraReporte(generadoEn)}${definicion.metadatos.generadoPor ? `  ·  Por: ${definicion.metadatos.generadoPor}` : ''}`;
-    celdaMeta.font = { name: 'Aptos', size: 9, color: { argb: EXCEL_COLORES.textoSecundario } };
+    celdaMeta.font = {
+      name: 'Aptos',
+      size: 9,
+      color: { argb: EXCEL_COLORES.textoSecundario },
+    };
     filaActual += 2;
 
-    if (definicion.opciones?.incluirFiltros !== false && definicion.metadatos.filtros) {
+    if (
+      definicion.opciones?.incluirFiltros !== false &&
+      definicion.metadatos.filtros
+    ) {
       const filtros = Object.entries(definicion.metadatos.filtros)
-        .map(([clave, valor]) => `${clave}: ${Array.isArray(valor) ? valor.join(', ') : String(valor ?? 'Todos')}`)
+        .map(
+          ([clave, valor]) =>
+            `${clave}: ${Array.isArray(valor) ? valor.join(', ') : String(valor ?? 'Todos')}`,
+        )
         .join('  ·  ');
       hoja.mergeCells(filaActual, 1, filaActual, totalColumnas);
       const celda = hoja.getCell(filaActual, 1);
       celda.value = `Filtros · ${filtros}`;
-      celda.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORES.superficieAlterna } };
-      celda.font = { name: 'Aptos', size: 9, italic: true, color: { argb: EXCEL_COLORES.textoSecundario } };
+      celda.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: EXCEL_COLORES.superficieAlterna },
+      };
+      celda.font = {
+        name: 'Aptos',
+        size: 9,
+        italic: true,
+        color: { argb: EXCEL_COLORES.textoSecundario },
+      };
       celda.alignment = { wrapText: true, vertical: 'middle' };
       filaActual += 2;
     }
@@ -182,7 +203,12 @@ export class ExcelService {
       hoja.mergeCells(filaActual, 1, filaActual, totalColumnas);
       const celda = hoja.getCell(filaActual, 1);
       celda.value = seccion.titulo;
-      celda.font = { name: 'Aptos', size: 13, bold: true, color: { argb: EXCEL_COLORES.texto } };
+      celda.font = {
+        name: 'Aptos',
+        size: 13,
+        bold: true,
+        color: { argb: EXCEL_COLORES.texto },
+      };
       filaActual += 1;
     }
 
@@ -195,13 +221,23 @@ export class ExcelService {
     this.estilizarEncabezado(encabezado, etiquetas.length);
 
     seccion.filas.forEach((fila, indice) => {
-      const valores = columnas.map((columna) => obtenerValorFilaExcel(fila, columna, indice));
-      const filaExcel = hoja.addRow(incluyeNumero ? [indice + 1, ...valores] : valores);
+      const valores = columnas.map((columna) =>
+        obtenerValorFilaExcel(fila, columna, indice),
+      );
+      const filaExcel = hoja.addRow(
+        incluyeNumero ? [indice + 1, ...valores] : valores,
+      );
       filaExcel.height = 22;
 
       filaExcel.eachCell({ includeEmpty: true }, (celda, indiceColumna) => {
-        const columna = incluyeNumero ? columnas[indiceColumna - 2] : columnas[indiceColumna - 1];
-        celda.font = { name: 'Aptos', size: 10, color: { argb: EXCEL_COLORES.texto } };
+        const columna = incluyeNumero
+          ? columnas[indiceColumna - 2]
+          : columnas[indiceColumna - 1];
+        celda.font = {
+          name: 'Aptos',
+          size: 10,
+          color: { argb: EXCEL_COLORES.texto },
+        };
         celda.border = EXCEL_BORDE_CELDA;
         celda.alignment = {
           ...EXCEL_ALINEACION_CELDA,
@@ -213,9 +249,10 @@ export class ExcelService {
           type: 'pattern',
           pattern: 'solid',
           fgColor: {
-            argb: indice % 2 === 0
-              ? EXCEL_COLORES.superficie
-              : EXCEL_COLORES.superficieAlterna,
+            argb:
+              indice % 2 === 0
+                ? EXCEL_COLORES.superficie
+                : EXCEL_COLORES.superficieAlterna,
           },
         };
         if (columna) {
@@ -229,8 +266,17 @@ export class ExcelService {
       const celda = hoja.getCell(filaEncabezado + 1, 1);
       celda.value = 'No existen registros para los filtros seleccionados.';
       celda.alignment = { horizontal: 'center', vertical: 'middle' };
-      celda.font = { name: 'Aptos', size: 10, italic: true, color: { argb: EXCEL_COLORES.textoSecundario } };
-      celda.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_COLORES.superficie } };
+      celda.font = {
+        name: 'Aptos',
+        size: 10,
+        italic: true,
+        color: { argb: EXCEL_COLORES.textoSecundario },
+      };
+      celda.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: EXCEL_COLORES.superficie },
+      };
     }
 
     let offset = 1;
@@ -239,14 +285,23 @@ export class ExcelService {
       offset = 2;
     }
     columnas.forEach((columna, indice) => {
-      hoja.getColumn(indice + offset).width = calcularAnchoExcel(columna, seccion.filas);
+      hoja.getColumn(indice + offset).width = calcularAnchoExcel(
+        columna,
+        seccion.filas,
+      );
     });
 
     hoja.autoFilter = {
       from: { row: filaEncabezado, column: 1 },
       to: { row: filaEncabezado, column: totalColumnas },
     };
-    hoja.views = [{ state: 'frozen', ySplit: filaEncabezado, activeCell: `A${filaEncabezado + 1}` }];
+    hoja.views = [
+      {
+        state: 'frozen',
+        ySplit: filaEncabezado,
+        activeCell: `A${filaEncabezado + 1}`,
+      },
+    ];
     hoja.headerFooter.oddFooter = `&LIusAcademy · ${codigoUnico}&RPágina &P de &N`;
     hoja.pageSetup.printTitlesRow = `${filaEncabezado}:${filaEncabezado}`;
     hoja.pageSetup.printArea = `A1:${hoja.getColumn(totalColumnas).letter}${Math.max(filaEncabezado + 1, hoja.rowCount)}`;
@@ -259,11 +314,18 @@ export class ExcelService {
       celda.font = EXCEL_FUENTE_ENCABEZADO;
       celda.fill = EXCEL_RELLENO_ENCABEZADO;
       celda.border = EXCEL_BORDE_CELDA;
-      celda.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      celda.alignment = {
+        horizontal: 'center',
+        vertical: 'middle',
+        wrapText: true,
+      };
     }
   }
 
-  private obtenerNombreHojaUnico(libro: ExcelJS.Workbook, nombre: string): string {
+  private obtenerNombreHojaUnico(
+    libro: ExcelJS.Workbook,
+    nombre: string,
+  ): string {
     const base = normalizarNombreHojaExcel(normalizarTextoReporte(nombre));
     let candidato = base;
     let numero = 2;

@@ -8,43 +8,23 @@ import {
 
 import * as argon2 from 'argon2';
 
-import {
-  randomUUID,
-} from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
-import {
-  mkdir,
-  unlink,
-  writeFile,
-} from 'node:fs/promises';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
 
-import {
-  basename,
-  join,
-} from 'node:path';
+import { basename, join } from 'node:path';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-import {
-  ActualizarPerfilDto,
-} from './dto/actualizar-perfil.dto';
+import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 
-import {
-  CambiarPasswordPerfilDto,
-} from './dto/cambiar-password-perfil.dto';
+import { CambiarPasswordPerfilDto } from './dto/cambiar-password-perfil.dto';
 
-import type {
-  ArchivoPerfil,
-} from './types/archivo-perfil.type';
+import type { ArchivoPerfil } from './types/archivo-perfil.type';
 
 @Injectable()
 export class PerfilService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private readonly seleccionPerfil = {
     id: true,
@@ -62,34 +42,20 @@ export class PerfilService {
     actualizadoEn: true,
   };
 
-  private obtenerDirectorioPerfiles():
-    string {
-    return join(
-      process.cwd(),
-      'uploads',
-      'perfiles',
-    );
+  private obtenerDirectorioPerfiles(): string {
+    return join(process.cwd(), 'uploads', 'perfiles');
   }
 
-  private obtenerExtension(
-    tipoMime: string,
-  ): string {
-    const extensiones:
-      Record<string, string> = {
-        'image/jpeg':
-          'jpg',
+  private obtenerExtension(tipoMime: string): string {
+    const extensiones: Record<string, string> = {
+      'image/jpeg': 'jpg',
 
-        'image/png':
-          'png',
+      'image/png': 'png',
 
-        'image/webp':
-          'webp',
-      };
+      'image/webp': 'webp',
+    };
 
-    const extension =
-      extensiones[
-        tipoMime
-      ];
+    const extension = extensiones[tipoMime];
 
     if (!extension) {
       throw new BadRequestException(
@@ -101,8 +67,7 @@ export class PerfilService {
   }
 
   private async eliminarArchivoAnterior(
-    fotoPerfilUrl:
-      string | null,
+    fotoPerfilUrl: string | null,
   ): Promise<void> {
     if (!fotoPerfilUrl) {
       return;
@@ -112,201 +77,128 @@ export class PerfilService {
      * basename evita que una ruta guardada
      * pueda salir del directorio de perfiles.
      */
-    const nombreArchivo =
-      basename(
-        fotoPerfilUrl,
-      );
+    const nombreArchivo = basename(fotoPerfilUrl);
 
-    const rutaArchivo =
-      join(
-        this.obtenerDirectorioPerfiles(),
-        nombreArchivo,
-      );
+    const rutaArchivo = join(this.obtenerDirectorioPerfiles(), nombreArchivo);
 
     try {
-      await unlink(
-        rutaArchivo,
-      );
-    } catch (
-      error
-    ) {
-      const errorArchivo =
-        error as NodeJS.ErrnoException;
+      await unlink(rutaArchivo);
+    } catch (error) {
+      const errorArchivo = error as NodeJS.ErrnoException;
 
       /*
        * Si el archivo ya no existe,
        * no interrumpimos la operación.
        */
-      if (
-        errorArchivo.code !==
-        'ENOENT'
-      ) {
-        console.error(
-          'No fue posible eliminar la fotografía anterior:',
-          error,
-        );
+      if (errorArchivo.code !== 'ENOENT') {
+        console.error('No fue posible eliminar la fotografía anterior:', error);
       }
     }
   }
 
-  private async verificarUsuario(
-    usuarioId: number,
-  ) {
-    const usuario =
-      await this.prisma.usuario.findUnique({
-        where: {
-          id:
-            usuarioId,
-        },
+  private async verificarUsuario(usuarioId: number) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: {
+        id: usuarioId,
+      },
 
-        select: {
-          id: true,
-          estaActivo: true,
-          passwordHash: true,
-          fotoPerfilUrl: true,
-        },
-      });
+      select: {
+        id: true,
+        estaActivo: true,
+        passwordHash: true,
+        fotoPerfilUrl: true,
+      },
+    });
 
     if (!usuario) {
-      throw new NotFoundException(
-        'El usuario no existe',
-      );
+      throw new NotFoundException('El usuario no existe');
     }
 
     if (!usuario.estaActivo) {
-      throw new UnauthorizedException(
-        'La cuenta se encuentra desactivada',
-      );
+      throw new UnauthorizedException('La cuenta se encuentra desactivada');
     }
 
     return usuario;
   }
 
-  async obtenerPerfil(
-    usuarioId: number,
-  ) {
-    const usuario =
-      await this.prisma.usuario.findUnique({
-        where: {
-          id:
-            usuarioId,
-        },
+  async obtenerPerfil(usuarioId: number) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: {
+        id: usuarioId,
+      },
 
-        select:
-          this.seleccionPerfil,
-      });
+      select: this.seleccionPerfil,
+    });
 
     if (!usuario) {
-      throw new NotFoundException(
-        'El usuario no existe',
-      );
+      throw new NotFoundException('El usuario no existe');
     }
 
     if (!usuario.estaActivo) {
-      throw new UnauthorizedException(
-        'La cuenta se encuentra desactivada',
-      );
+      throw new UnauthorizedException('La cuenta se encuentra desactivada');
     }
 
     return usuario;
   }
 
-  async actualizarPerfil(
-    usuarioId: number,
-    datos:
-      ActualizarPerfilDto,
-  ) {
-    await this.verificarUsuario(
-      usuarioId,
-    );
+  async actualizarPerfil(usuarioId: number, datos: ActualizarPerfilDto) {
+    await this.verificarUsuario(usuarioId);
 
-    const nombres =
-      datos.nombres
-        ?.trim();
+    const nombres = datos.nombres?.trim();
 
-    const apellidoPaterno =
-      datos.apellidoPaterno
-        ?.trim();
+    const apellidoPaterno = datos.apellidoPaterno?.trim();
 
-    const apellidoMaterno =
-      datos.apellidoMaterno
-        ?.trim();
+    const apellidoMaterno = datos.apellidoMaterno?.trim();
 
-    if (
-      nombres !==
-        undefined &&
-      nombres.length <
-        2
-    ) {
+    if (nombres !== undefined && nombres.length < 2) {
       throw new BadRequestException(
         'Los nombres deben tener al menos 2 caracteres',
       );
     }
 
-    if (
-      apellidoPaterno !==
-        undefined &&
-      apellidoPaterno.length <
-        2
-    ) {
+    if (apellidoPaterno !== undefined && apellidoPaterno.length < 2) {
       throw new BadRequestException(
         'El apellido paterno debe tener al menos 2 caracteres',
       );
     }
 
-    const perfil =
-      await this.prisma.usuario.update({
-        where: {
-          id:
-            usuarioId,
-        },
+    const perfil = await this.prisma.usuario.update({
+      where: {
+        id: usuarioId,
+      },
 
-        data: {
-          ...(nombres !==
-          undefined
-            ? {
-                nombres,
-              }
-            : {}),
+      data: {
+        ...(nombres !== undefined
+          ? {
+              nombres,
+            }
+          : {}),
 
-          ...(apellidoPaterno !==
-          undefined
-            ? {
-                apellidoPaterno,
-              }
-            : {}),
+        ...(apellidoPaterno !== undefined
+          ? {
+              apellidoPaterno,
+            }
+          : {}),
 
-          ...(datos.apellidoMaterno !==
-          undefined
-            ? {
-                apellidoMaterno:
-                  apellidoMaterno ||
-                  null,
-              }
-            : {}),
-        },
+        ...(datos.apellidoMaterno !== undefined
+          ? {
+              apellidoMaterno: apellidoMaterno || null,
+            }
+          : {}),
+      },
 
-        select:
-          this.seleccionPerfil,
-      });
+      select: this.seleccionPerfil,
+    });
 
     return {
-      mensaje:
-        'Perfil actualizado correctamente',
+      mensaje: 'Perfil actualizado correctamente',
 
       perfil,
     };
   }
 
-  async cambiarPassword(
-    usuarioId: number,
-    datos:
-      CambiarPasswordPerfilDto,
-  ) {
-    const usuario =
-      await this.verificarUsuario(
-        usuarioId,
-      );
+  async cambiarPassword(usuarioId: number, datos: CambiarPasswordPerfilDto) {
+    const usuario = await this.verificarUsuario(usuarioId);
 
     if (!usuario.passwordHash) {
       throw new BadRequestException(
@@ -314,190 +206,120 @@ export class PerfilService {
       );
     }
 
-    if (
-      datos.nuevaPassword !==
-      datos.confirmarPassword
-    ) {
+    if (datos.nuevaPassword !== datos.confirmarPassword) {
       throw new BadRequestException(
         'La nueva contraseña y su confirmación no coinciden',
       );
     }
 
-    const passwordActualCorrecta =
-      await argon2.verify(
-        usuario.passwordHash,
-        datos.passwordActual,
-      );
+    const passwordActualCorrecta = await argon2.verify(
+      usuario.passwordHash,
+      datos.passwordActual,
+    );
 
-    if (
-      !passwordActualCorrecta
-    ) {
-      throw new UnauthorizedException(
-        'La contraseña actual es incorrecta',
-      );
+    if (!passwordActualCorrecta) {
+      throw new UnauthorizedException('La contraseña actual es incorrecta');
     }
 
-    const nuevaIgualActual =
-      await argon2.verify(
-        usuario.passwordHash,
-        datos.nuevaPassword,
-      );
+    const nuevaIgualActual = await argon2.verify(
+      usuario.passwordHash,
+      datos.nuevaPassword,
+    );
 
-    if (
-      nuevaIgualActual
-    ) {
+    if (nuevaIgualActual) {
       throw new BadRequestException(
         'La nueva contraseña debe ser diferente de la contraseña actual',
       );
     }
 
-    const nuevoPasswordHash =
-      await argon2.hash(
-        datos.nuevaPassword,
-      );
+    const nuevoPasswordHash = await argon2.hash(datos.nuevaPassword);
 
     await this.prisma.usuario.update({
       where: {
-        id:
-          usuarioId,
+        id: usuarioId,
       },
 
       data: {
-        passwordHash:
-          nuevoPasswordHash,
+        passwordHash: nuevoPasswordHash,
 
-        passwordCambiadaEn:
-          new Date(),
+        passwordCambiadaEn: new Date(),
       },
     });
 
     return {
-      mensaje:
-        'Contraseña actualizada correctamente',
+      mensaje: 'Contraseña actualizada correctamente',
     };
   }
 
-  async actualizarFoto(
-    usuarioId: number,
-    archivo:
-      ArchivoPerfil,
-  ) {
-    const usuario =
-      await this.verificarUsuario(
-        usuarioId,
-      );
+  async actualizarFoto(usuarioId: number, archivo: ArchivoPerfil) {
+    const usuario = await this.verificarUsuario(usuarioId);
 
-    if (
-      !archivo ||
-      !archivo.buffer
-    ) {
-      throw new BadRequestException(
-        'Debes seleccionar una fotografía',
-      );
+    if (!archivo || !archivo.buffer) {
+      throw new BadRequestException('Debes seleccionar una fotografía');
     }
 
-    const limiteBytes =
-      3 *
-      1024 *
-      1024;
+    const limiteBytes = 3 * 1024 * 1024;
 
-    if (
-      archivo.size >
-      limiteBytes
-    ) {
-      throw new BadRequestException(
-        'La fotografía no puede superar los 3 MB',
-      );
+    if (archivo.size > limiteBytes) {
+      throw new BadRequestException('La fotografía no puede superar los 3 MB');
     }
 
-    const extension =
-      this.obtenerExtension(
-        archivo.mimetype,
-      );
+    const extension = this.obtenerExtension(archivo.mimetype);
 
-    const directorio =
-      this.obtenerDirectorioPerfiles();
+    const directorio = this.obtenerDirectorioPerfiles();
 
-    await mkdir(
-      directorio,
-      {
-        recursive:
-          true,
-      },
-    );
+    await mkdir(directorio, {
+      recursive: true,
+    });
 
     const nombreArchivo =
-      [
-        `usuario-${usuarioId}`,
-        Date.now(),
-        randomUUID(),
-      ].join(
-        '-',
-      ) +
+      [`usuario-${usuarioId}`, Date.now(), randomUUID()].join('-') +
       `.${extension}`;
 
-    const rutaArchivo =
-      join(
-        directorio,
-        nombreArchivo,
-      );
+    const rutaArchivo = join(directorio, nombreArchivo);
 
-    const fotoPerfilUrl =
-      `/uploads/perfiles/${nombreArchivo}`;
+    const fotoPerfilUrl = `/uploads/perfiles/${nombreArchivo}`;
 
     try {
       /*
        * Primero guardamos el nuevo archivo.
        */
-      await writeFile(
-        rutaArchivo,
-        archivo.buffer,
-      );
+      await writeFile(rutaArchivo, archivo.buffer);
 
       /*
        * Después actualizamos PostgreSQL.
        */
-      const perfil =
-        await this.prisma.usuario.update({
-          where: {
-            id:
-              usuarioId,
-          },
+      const perfil = await this.prisma.usuario.update({
+        where: {
+          id: usuarioId,
+        },
 
-          data: {
-            fotoPerfilUrl,
-          },
+        data: {
+          fotoPerfilUrl,
+        },
 
-          select:
-            this.seleccionPerfil,
-        });
+        select: this.seleccionPerfil,
+      });
 
       /*
        * Cuando la BD ya fue actualizada,
        * eliminamos la fotografía anterior.
        */
-      await this.eliminarArchivoAnterior(
-        usuario.fotoPerfilUrl,
-      );
+      await this.eliminarArchivoAnterior(usuario.fotoPerfilUrl);
 
       return {
-        mensaje:
-          'Fotografía actualizada correctamente',
+        mensaje: 'Fotografía actualizada correctamente',
 
         perfil,
       };
-    } catch (
-      error
-    ) {
+    } catch (error) {
       /*
        * Si ocurrió un error después de guardar
        * el archivo, eliminamos el archivo nuevo
        * para no dejar archivos huérfanos.
        */
       try {
-        await unlink(
-          rutaArchivo,
-        );
+        await unlink(rutaArchivo);
       } catch {
         /*
          * No hacemos nada si el archivo
@@ -505,10 +327,7 @@ export class PerfilService {
          */
       }
 
-      console.error(
-        'Error al actualizar la fotografía:',
-        error,
-      );
+      console.error('Error al actualizar la fotografía:', error);
 
       throw new InternalServerErrorException(
         'No fue posible guardar la fotografía',
@@ -516,54 +335,35 @@ export class PerfilService {
     }
   }
 
-  async eliminarFoto(
-    usuarioId: number,
-  ) {
-    const usuario =
-      await this.verificarUsuario(
-        usuarioId,
-      );
+  async eliminarFoto(usuarioId: number) {
+    const usuario = await this.verificarUsuario(usuarioId);
 
-    if (
-      !usuario.fotoPerfilUrl
-    ) {
+    if (!usuario.fotoPerfilUrl) {
       return {
-        mensaje:
-          'El perfil no tiene una fotografía registrada',
+        mensaje: 'El perfil no tiene una fotografía registrada',
 
-        perfil:
-          await this.obtenerPerfil(
-            usuarioId,
-          ),
+        perfil: await this.obtenerPerfil(usuarioId),
       };
     }
 
-    const fotoAnterior =
-      usuario.fotoPerfilUrl;
+    const fotoAnterior = usuario.fotoPerfilUrl;
 
-    const perfil =
-      await this.prisma.usuario.update({
-        where: {
-          id:
-            usuarioId,
-        },
+    const perfil = await this.prisma.usuario.update({
+      where: {
+        id: usuarioId,
+      },
 
-        data: {
-          fotoPerfilUrl:
-            null,
-        },
+      data: {
+        fotoPerfilUrl: null,
+      },
 
-        select:
-          this.seleccionPerfil,
-      });
+      select: this.seleccionPerfil,
+    });
 
-    await this.eliminarArchivoAnterior(
-      fotoAnterior,
-    );
+    await this.eliminarArchivoAnterior(fotoAnterior);
 
     return {
-      mensaje:
-        'Fotografía eliminada correctamente',
+      mensaje: 'Fotografía eliminada correctamente',
 
       perfil,
     };

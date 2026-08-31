@@ -5,13 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import {
-  createHash,
-} from 'node:crypto';
+import { createHash } from 'node:crypto';
 
-import {
-  extname,
-} from 'node:path';
+import { extname } from 'node:path';
 
 import {
   CapacidadTarea,
@@ -24,129 +20,71 @@ import {
   TipoContenidoRecurso,
 } from '../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-import {
-  ActualizarArchivoDto,
-} from './dto/actualizar-archivo.dto';
+import { ActualizarArchivoDto } from './dto/actualizar-archivo.dto';
 
-import {
-  AlmacenamientoArchivos,
-} from './almacenamiento/almacenamiento.interface';
+import { AlmacenamientoArchivos } from './almacenamiento/almacenamiento.interface';
 
-import type {
-  UsuarioAutenticado,
-} from './interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
-import {
-  ProcesadorPdfService,
-} from './procesamiento/procesador-pdf.service';
+import { ProcesadorPdfService } from './procesamiento/procesador-pdf.service';
 
 type ArchivoSubido = {
-  originalname:
-    string;
+  originalname: string;
 
-  mimetype:
-    string;
+  mimetype: string;
 
-  size:
-    number;
+  size: number;
 
-  buffer:
-    Buffer;
+  buffer: Buffer;
 };
 
 @Injectable()
 export class ArchivosService {
   constructor(
-    private readonly prisma:
-      PrismaService,
+    private readonly prisma: PrismaService,
 
-    private readonly almacenamiento:
-      AlmacenamientoArchivos,
+    private readonly almacenamiento: AlmacenamientoArchivos,
 
-    private readonly procesadorPdf:
-      ProcesadorPdfService,
+    private readonly procesadorPdf: ProcesadorPdfService,
   ) {}
 
-  private obtenerExtension(
-    nombre:
-      string,
-  ) {
-    return extname(
-      nombre,
-    )
-      .replace(
-        '.',
-        '',
-      )
-      .trim()
-      .toLowerCase();
+  private obtenerExtension(nombre: string) {
+    return extname(nombre).replace('.', '').trim().toLowerCase();
   }
 
-  private calcularHash(
-    buffer:
-      Buffer,
-  ) {
-    return createHash(
-      'sha256',
-    )
-      .update(
-        buffer,
-      )
-      .digest(
-        'hex',
-      );
+  private calcularHash(buffer: Buffer) {
+    return createHash('sha256').update(buffer).digest('hex');
   }
 
-  private validarArchivoGeneral(
-    archivo:
-      ArchivoSubido | undefined,
-  ) {
+  private validarArchivoGeneral(archivo: ArchivoSubido | undefined) {
     if (!archivo) {
-      throw new BadRequestException(
-        'Debes seleccionar un archivo',
-      );
+      throw new BadRequestException('Debes seleccionar un archivo');
     }
 
-    if (
-      !archivo.buffer ||
-      archivo.size <=
-        0
-    ) {
-      throw new BadRequestException(
-        'El archivo está vacío',
-      );
+    if (!archivo.buffer || archivo.size <= 0) {
+      throw new BadRequestException('El archivo está vacío');
     }
 
-    const extension =
-      this.obtenerExtension(
-        archivo.originalname,
-      );
+    const extension = this.obtenerExtension(archivo.originalname);
 
-    const permitidas =
-      [
-        'pdf',
-        'doc',
-        'docx',
-        'ppt',
-        'pptx',
-        'xls',
-        'xlsx',
-        'txt',
-        'jpg',
-        'jpeg',
-        'png',
-        'webp',
-      ];
+    const permitidas = [
+      'pdf',
+      'doc',
+      'docx',
+      'ppt',
+      'pptx',
+      'xls',
+      'xlsx',
+      'txt',
+      'jpg',
+      'jpeg',
+      'png',
+      'webp',
+    ];
 
-    if (
-      !permitidas.includes(
-        extension,
-      )
-    ) {
+    if (!permitidas.includes(extension)) {
       throw new BadRequestException(
         'Formato no permitido. Usa un documento, presentación, hoja de cálculo, texto o imagen compatible',
       );
@@ -156,67 +94,44 @@ export class ArchivosService {
   }
 
   private async validarAccesoCurso(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
   ) {
-    const curso =
-      await this.prisma.curso.findUnique({
-        where: {
-          id:
-            cursoId,
-        },
+    const curso = await this.prisma.curso.findUnique({
+      where: {
+        id: cursoId,
+      },
 
-        select: {
-          id:
-            true,
-          docenteId:
-            true,
-        },
-      });
+      select: {
+        id: true,
+        docenteId: true,
+      },
+    });
 
     if (!curso) {
-      throw new NotFoundException(
-        'El curso no existe',
-      );
+      throw new NotFoundException('El curso no existe');
     }
 
-    if (
-      usuario.rol ===
-      Rol.DOCENTE
-    ) {
-      if (
-        curso.docenteId !==
-        usuario.id
-      ) {
-        throw new ForbiddenException(
-          'No tienes acceso a este curso',
-        );
+    if (usuario.rol === Rol.DOCENTE) {
+      if (curso.docenteId !== usuario.id) {
+        throw new ForbiddenException('No tienes acceso a este curso');
       }
 
       return;
     }
 
-    if (
-      usuario.rol ===
-      Rol.ESTUDIANTE
-    ) {
-      const inscripcion =
-        await this.prisma.inscripcionCurso.findFirst({
-          where: {
-            cursoId,
-            estudianteId:
-              usuario.id,
-            estado:
-              EstadoInscripcion.ACTIVA,
-          },
+    if (usuario.rol === Rol.ESTUDIANTE) {
+      const inscripcion = await this.prisma.inscripcionCurso.findFirst({
+        where: {
+          cursoId,
+          estudianteId: usuario.id,
+          estado: EstadoInscripcion.ACTIVA,
+        },
 
-          select: {
-            id:
-              true,
-          },
-        });
+        select: {
+          id: true,
+        },
+      });
 
       if (!inscripcion) {
         throw new ForbiddenException(
@@ -233,48 +148,29 @@ export class ArchivosService {
   }
 
   private validarConfiguracionArchivo(
-    archivo:
-      ArchivoSubido,
-    extension:
-      string,
+    archivo: ArchivoSubido,
+    extension: string,
     configuracion: {
-      extensionesPermitidas:
-        string[];
+      extensionesPermitidas: string[];
 
-      tamanioMaximoArchivoMb:
-        number;
+      tamanioMaximoArchivoMb: number;
 
-      maximoPermitido:
-        number;
+      maximoPermitido: number;
 
-      totalActual:
-        number;
+      totalActual: number;
 
-      habilitado:
-        boolean;
+      habilitado: boolean;
     },
   ) {
-    if (
-      !configuracion.habilitado
-    ) {
+    if (!configuracion.habilitado) {
       throw new BadRequestException(
         'La carga de archivos está deshabilitada para esta sección',
       );
     }
 
-    const extensiones =
-      configuracion.extensionesPermitidas.map(
-        (
-          item,
-        ) =>
-          item
-            .trim()
-            .toLowerCase()
-            .replace(
-              /^\./,
-              '',
-            ),
-      );
+    const extensiones = configuracion.extensionesPermitidas.map((item) =>
+      item.trim().toLowerCase().replace(/^\./, ''),
+    );
 
     /*
      * JPG y JPEG representan el mismo formato de imagen.
@@ -284,46 +180,25 @@ export class ArchivosService {
      * válida con 400 Bad Request.
      */
     const extensionPermitida =
-      extensiones.includes(
-        extension,
-      ) ||
-      (extension ===
-        'jpeg' &&
-        extensiones.includes(
-          'jpg',
-        )) ||
-      (extension ===
-        'jpg' &&
-        extensiones.includes(
-          'jpeg',
-        ));
+      extensiones.includes(extension) ||
+      (extension === 'jpeg' && extensiones.includes('jpg')) ||
+      (extension === 'jpg' && extensiones.includes('jpeg'));
 
-    if (
-      !extensionPermitida
-    ) {
+    if (!extensionPermitida) {
       throw new BadRequestException(
         `El formato .${extension} no está permitido en esta actividad`,
       );
     }
 
-    const limiteBytes =
-      configuracion.tamanioMaximoArchivoMb *
-      1024 *
-      1024;
+    const limiteBytes = configuracion.tamanioMaximoArchivoMb * 1024 * 1024;
 
-    if (
-      archivo.size >
-      limiteBytes
-    ) {
+    if (archivo.size > limiteBytes) {
       throw new BadRequestException(
         `El archivo supera el límite de ${configuracion.tamanioMaximoArchivoMb} MB`,
       );
     }
 
-    if (
-      configuracion.totalActual >=
-      configuracion.maximoPermitido
-    ) {
+    if (configuracion.totalActual >= configuracion.maximoPermitido) {
       throw new BadRequestException(
         `Se alcanzó el máximo de ${configuracion.maximoPermitido} archivos`,
       );
@@ -331,37 +206,30 @@ export class ArchivosService {
   }
 
   private async evitarDuplicado(
-    hash:
-      string,
+    hash: string,
     filtros: {
-      temaForoId?:
-        number;
+      temaForoId?: number;
 
-      respuestaForoId?:
-        number;
+      respuestaForoId?: number;
 
-      comentarioForoId?:
-        number;
+      comentarioForoId?: number;
 
-      entregaTareaId?:
-        number;
+      tareaId?: number;
+
+      entregaTareaId?: number;
     },
   ) {
-    const duplicado =
-      await this.prisma.archivoAdjunto.findFirst({
-        where: {
-          hashSha256:
-            hash,
-          estaActivo:
-            true,
-          ...filtros,
-        },
+    const duplicado = await this.prisma.archivoAdjunto.findFirst({
+      where: {
+        hashSha256: hash,
+        estaActivo: true,
+        ...filtros,
+      },
 
-        select: {
-          id:
-            true,
-        },
-      });
+      select: {
+        id: true,
+      },
+    });
 
     if (duplicado) {
       throw new BadRequestException(
@@ -371,236 +239,151 @@ export class ArchivosService {
   }
 
   async subirArchivoTema(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    foroId:
-      number,
-    archivo:
-      ArchivoSubido | undefined,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    foroId: number,
+    archivo: ArchivoSubido | undefined,
   ) {
-    await this.validarAccesoCurso(
-      usuario,
-      cursoId,
-    );
+    await this.validarAccesoCurso(usuario, cursoId);
 
-    if (
-      usuario.rol !==
-      Rol.DOCENTE
-    ) {
+    if (usuario.rol !== Rol.DOCENTE) {
       throw new ForbiddenException(
         'Solo el docente puede adjuntar archivos al tema principal',
       );
     }
 
-    const extension =
-      this.validarArchivoGeneral(
-        archivo,
-      );
+    const extension = this.validarArchivoGeneral(archivo);
 
-    const foro =
-      await this.prisma.temaForoCurso.findFirst({
-        where: {
-          id:
-            foroId,
-          cursoId,
-          estaActivo:
-            true,
-        },
+    const foro = await this.prisma.temaForoCurso.findFirst({
+      where: {
+        id: foroId,
+        cursoId,
+        estaActivo: true,
+      },
 
-        include: {
-          _count: {
-            select: {
-              archivos:
-                true,
-            },
+      include: {
+        _count: {
+          select: {
+            archivos: true,
           },
         },
-      });
+      },
+    });
 
     if (!foro) {
-      throw new NotFoundException(
-        'El foro no existe',
-      );
+      throw new NotFoundException('El foro no existe');
     }
 
-    this.validarConfiguracionArchivo(
-      archivo!,
+    this.validarConfiguracionArchivo(archivo!, extension, {
+      extensionesPermitidas: foro.extensionesPermitidas,
+      tamanioMaximoArchivoMb: foro.tamanioMaximoArchivoMb,
+      maximoPermitido: foro.maximoArchivosTema,
+      totalActual: foro._count.archivos,
+      habilitado: foro.permitirAdjuntosTema,
+    });
+
+    const hash = this.calcularHash(archivo!.buffer);
+
+    await this.evitarDuplicado(hash, {
+      temaForoId: foro.id,
+    });
+
+    const guardado = await this.almacenamiento.guardar({
+      buffer: archivo!.buffer,
+      nombreOriginal: archivo!.originalname,
       extension,
-      {
-        extensionesPermitidas:
-          foro.extensionesPermitidas,
-        tamanioMaximoArchivoMb:
-          foro.tamanioMaximoArchivoMb,
-        maximoPermitido:
-          foro.maximoArchivosTema,
-        totalActual:
-          foro._count.archivos,
-        habilitado:
-          foro.permitirAdjuntosTema,
-      },
-    );
-
-    const hash =
-      this.calcularHash(
-        archivo!.buffer,
-      );
-
-    await this.evitarDuplicado(
-      hash,
-      {
-        temaForoId:
-          foro.id,
-      },
-    );
-
-    const guardado =
-      await this.almacenamiento.guardar({
-        buffer:
-          archivo!.buffer,
-        nombreOriginal:
-          archivo!.originalname,
-        extension,
-        carpeta:
-          `foro/temas/${foro.id}`,
-      });
+      carpeta: `foro/temas/${foro.id}`,
+    });
 
     try {
-      const registro =
-        await this.prisma.archivoAdjunto.create({
-          data: {
-            cursoId,
-            subidoPorId:
-              usuario.id,
-            temaForoId:
-              foro.id,
-            categoria:
-              CategoriaArchivoAdjunto.FORO_TEMA,
-            nombreOriginal:
-              archivo!.originalname,
-            nombreAlmacenado:
-              guardado.nombreAlmacenado,
-            ruta:
-              guardado.rutaRelativa,
-            urlPublica:
-              guardado.urlPublica,
-            mimeType:
-              archivo!.mimetype,
-            extension,
-            tamanioBytes:
-              archivo!.size,
-            hashSha256:
-              hash,
-            permiteDescarga:
-              foro.permitirDescargaAdjuntos,
-          },
-        });
+      const registro = await this.prisma.archivoAdjunto.create({
+        data: {
+          cursoId,
+          subidoPorId: usuario.id,
+          temaForoId: foro.id,
+          categoria: CategoriaArchivoAdjunto.FORO_TEMA,
+          nombreOriginal: archivo!.originalname,
+          nombreAlmacenado: guardado.nombreAlmacenado,
+          ruta: guardado.rutaRelativa,
+          urlPublica: guardado.urlPublica,
+          mimeType: archivo!.mimetype,
+          extension,
+          tamanioBytes: archivo!.size,
+          hashSha256: hash,
+          permiteDescarga: foro.permitirDescargaAdjuntos,
+        },
+      });
 
       return {
-        mensaje:
-          'Archivo del tema subido correctamente',
-        archivo:
-          registro,
+        mensaje: 'Archivo del tema subido correctamente',
+        archivo: registro,
       };
-    } catch (
-      error
-    ) {
-      await this.almacenamiento.eliminar(
-        guardado.rutaRelativa,
-      );
+    } catch (error) {
+      await this.almacenamiento.eliminar(guardado.rutaRelativa);
 
       throw error;
     }
   }
 
   async subirArchivoRespuesta(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    respuestaId:
-      number,
-    archivo:
-      ArchivoSubido | undefined,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    respuestaId: number,
+    archivo: ArchivoSubido | undefined,
   ) {
-    await this.validarAccesoCurso(
-      usuario,
-      cursoId,
-    );
+    await this.validarAccesoCurso(usuario, cursoId);
 
-    const extension =
-      this.validarArchivoGeneral(
-        archivo,
-      );
+    const extension = this.validarArchivoGeneral(archivo);
 
-    const respuesta =
-      await this.prisma.respuestaForoCurso.findFirst({
-        where: {
-          id:
-            respuestaId,
-          estaActiva:
-            true,
-          tema: {
-            cursoId,
-            estaActivo:
-              true,
-          },
+    const respuesta = await this.prisma.respuestaForoCurso.findFirst({
+      where: {
+        id: respuestaId,
+        estaActiva: true,
+        tema: {
+          cursoId,
+          estaActivo: true,
         },
+      },
 
-        include: {
-          tema:
-            true,
-          grupoCurso: {
-            include: {
-              integrantes: {
-                where: {
-                  estudianteId:
-                    usuario.id,
-                  estaActivo:
-                    true,
-                },
+      include: {
+        tema: true,
+        grupoCurso: {
+          include: {
+            integrantes: {
+              where: {
+                estudianteId: usuario.id,
+                estaActivo: true,
               },
             },
           },
-          equipoAfinidad: {
-            include: {
-              integrantes: {
-                where: {
-                  estudianteId:
-                    usuario.id,
-                  estaActivo:
-                    true,
-                },
+        },
+        equipoAfinidad: {
+          include: {
+            integrantes: {
+              where: {
+                estudianteId: usuario.id,
+                estaActivo: true,
               },
             },
           },
-          _count: {
-            select: {
-              archivos:
-                true,
-            },
+        },
+        _count: {
+          select: {
+            archivos: true,
           },
         },
-      });
+      },
+    });
 
     if (!respuesta) {
-      throw new NotFoundException(
-        'La respuesta no existe',
-      );
+      throw new NotFoundException('La respuesta no existe');
     }
 
     const puedeAdjuntar =
-      usuario.rol ===
-        Rol.DOCENTE ||
-      respuesta.autorId ===
-        usuario.id ||
-      Boolean(
-        respuesta.grupoCurso?.integrantes.length,
-      ) ||
-      Boolean(
-        respuesta.equipoAfinidad?.integrantes.length,
-      );
+      usuario.rol === Rol.DOCENTE ||
+      respuesta.autorId === usuario.id ||
+      Boolean(respuesta.grupoCurso?.integrantes.length) ||
+      Boolean(respuesta.equipoAfinidad?.integrantes.length);
 
     if (!puedeAdjuntar) {
       throw new ForbiddenException(
@@ -608,120 +391,67 @@ export class ArchivosService {
       );
     }
 
-    if (
-      respuesta.tema.estaCerrado
-    ) {
-      throw new BadRequestException(
-        'El foro está cerrado',
-      );
+    if (respuesta.tema.estaCerrado) {
+      throw new BadRequestException('El foro está cerrado');
     }
 
-    this.validarConfiguracionArchivo(
-      archivo!,
+    this.validarConfiguracionArchivo(archivo!, extension, {
+      extensionesPermitidas: respuesta.tema.extensionesPermitidas,
+      tamanioMaximoArchivoMb: respuesta.tema.tamanioMaximoArchivoMb,
+      maximoPermitido: respuesta.tema.maximoArchivosRespuesta,
+      totalActual: respuesta._count.archivos,
+      habilitado: respuesta.tema.permitirAdjuntosRespuesta,
+    });
+
+    const hash = this.calcularHash(archivo!.buffer);
+
+    await this.evitarDuplicado(hash, {
+      respuestaForoId: respuesta.id,
+    });
+
+    const guardado = await this.almacenamiento.guardar({
+      buffer: archivo!.buffer,
+      nombreOriginal: archivo!.originalname,
       extension,
-      {
-        extensionesPermitidas:
-          respuesta.tema.extensionesPermitidas,
-        tamanioMaximoArchivoMb:
-          respuesta.tema.tamanioMaximoArchivoMb,
-        maximoPermitido:
-          respuesta.tema.maximoArchivosRespuesta,
-        totalActual:
-          respuesta._count.archivos,
-        habilitado:
-          respuesta.tema.permitirAdjuntosRespuesta,
-      },
-    );
-
-    const hash =
-      this.calcularHash(
-        archivo!.buffer,
-      );
-
-    await this.evitarDuplicado(
-      hash,
-      {
-        respuestaForoId:
-          respuesta.id,
-      },
-    );
-
-    const guardado =
-      await this.almacenamiento.guardar({
-        buffer:
-          archivo!.buffer,
-        nombreOriginal:
-          archivo!.originalname,
-        extension,
-        carpeta:
-          `foro/respuestas/${respuesta.id}`,
-      });
+      carpeta: `foro/respuestas/${respuesta.id}`,
+    });
 
     try {
-      const registro =
-        await this.prisma.archivoAdjunto.create({
-          data: {
-            cursoId,
-            subidoPorId:
-              usuario.id,
-            respuestaForoId:
-              respuesta.id,
-            categoria:
-              CategoriaArchivoAdjunto.FORO_RESPUESTA,
-            nombreOriginal:
-              archivo!.originalname,
-            nombreAlmacenado:
-              guardado.nombreAlmacenado,
-            ruta:
-              guardado.rutaRelativa,
-            urlPublica:
-              guardado.urlPublica,
-            mimeType:
-              archivo!.mimetype,
-            extension,
-            tamanioBytes:
-              archivo!.size,
-            hashSha256:
-              hash,
-            permiteDescarga:
-              respuesta.tema.permitirDescargaAdjuntos,
-          },
-        });
+      const registro = await this.prisma.archivoAdjunto.create({
+        data: {
+          cursoId,
+          subidoPorId: usuario.id,
+          respuestaForoId: respuesta.id,
+          categoria: CategoriaArchivoAdjunto.FORO_RESPUESTA,
+          nombreOriginal: archivo!.originalname,
+          nombreAlmacenado: guardado.nombreAlmacenado,
+          ruta: guardado.rutaRelativa,
+          urlPublica: guardado.urlPublica,
+          mimeType: archivo!.mimetype,
+          extension,
+          tamanioBytes: archivo!.size,
+          hashSha256: hash,
+          permiteDescarga: respuesta.tema.permitirDescargaAdjuntos,
+        },
+      });
 
       return {
-        mensaje:
-          'Archivo de la respuesta subido correctamente',
-        archivo:
-          registro,
+        mensaje: 'Archivo de la respuesta subido correctamente',
+        archivo: registro,
       };
-    } catch (
-      error
-    ) {
-      await this.almacenamiento.eliminar(
-        guardado.rutaRelativa,
-      );
+    } catch (error) {
+      await this.almacenamiento.eliminar(guardado.rutaRelativa);
 
       throw error;
     }
   }
 
-  private obtenerResponsableEntregaTarea(
-    configuracion:
-      unknown,
-  ) {
+  private obtenerResponsableEntregaTarea(configuracion: unknown) {
     if (
       configuracion &&
-      typeof configuracion ===
-        'object' &&
-      !Array.isArray(
-        configuracion,
-      ) &&
-      (
-        configuracion as Record<
-          string,
-          unknown
-        >
-      ).responsableEntregaGrupo ===
+      typeof configuracion === 'object' &&
+      !Array.isArray(configuracion) &&
+      (configuracion as Record<string, unknown>).responsableEntregaGrupo ===
         'CUALQUIER_INTEGRANTE'
     ) {
       return 'CUALQUIER_INTEGRANTE';
@@ -731,100 +461,76 @@ export class ArchivosService {
   }
 
   private async validarPuedeConsultarEntregaTarea(
-    usuario:
-      UsuarioAutenticado,
-    entregaId:
-      number,
-    cursoId:
-      number,
+    usuario: UsuarioAutenticado,
+    entregaId: number,
+    cursoId: number,
   ) {
-    const entrega =
-      await this.prisma.entregaTarea.findFirst({
-        where: {
-          id:
-            entregaId,
-          estaActiva:
-            true,
-          tarea: {
-            cursoId,
-            estaActiva:
-              true,
-          },
+    const entrega = await this.prisma.entregaTarea.findFirst({
+      where: {
+        id: entregaId,
+        estaActiva: true,
+        tarea: {
+          cursoId,
+          estaActiva: true,
         },
+      },
 
-        include: {
-          tarea: {
-            select: {
-              curso: {
-                select: {
-                  docenteId:
-                    true,
-                },
-              },
-            },
-          },
-
-          grupoCurso: {
-            include: {
-              integrantes: {
-                where: {
-                  estudianteId:
-                    usuario.id,
-                  estaActivo:
-                    true,
-                },
-              },
-            },
-          },
-
-          equipoAfinidadTarea: {
-            include: {
-              integrantes: {
-                where: {
-                  estudianteId:
-                    usuario.id,
-                  estaActivo:
-                    true,
-                },
+      include: {
+        tarea: {
+          select: {
+            curso: {
+              select: {
+                docenteId: true,
               },
             },
           },
         },
-      });
+
+        grupoCurso: {
+          include: {
+            integrantes: {
+              where: {
+                estudianteId: usuario.id,
+                estaActivo: true,
+              },
+            },
+          },
+        },
+
+        equipoAfinidadTarea: {
+          include: {
+            integrantes: {
+              where: {
+                estudianteId: usuario.id,
+                estaActivo: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!entrega) {
-      throw new NotFoundException(
-        'La entrega no existe',
-      );
+      throw new NotFoundException('La entrega no existe');
     }
 
     if (
-      usuario.rol ===
-        Rol.DOCENTE &&
-      entrega.tarea.curso.docenteId ===
-        usuario.id
+      usuario.rol === Rol.DOCENTE &&
+      entrega.tarea.curso.docenteId === usuario.id
     ) {
       return;
     }
 
-    if (
-      usuario.rol !==
-      Rol.ESTUDIANTE
-    ) {
+    if (usuario.rol !== Rol.ESTUDIANTE) {
       throw new ForbiddenException(
         'No puedes consultar este archivo de entrega',
       );
     }
 
     const pertenece =
-      entrega.estudianteId ===
-        usuario.id ||
-      Boolean(
-        entrega.grupoCurso?.integrantes.length,
-      ) ||
-      Boolean(
-        entrega.equipoAfinidadTarea?.integrantes.length,
-      );
+      entrega.estudianteId === usuario.id ||
+      Boolean(entrega.grupoCurso?.integrantes.length) ||
+      Boolean(entrega.equipoAfinidadTarea?.integrantes.length);
 
     if (!pertenece) {
       throw new ForbiddenException(
@@ -834,135 +540,87 @@ export class ArchivosService {
   }
 
   private async validarPuedeModificarEntregaTarea(
-    usuario:
-      UsuarioAutenticado,
-    entregaId:
-      number,
-    cursoId:
-      number,
+    usuario: UsuarioAutenticado,
+    entregaId: number,
+    cursoId: number,
   ) {
-    const entrega =
-      await this.prisma.entregaTarea.findFirst({
-        where: {
-          id:
-            entregaId,
-          estaActiva:
-            true,
-          tarea: {
-            cursoId,
-            estaActiva:
-              true,
-          },
+    const entrega = await this.prisma.entregaTarea.findFirst({
+      where: {
+        id: entregaId,
+        estaActiva: true,
+        tarea: {
+          cursoId,
+          estaActiva: true,
         },
+      },
 
-        include: {
-          tarea:
-            true,
+      include: {
+        tarea: true,
 
-          grupoCurso: {
-            include: {
-              integrantes: {
-                where: {
-                  estudianteId:
-                    usuario.id,
-                  estaActivo:
-                    true,
-                },
+        grupoCurso: {
+          include: {
+            integrantes: {
+              where: {
+                estudianteId: usuario.id,
+                estaActivo: true,
               },
             },
           },
+        },
 
-          equipoAfinidadTarea: {
-            include: {
-              integrantes: {
-                where: {
-                  estudianteId:
-                    usuario.id,
-                  estaActivo:
-                    true,
-                },
+        equipoAfinidadTarea: {
+          include: {
+            integrantes: {
+              where: {
+                estudianteId: usuario.id,
+                estaActivo: true,
               },
             },
           },
+        },
 
-          _count: {
-            select: {
-              archivos:
-                true,
-            },
+        _count: {
+          select: {
+            archivos: true,
           },
         },
-      });
+      },
+    });
 
     if (!entrega) {
-      throw new NotFoundException(
-        'La entrega no existe',
-      );
+      throw new NotFoundException('La entrega no existe');
     }
 
-    if (
-      usuario.rol !==
-      Rol.ESTUDIANTE
-    ) {
+    if (usuario.rol !== Rol.ESTUDIANTE) {
       throw new ForbiddenException(
         'Solo el estudiante puede adjuntar archivos a una entrega',
       );
     }
 
-    const tarea =
-      entrega.tarea;
+    const tarea = entrega.tarea;
 
-    const responsable =
-      this.obtenerResponsableEntregaTarea(
-        tarea.configuracionTipo,
-      );
+    const responsable = this.obtenerResponsableEntregaTarea(
+      tarea.configuracionTipo,
+    );
 
-    let puedeModificar =
-      false;
+    let puedeModificar = false;
 
-    if (
-      tarea.modalidad ===
-      ModalidadTarea.INDIVIDUAL
-    ) {
-      puedeModificar =
-        entrega.estudianteId ===
-        usuario.id;
-    } else if (
-      tarea.origenGrupo ===
-      OrigenGrupoTarea.PLATAFORMA
-    ) {
-      const integrante =
-        entrega.grupoCurso?.integrantes[0];
+    if (tarea.modalidad === ModalidadTarea.INDIVIDUAL) {
+      puedeModificar = entrega.estudianteId === usuario.id;
+    } else if (tarea.origenGrupo === OrigenGrupoTarea.PLATAFORMA) {
+      const integrante = entrega.grupoCurso?.integrantes[0];
 
       puedeModificar =
-        Boolean(
-          integrante,
-        ) &&
-        (
-          responsable ===
-            'CUALQUIER_INTEGRANTE' ||
-          Boolean(
-            integrante?.esRepresentante,
-          )
-        );
-    } else if (
-      tarea.origenGrupo ===
-      OrigenGrupoTarea.AFINIDAD
-    ) {
-      const integrante =
-        entrega.equipoAfinidadTarea?.integrantes[0];
+        Boolean(integrante) &&
+        (responsable === 'CUALQUIER_INTEGRANTE' ||
+          Boolean(integrante?.esRepresentante));
+    } else if (tarea.origenGrupo === OrigenGrupoTarea.AFINIDAD) {
+      const integrante = entrega.equipoAfinidadTarea?.integrantes[0];
 
       puedeModificar =
-        Boolean(
-          integrante,
-        ) &&
-        (
-          responsable ===
-            'CUALQUIER_INTEGRANTE' ||
-          Boolean(
-            integrante?.esRepresentante,
-          )
-        );
+        Boolean(integrante) &&
+        (responsable === 'CUALQUIER_INTEGRANTE' ||
+          Boolean(integrante?.esRepresentante));
     }
 
     if (!puedeModificar) {
@@ -972,449 +630,345 @@ export class ArchivosService {
     }
 
     if (
-      entrega.estado ===
-        EstadoEntregaTarea.BLOQUEADA ||
-      entrega.estado ===
-        EstadoEntregaTarea.ANULADA
+      entrega.estado === EstadoEntregaTarea.BLOQUEADA ||
+      entrega.estado === EstadoEntregaTarea.ANULADA
     ) {
-      throw new BadRequestException(
-        'La entrega ya no puede modificarse',
-      );
+      throw new BadRequestException('La entrega ya no puede modificarse');
     }
 
-    if (
-      entrega.enviadaEn &&
-      !tarea.permitirEditarEntrega
-    ) {
+    if (entrega.enviadaEn && !tarea.permitirEditarEntrega) {
       throw new BadRequestException(
         'La tarea no permite reemplazar una entrega ya enviada',
       );
     }
 
-    const ahora =
-      new Date();
+    const ahora = new Date();
 
-    if (
-      ahora <
-      tarea.fechaApertura
-    ) {
-      throw new BadRequestException(
-        'La tarea todavía no está abierta',
-      );
+    if (ahora < tarea.fechaApertura) {
+      throw new BadRequestException('La tarea todavía no está abierta');
     }
 
-    const cierreEfectivo =
-      tarea.permitirRetrasos
-        ? tarea.fechaMaximaRetraso ??
-          tarea.fechaCierre
-        : tarea.fechaLimite;
+    const cierreEfectivo = tarea.permitirRetrasos
+      ? (tarea.fechaMaximaRetraso ?? tarea.fechaCierre)
+      : tarea.fechaLimite;
 
-    if (
-      ahora >
-      cierreEfectivo
-    ) {
-      throw new BadRequestException(
-        'El período de entrega terminó',
-      );
+    if (ahora > cierreEfectivo) {
+      throw new BadRequestException('El período de entrega terminó');
     }
 
-    if (
-      !tarea.capacidades.includes(
-        CapacidadTarea.ARCHIVOS,
-      )
-    ) {
-      throw new BadRequestException(
-        'Esta tarea no admite archivos',
-      );
+    if (!tarea.capacidades.includes(CapacidadTarea.ARCHIVOS)) {
+      throw new BadRequestException('Esta tarea no admite archivos');
     }
 
     return entrega;
   }
 
   async subirArchivoEntregaTarea(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    entregaId:
-      number,
-    archivo:
-      ArchivoSubido | undefined,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    entregaId: number,
+    archivo: ArchivoSubido | undefined,
   ) {
-    await this.validarAccesoCurso(
+    await this.validarAccesoCurso(usuario, cursoId);
+
+    const extension = this.validarArchivoGeneral(archivo);
+
+    const entrega = await this.validarPuedeModificarEntregaTarea(
       usuario,
+      entregaId,
       cursoId,
     );
 
-    const extension =
-      this.validarArchivoGeneral(
-        archivo,
-      );
+    this.validarConfiguracionArchivo(archivo!, extension, {
+      extensionesPermitidas: entrega.tarea.extensionesPermitidas,
+      tamanioMaximoArchivoMb: entrega.tarea.tamanioMaximoArchivoMb,
+      maximoPermitido: entrega.tarea.maximoArchivos,
+      totalActual: entrega._count.archivos,
+      habilitado: entrega.tarea.capacidades.includes(CapacidadTarea.ARCHIVOS),
+    });
 
-    const entrega =
-      await this.validarPuedeModificarEntregaTarea(
-        usuario,
-        entregaId,
-        cursoId,
-      );
+    const hash = this.calcularHash(archivo!.buffer);
 
-    this.validarConfiguracionArchivo(
-      archivo!,
+    await this.evitarDuplicado(hash, {
+      entregaTareaId: entrega.id,
+    });
+
+    const guardado = await this.almacenamiento.guardar({
+      buffer: archivo!.buffer,
+      nombreOriginal: archivo!.originalname,
       extension,
-      {
-        extensionesPermitidas:
-          entrega.tarea.extensionesPermitidas,
-        tamanioMaximoArchivoMb:
-          entrega.tarea.tamanioMaximoArchivoMb,
-        maximoPermitido:
-          entrega.tarea.maximoArchivos,
-        totalActual:
-          entrega._count.archivos,
-        habilitado:
-          entrega.tarea.capacidades.includes(
-            CapacidadTarea.ARCHIVOS,
-          ),
-      },
-    );
-
-    const hash =
-      this.calcularHash(
-        archivo!.buffer,
-      );
-
-    await this.evitarDuplicado(
-      hash,
-      {
-        entregaTareaId:
-          entrega.id,
-      },
-    );
-
-    const guardado =
-      await this.almacenamiento.guardar({
-        buffer:
-          archivo!.buffer,
-        nombreOriginal:
-          archivo!.originalname,
-        extension,
-        carpeta:
-          `tareas/entregas/${entrega.id}`,
-      });
+      carpeta: `tareas/entregas/${entrega.id}`,
+    });
 
     try {
-      const registro =
-        await this.prisma.archivoAdjunto.create({
-          data: {
-            cursoId,
-            subidoPorId:
-              usuario.id,
-            entregaTareaId:
-              entrega.id,
-            categoria:
-              CategoriaArchivoAdjunto.TAREA_ENTREGA,
-            nombreOriginal:
-              archivo!.originalname,
-            nombreAlmacenado:
-              guardado.nombreAlmacenado,
-            ruta:
-              guardado.rutaRelativa,
-            urlPublica:
-              guardado.urlPublica,
-            mimeType:
-              archivo!.mimetype,
-            extension,
-            tamanioBytes:
-              archivo!.size,
-            hashSha256:
-              hash,
-            permiteDescarga:
-              true,
-          },
-        });
+      const registro = await this.prisma.archivoAdjunto.create({
+        data: {
+          cursoId,
+          subidoPorId: usuario.id,
+          entregaTareaId: entrega.id,
+          categoria: CategoriaArchivoAdjunto.TAREA_ENTREGA,
+          nombreOriginal: archivo!.originalname,
+          nombreAlmacenado: guardado.nombreAlmacenado,
+          ruta: guardado.rutaRelativa,
+          urlPublica: guardado.urlPublica,
+          mimeType: archivo!.mimetype,
+          extension,
+          tamanioBytes: archivo!.size,
+          hashSha256: hash,
+          permiteDescarga: true,
+        },
+      });
 
       return {
-        mensaje:
-          'Archivo de la entrega subido correctamente',
-        archivo:
-          registro,
+        mensaje: 'Archivo de la entrega subido correctamente',
+        archivo: registro,
       };
-    } catch (
-      error
-    ) {
-      await this.almacenamiento.eliminar(
-        guardado.rutaRelativa,
-      );
+    } catch (error) {
+      await this.almacenamiento.eliminar(guardado.rutaRelativa);
 
       throw error;
     }
   }
 
-  async subirArchivoComentario(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    comentarioId:
-      number,
-    archivo:
-      ArchivoSubido | undefined,
+  async subirArchivoTarea(
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    tareaId: number,
+    archivo: ArchivoSubido | undefined,
   ) {
-    await this.validarAccesoCurso(
-      usuario,
-      cursoId,
-    );
-
-    const extension =
-      this.validarArchivoGeneral(
-        archivo,
-      );
-
-    const comentario =
-      await this.prisma.comentarioRespuestaForo.findFirst({
-        where: {
-          id:
-            comentarioId,
-          estaActivo:
-            true,
-          respuesta: {
-            tema: {
-              cursoId,
-              estaActivo:
-                true,
-            },
-          },
-        },
-
-        include: {
-          respuesta: {
-            include: {
-              tema:
-                true,
-            },
-          },
-          _count: {
-            select: {
-              archivos:
-                true,
-            },
-          },
-        },
-      });
-
-    if (!comentario) {
-      throw new NotFoundException(
-        'El comentario no existe',
+    if (usuario.rol !== Rol.DOCENTE) {
+      throw new ForbiddenException(
+        'Solo el docente puede adjuntar archivos a una tarea',
       );
     }
 
-    if (
-      comentario.autorId !==
-        usuario.id &&
-      usuario.rol !==
-        Rol.DOCENTE
-    ) {
+    await this.validarAccesoCurso(usuario, cursoId);
+
+    const tarea = await this.prisma.tareaCurso.findFirst({
+      where: {
+        id: tareaId,
+        cursoId,
+        autorId: usuario.id,
+        estaActiva: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!tarea) {
+      throw new NotFoundException(
+        'La tarea no existe o no pertenece al docente',
+      );
+    }
+
+    const extension = this.validarArchivoGeneral(archivo);
+    const hash = this.calcularHash(archivo!.buffer);
+
+    await this.evitarDuplicado(hash, {
+      tareaId,
+    });
+
+    const guardado = await this.almacenamiento.guardar({
+      buffer: archivo!.buffer,
+      nombreOriginal: archivo!.originalname,
+      extension,
+      carpeta: `tareas/consignas/${tareaId}`,
+    });
+
+    try {
+      const registro = await this.prisma.archivoAdjunto.create({
+        data: {
+          cursoId,
+          subidoPorId: usuario.id,
+          tareaId,
+          categoria: CategoriaArchivoAdjunto.TAREA,
+          nombreOriginal: archivo!.originalname,
+          nombreAlmacenado: guardado.nombreAlmacenado,
+          ruta: guardado.rutaRelativa,
+          urlPublica: guardado.urlPublica,
+          mimeType: archivo!.mimetype,
+          extension,
+          tamanioBytes: archivo!.size,
+          hashSha256: hash,
+          permiteDescarga: true,
+        },
+      });
+
+      return {
+        mensaje: 'Archivo de consigna subido correctamente',
+        archivo: registro,
+      };
+    } catch (error) {
+      await this.almacenamiento.eliminar(guardado.rutaRelativa);
+      throw error;
+    }
+  }
+
+  async subirArchivoComentario(
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    comentarioId: number,
+    archivo: ArchivoSubido | undefined,
+  ) {
+    await this.validarAccesoCurso(usuario, cursoId);
+
+    const extension = this.validarArchivoGeneral(archivo);
+
+    const comentario = await this.prisma.comentarioRespuestaForo.findFirst({
+      where: {
+        id: comentarioId,
+        estaActivo: true,
+        respuesta: {
+          tema: {
+            cursoId,
+            estaActivo: true,
+          },
+        },
+      },
+
+      include: {
+        respuesta: {
+          include: {
+            tema: true,
+          },
+        },
+        _count: {
+          select: {
+            archivos: true,
+          },
+        },
+      },
+    });
+
+    if (!comentario) {
+      throw new NotFoundException('El comentario no existe');
+    }
+
+    if (comentario.autorId !== usuario.id && usuario.rol !== Rol.DOCENTE) {
       throw new ForbiddenException(
         'No puedes adjuntar archivos a este comentario',
       );
     }
 
-    if (
-      comentario.respuesta.tema.estaCerrado
-    ) {
-      throw new BadRequestException(
-        'El foro está cerrado',
-      );
+    if (comentario.respuesta.tema.estaCerrado) {
+      throw new BadRequestException('El foro está cerrado');
     }
 
-    this.validarConfiguracionArchivo(
-      archivo!,
+    this.validarConfiguracionArchivo(archivo!, extension, {
+      extensionesPermitidas: comentario.respuesta.tema.extensionesPermitidas,
+      tamanioMaximoArchivoMb: comentario.respuesta.tema.tamanioMaximoArchivoMb,
+      maximoPermitido: comentario.respuesta.tema.maximoArchivosComentario,
+      totalActual: comentario._count.archivos,
+      habilitado: comentario.respuesta.tema.permitirAdjuntosComentario,
+    });
+
+    const hash = this.calcularHash(archivo!.buffer);
+
+    await this.evitarDuplicado(hash, {
+      comentarioForoId: comentario.id,
+    });
+
+    const guardado = await this.almacenamiento.guardar({
+      buffer: archivo!.buffer,
+      nombreOriginal: archivo!.originalname,
       extension,
-      {
-        extensionesPermitidas:
-          comentario.respuesta.tema.extensionesPermitidas,
-        tamanioMaximoArchivoMb:
-          comentario.respuesta.tema.tamanioMaximoArchivoMb,
-        maximoPermitido:
-          comentario.respuesta.tema.maximoArchivosComentario,
-        totalActual:
-          comentario._count.archivos,
-        habilitado:
-          comentario.respuesta.tema.permitirAdjuntosComentario,
-      },
-    );
-
-    const hash =
-      this.calcularHash(
-        archivo!.buffer,
-      );
-
-    await this.evitarDuplicado(
-      hash,
-      {
-        comentarioForoId:
-          comentario.id,
-      },
-    );
-
-    const guardado =
-      await this.almacenamiento.guardar({
-        buffer:
-          archivo!.buffer,
-        nombreOriginal:
-          archivo!.originalname,
-        extension,
-        carpeta:
-          `foro/comentarios/${comentario.id}`,
-      });
+      carpeta: `foro/comentarios/${comentario.id}`,
+    });
 
     try {
-      const registro =
-        await this.prisma.archivoAdjunto.create({
-          data: {
-            cursoId,
-            subidoPorId:
-              usuario.id,
-            comentarioForoId:
-              comentario.id,
-            categoria:
-              CategoriaArchivoAdjunto.FORO_COMENTARIO,
-            nombreOriginal:
-              archivo!.originalname,
-            nombreAlmacenado:
-              guardado.nombreAlmacenado,
-            ruta:
-              guardado.rutaRelativa,
-            urlPublica:
-              guardado.urlPublica,
-            mimeType:
-              archivo!.mimetype,
-            extension,
-            tamanioBytes:
-              archivo!.size,
-            hashSha256:
-              hash,
-            permiteDescarga:
-              comentario.respuesta.tema.permitirDescargaAdjuntos,
-          },
-        });
+      const registro = await this.prisma.archivoAdjunto.create({
+        data: {
+          cursoId,
+          subidoPorId: usuario.id,
+          comentarioForoId: comentario.id,
+          categoria: CategoriaArchivoAdjunto.FORO_COMENTARIO,
+          nombreOriginal: archivo!.originalname,
+          nombreAlmacenado: guardado.nombreAlmacenado,
+          ruta: guardado.rutaRelativa,
+          urlPublica: guardado.urlPublica,
+          mimeType: archivo!.mimetype,
+          extension,
+          tamanioBytes: archivo!.size,
+          hashSha256: hash,
+          permiteDescarga: comentario.respuesta.tema.permitirDescargaAdjuntos,
+        },
+      });
 
       return {
-        mensaje:
-          'Archivo del comentario subido correctamente',
-        archivo:
-          registro,
+        mensaje: 'Archivo del comentario subido correctamente',
+        archivo: registro,
       };
-    } catch (
-      error
-    ) {
-      await this.almacenamiento.eliminar(
-        guardado.rutaRelativa,
-      );
+    } catch (error) {
+      await this.almacenamiento.eliminar(guardado.rutaRelativa);
 
       throw error;
     }
   }
 
   async subirArchivoContenidoRecurso(
-    usuario:
-      UsuarioAutenticado,
-    cursoId:
-      number,
-    contenidoId:
-      number,
-    numeroVersion:
-      number,
-    archivo:
-      ArchivoSubido | undefined,
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    contenidoId: number,
+    numeroVersion: number,
+    archivo: ArchivoSubido | undefined,
   ) {
-    await this.validarAccesoCurso(
-      usuario,
-      cursoId,
-    );
+    await this.validarAccesoCurso(usuario, cursoId);
 
-    if (
-      usuario.rol !==
-      Rol.DOCENTE
-    ) {
+    if (usuario.rol !== Rol.DOCENTE) {
       throw new ForbiddenException(
         'Solo el docente puede subir archivos de recursos',
       );
     }
 
-    const extension =
-      this.validarArchivoGeneral(
-        archivo,
-      );
+    const extension = this.validarArchivoGeneral(archivo);
 
-    const contenido =
-      await this.prisma.recursoContenido.findFirst({
-        where: {
-          id:
-            contenidoId,
-          estaActivo:
-            true,
-          recurso: {
-            cursoId,
-            estaActivo:
-              true,
-          },
+    const contenido = await this.prisma.recursoContenido.findFirst({
+      where: {
+        id: contenidoId,
+        estaActivo: true,
+        recurso: {
+          cursoId,
+          estaActivo: true,
         },
-        select: {
-          id:
-            true,
-          tipo:
-            true,
-          disponibleParaQuiz:
-            true,
-          recursoId:
-            true,
-        },
-      });
+      },
+      select: {
+        id: true,
+        tipo: true,
+        disponibleParaQuiz: true,
+        recursoId: true,
+      },
+    });
 
     if (!contenido) {
-      throw new NotFoundException(
-        'El contenido del recurso no existe',
-      );
+      throw new NotFoundException('El contenido del recurso no existe');
     }
 
-    if (
-      contenido.tipo !==
-      TipoContenidoRecurso.ARCHIVO
-    ) {
+    if (contenido.tipo !== TipoContenidoRecurso.ARCHIVO) {
       throw new BadRequestException(
         'Los contenidos de tipo ENLACE no admiten archivos versionados',
       );
     }
 
-    if (
-      contenido.disponibleParaQuiz &&
-      extension !== 'pdf'
-    ) {
+    if (contenido.disponibleParaQuiz && extension !== 'pdf') {
       throw new BadRequestException(
         'Los archivos disponibles para Quizzes deben ser PDF',
       );
     }
 
-    const hash =
-      this.calcularHash(
-        archivo!.buffer,
-      );
+    const hash = this.calcularHash(archivo!.buffer);
 
     const versionDuplicada =
       await this.prisma.recursoContenidoVersion.findFirst({
         where: {
-          contenidoId:
-            contenido.id,
+          contenidoId: contenido.id,
           archivo: {
-            hashSha256:
-              hash,
-            estaActivo:
-              true,
+            hashSha256: hash,
+            estaActivo: true,
           },
         },
         select: {
-          id:
-            true,
+          id: true,
         },
       });
 
@@ -1424,53 +978,34 @@ export class ArchivosService {
       );
     }
 
-    const guardado =
-      await this.almacenamiento.guardar({
-        buffer:
-          archivo!.buffer,
-        nombreOriginal:
-          archivo!.originalname,
-        extension,
-        carpeta:
-          `recursos/${contenido.recursoId}/contenido-${contenido.id}/version-${numeroVersion}`,
-      });
+    const guardado = await this.almacenamiento.guardar({
+      buffer: archivo!.buffer,
+      nombreOriginal: archivo!.originalname,
+      extension,
+      carpeta: `recursos/${contenido.recursoId}/contenido-${contenido.id}/version-${numeroVersion}`,
+    });
 
     try {
       return await this.prisma.archivoAdjunto.create({
         data: {
           cursoId,
-          subidoPorId:
-            usuario.id,
-          categoria:
-            CategoriaArchivoAdjunto.RECURSO,
-          nombreOriginal:
-            archivo!.originalname,
-          nombreAlmacenado:
-            guardado.nombreAlmacenado,
-          ruta:
-            guardado.rutaRelativa,
-          urlPublica:
-            guardado.urlPublica,
-          mimeType:
-            archivo!.mimetype,
+          subidoPorId: usuario.id,
+          categoria: CategoriaArchivoAdjunto.RECURSO,
+          nombreOriginal: archivo!.originalname,
+          nombreAlmacenado: guardado.nombreAlmacenado,
+          ruta: guardado.rutaRelativa,
+          urlPublica: guardado.urlPublica,
+          mimeType: archivo!.mimetype,
           extension,
-          tamanioBytes:
-            archivo!.size,
-          hashSha256:
-            hash,
+          tamanioBytes: archivo!.size,
+          hashSha256: hash,
           numeroVersion,
-          permiteDescarga:
-            true,
-          textoExtraido:
-            null,
+          permiteDescarga: true,
+          textoExtraido: null,
         },
       });
-    } catch (
-      error
-    ) {
-      await this.almacenamiento.eliminar(
-        guardado.rutaRelativa,
-      );
+    } catch (error) {
+      await this.almacenamiento.eliminar(guardado.rutaRelativa);
 
       throw error;
     }
@@ -1480,86 +1015,57 @@ export class ArchivosService {
    * Se utiliza únicamente para revertir una carga de recurso cuando
    * falla la creación de su registro de versión.
    */
-  async eliminarArchivoFisicoSeguro(
-    archivoId:
-      number,
-  ) {
-    const archivo =
-      await this.prisma.archivoAdjunto.findUnique({
-        where: {
-          id:
-            archivoId,
-        },
-        select: {
-          id:
-            true,
-          ruta:
-            true,
-          versionContenidoRecurso: {
-            select: {
-              id:
-                true,
-            },
+  async eliminarArchivoFisicoSeguro(archivoId: number) {
+    const archivo = await this.prisma.archivoAdjunto.findUnique({
+      where: {
+        id: archivoId,
+      },
+      select: {
+        id: true,
+        ruta: true,
+        versionContenidoRecurso: {
+          select: {
+            id: true,
           },
         },
-      });
+      },
+    });
 
-    if (
-      !archivo ||
-      archivo.versionContenidoRecurso
-    ) {
+    if (!archivo || archivo.versionContenidoRecurso) {
       return;
     }
 
-    await this.almacenamiento.eliminar(
-      archivo.ruta,
-    );
+    await this.almacenamiento.eliminar(archivo.ruta);
 
     await this.prisma.archivoAdjunto.delete({
       where: {
-        id:
-          archivo.id,
+        id: archivo.id,
       },
     });
   }
 
   async actualizar(
-    usuario:
-      UsuarioAutenticado,
-    archivoId:
-      number,
-    datos:
-      ActualizarArchivoDto,
+    usuario: UsuarioAutenticado,
+    archivoId: number,
+    datos: ActualizarArchivoDto,
   ) {
-    const archivo =
-      await this.prisma.archivoAdjunto.findFirst({
-        where: {
-          id:
-            archivoId,
-          estaActivo:
-            true,
-        },
-      });
+    const archivo = await this.prisma.archivoAdjunto.findFirst({
+      where: {
+        id: archivoId,
+        estaActivo: true,
+      },
+    });
 
     if (!archivo) {
-      throw new NotFoundException(
-        'El archivo no existe',
-      );
+      throw new NotFoundException('El archivo no existe');
     }
 
     if (archivo.cursoId) {
-      await this.validarAccesoCurso(
-        usuario,
-        archivo.cursoId,
-      );
+      await this.validarAccesoCurso(usuario, archivo.cursoId);
     }
 
-    if (
-      archivo.entregaTareaId
-    ) {
-      if (
-        !archivo.cursoId
-      ) {
+    if (archivo.entregaTareaId) {
+      if (!archivo.cursoId) {
         throw new BadRequestException(
           'El archivo de la entrega no tiene curso asociado',
         );
@@ -1571,85 +1077,55 @@ export class ArchivosService {
         archivo.cursoId,
       );
     } else if (
-      archivo.subidoPorId !==
-        usuario.id &&
-      usuario.rol !==
-        Rol.DOCENTE
+      archivo.subidoPorId !== usuario.id &&
+      usuario.rol !== Rol.DOCENTE
     ) {
-      throw new ForbiddenException(
-        'No puedes modificar este archivo',
-      );
+      throw new ForbiddenException('No puedes modificar este archivo');
     }
 
-    const actualizado =
-      await this.prisma.archivoAdjunto.update({
-        where: {
-          id:
-            archivo.id,
-        },
+    const actualizado = await this.prisma.archivoAdjunto.update({
+      where: {
+        id: archivo.id,
+      },
 
-        data: {
-          ...(datos.descripcion !==
-          undefined
-            ? {
-                descripcion:
-                  datos.descripcion.trim() ||
-                  null,
-              }
-            : {}),
-          ...(datos.permiteDescarga !==
-          undefined
-            ? {
-                permiteDescarga:
-                  datos.permiteDescarga,
-              }
-            : {}),
-        },
-      });
+      data: {
+        ...(datos.descripcion !== undefined
+          ? {
+              descripcion: datos.descripcion.trim() || null,
+            }
+          : {}),
+        ...(datos.permiteDescarga !== undefined
+          ? {
+              permiteDescarga: datos.permiteDescarga,
+            }
+          : {}),
+      },
+    });
 
     return {
-      mensaje:
-        'Archivo actualizado correctamente',
-      archivo:
-        actualizado,
+      mensaje: 'Archivo actualizado correctamente',
+      archivo: actualizado,
     };
   }
 
-  async eliminar(
-    usuario:
-      UsuarioAutenticado,
-    archivoId:
-      number,
-  ) {
-    const archivo =
-      await this.prisma.archivoAdjunto.findFirst({
-        where: {
-          id:
-            archivoId,
-          estaActivo:
-            true,
-        },
-      });
+  async eliminar(usuario: UsuarioAutenticado, archivoId: number) {
+    const archivo = await this.prisma.archivoAdjunto.findFirst({
+      where: {
+        id: archivoId,
+        estaActivo: true,
+      },
+    });
 
     if (!archivo) {
-      throw new NotFoundException(
-        'El archivo no existe',
-      );
+      throw new NotFoundException('El archivo no existe');
     }
 
     if (archivo.cursoId) {
-      await this.validarAccesoCurso(
-        usuario,
-        archivo.cursoId,
-      );
+      await this.validarAccesoCurso(usuario, archivo.cursoId);
     }
 
-    if (
-      archivo.entregaTareaId
-    ) {
-      if (
-        !archivo.cursoId
-      ) {
+    if (archivo.entregaTareaId) {
+      if (!archivo.cursoId) {
         throw new BadRequestException(
           'El archivo de la entrega no tiene curso asociado',
         );
@@ -1661,77 +1137,48 @@ export class ArchivosService {
         archivo.cursoId,
       );
     } else if (
-      archivo.subidoPorId !==
-        usuario.id &&
-      usuario.rol !==
-        Rol.DOCENTE
+      archivo.subidoPorId !== usuario.id &&
+      usuario.rol !== Rol.DOCENTE
     ) {
-      throw new ForbiddenException(
-        'No puedes eliminar este archivo',
-      );
+      throw new ForbiddenException('No puedes eliminar este archivo');
     }
 
     await this.prisma.archivoAdjunto.update({
       where: {
-        id:
-          archivo.id,
+        id: archivo.id,
       },
 
       data: {
-        estaActivo:
-          false,
-        eliminadoEn:
-          new Date(),
+        estaActivo: false,
+        eliminadoEn: new Date(),
       },
     });
 
-    await this.almacenamiento.eliminar(
-      archivo.ruta,
-    );
+    await this.almacenamiento.eliminar(archivo.ruta);
 
     return {
-      mensaje:
-        'Archivo eliminado correctamente',
+      mensaje: 'Archivo eliminado correctamente',
     };
   }
 
-  async obtenerPorId(
-    usuario:
-      UsuarioAutenticado,
-    archivoId:
-      number,
-  ) {
-    const archivo =
-      await this.prisma.archivoAdjunto.findFirst({
-        where: {
-          id:
-            archivoId,
-          estaActivo:
-            true,
-        },
-      });
+  async obtenerPorId(usuario: UsuarioAutenticado, archivoId: number) {
+    const archivo = await this.prisma.archivoAdjunto.findFirst({
+      where: {
+        id: archivoId,
+        estaActivo: true,
+      },
+    });
 
     if (!archivo) {
-      throw new NotFoundException(
-        'El archivo no existe',
-      );
+      throw new NotFoundException('El archivo no existe');
     }
 
-    if (
-      archivo.cursoId
-    ) {
-      await this.validarAccesoCurso(
-        usuario,
-        archivo.cursoId,
-      );
+    if (archivo.cursoId) {
+      await this.validarAccesoCurso(usuario, archivo.cursoId);
     }
 
-    if (
-      archivo.entregaTareaId
-    ) {
-      if (
-        !archivo.cursoId
-      ) {
+    if (archivo.entregaTareaId) {
+      if (!archivo.cursoId) {
         throw new BadRequestException(
           'El archivo de la entrega no tiene curso asociado',
         );
@@ -1746,10 +1193,8 @@ export class ArchivosService {
 
     if (
       !archivo.permiteDescarga &&
-      archivo.subidoPorId !==
-        usuario.id &&
-      usuario.rol !==
-        Rol.DOCENTE
+      archivo.subidoPorId !== usuario.id &&
+      usuario.rol !== Rol.DOCENTE
     ) {
       throw new ForbiddenException(
         'La descarga de este archivo está deshabilitada',
@@ -1759,174 +1204,98 @@ export class ArchivosService {
     return archivo;
   }
 
-
   async procesarPdfParaDataset(
-    archivoId:
-      number,
+    archivoId: number,
 
-    onProgreso?:
-      (
-        progreso:
-          number,
-      ) => void |
-      Promise<void>,
+    onProgreso?: (progreso: number) => void | Promise<void>,
   ): Promise<string | null> {
-    return this.asegurarTextoExtraidoPdf(
-      archivoId,
-      onProgreso,
-    );
+    return this.asegurarTextoExtraidoPdf(archivoId, onProgreso);
   }
 
   async asegurarTextoExtraidoPdf(
-    archivoId:
-      number,
+    archivoId: number,
 
-    onProgreso?:
-      (
-        progreso:
-          number,
-      ) => void |
-      Promise<void>,
+    onProgreso?: (progreso: number) => void | Promise<void>,
   ): Promise<string | null> {
-    const archivo =
-      await this.prisma.archivoAdjunto.findUnique({
-        where: {
-          id:
-            archivoId,
-        },
+    const archivo = await this.prisma.archivoAdjunto.findUnique({
+      where: {
+        id: archivoId,
+      },
 
-        select: {
-          id:
-            true,
+      select: {
+        id: true,
 
-          nombreOriginal:
-            true,
+        nombreOriginal: true,
 
-          ruta:
-            true,
+        ruta: true,
 
-          extension:
-            true,
+        extension: true,
 
-          mimeType:
-            true,
+        mimeType: true,
 
-          tamanioBytes:
-            true,
+        tamanioBytes: true,
 
-          textoExtraido:
-            true,
-        },
-      });
+        textoExtraido: true,
+      },
+    });
 
-    if (
-      !archivo
-    ) {
-      throw new NotFoundException(
-        'El archivo no existe',
-      );
+    if (!archivo) {
+      throw new NotFoundException('El archivo no existe');
     }
 
-    const extension =
-      archivo.extension
-        .replace(
-          /^\./,
-          '',
-        )
-        .trim()
-        .toLowerCase();
+    const extension = archivo.extension.replace(/^\./, '').trim().toLowerCase();
 
-    if (
-      extension !==
-      'pdf'
-    ) {
+    if (extension !== 'pdf') {
       return null;
     }
 
-    const textoExistente =
-      archivo.textoExtraido?.trim() ??
-      '';
+    const textoExistente = archivo.textoExtraido?.trim() ?? '';
 
-    if (
-      textoExistente.length >=
-      10
-    ) {
-      await onProgreso?.(
-        94,
-      );
+    if (textoExistente.length >= 10) {
+      await onProgreso?.(94);
 
       return textoExistente;
     }
 
     try {
-      await onProgreso?.(
-        5,
-      );
+      await onProgreso?.(5);
 
-      const buffer =
-        await this.almacenamiento.leer(
-          archivo.ruta,
-        );
+      const buffer = await this.almacenamiento.leer(archivo.ruta);
 
-      if (
-        !buffer ||
-        buffer.length ===
-          0
-      ) {
-        throw new BadRequestException(
-          'El archivo PDF guardado está vacío.',
-        );
+      if (!buffer || buffer.length === 0) {
+        throw new BadRequestException('El archivo PDF guardado está vacío.');
       }
 
-      const textoExtraido =
-        await this.procesadorPdf.extraerTexto(
-          buffer,
-          onProgreso,
-        );
+      const textoExtraido = await this.procesadorPdf.extraerTexto(
+        buffer,
+        onProgreso,
+      );
 
-      if (
-        !textoExtraido?.trim()
-      ) {
+      if (!textoExtraido?.trim()) {
         return null;
       }
 
-      await onProgreso?.(
-        95,
-      );
+      await onProgreso?.(95);
 
       await this.prisma.archivoAdjunto.update({
         where: {
-          id:
-            archivo.id,
+          id: archivo.id,
         },
 
         data: {
-          textoExtraido:
-            textoExtraido.trim(),
+          textoExtraido: textoExtraido.trim(),
         },
       });
 
-      await onProgreso?.(
-        98,
-      );
+      await onProgreso?.(98);
 
       return textoExtraido.trim();
-    } catch (
-      error
-    ) {
-      if (
-        error instanceof
-        BadRequestException
-      ) {
+    } catch (error) {
+      if (error instanceof BadRequestException) {
         throw error;
       }
 
-      const mensaje =
-        error instanceof Error
-          ? error.message
-          : String(
-              error,
-            );
+      const mensaje = error instanceof Error ? error.message : String(error);
 
       throw new BadRequestException(
         `No fue posible leer o procesar el PDF "${archivo.nombreOriginal}": ${mensaje}`,
@@ -1934,42 +1303,26 @@ export class ArchivosService {
     }
   }
 
-  async descargar(
-    usuario:
-      UsuarioAutenticado,
-    archivoId:
-      number,
-  ) {
-    const archivo =
-      await this.obtenerPorId(
-        usuario,
-        archivoId,
-      );
+  async descargar(usuario: UsuarioAutenticado, archivoId: number) {
+    const archivo = await this.obtenerPorId(usuario, archivoId);
 
-    const buffer =
-      await this.almacenamiento.leer(
-        archivo.ruta,
-      );
+    const buffer = await this.almacenamiento.leer(archivo.ruta);
 
     await this.prisma.archivoAdjunto.update({
       where: {
-        id:
-          archivo.id,
+        id: archivo.id,
       },
       data: {
         cantidadDescargas: {
-          increment:
-            1,
+          increment: 1,
         },
       },
     });
 
     return {
       buffer,
-      nombreOriginal:
-        archivo.nombreOriginal,
-      mimeType:
-        archivo.mimeType,
+      nombreOriginal: archivo.nombreOriginal,
+      mimeType: archivo.mimeType,
     };
   }
 }

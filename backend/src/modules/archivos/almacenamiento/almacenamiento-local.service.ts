@@ -1,25 +1,10 @@
-import {
-  Injectable,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import {
-  mkdir,
-  readFile,
-  rm,
-  writeFile,
-} from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 
-import {
-  dirname,
-  join,
-  normalize,
-  relative,
-  sep,
-} from 'node:path';
+import { dirname, join, normalize, relative, sep } from 'node:path';
 
-import {
-  randomUUID,
-} from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
 import {
   AlmacenamientoArchivos,
@@ -28,144 +13,61 @@ import {
 } from './almacenamiento.interface';
 
 @Injectable()
-export class AlmacenamientoLocalService
-  implements AlmacenamientoArchivos {
-  private readonly raiz =
-    join(
-      process.cwd(),
-      'uploads',
-    );
+export class AlmacenamientoLocalService implements AlmacenamientoArchivos {
+  private readonly raiz = join(process.cwd(), 'uploads');
 
-  async guardar(
-    archivo:
-      ArchivoParaGuardar,
-  ):
-    Promise<ArchivoGuardado> {
-    const carpetaNormalizada =
-      archivo.carpeta
-        .replace(
-          /\\/g,
-          '/',
-        )
-        .replace(
-          /\.\./g,
-          '',
-        )
-        .replace(
-          /^\/+/,
-          '',
-        )
-        .replace(
-          /\/+/g,
-          '/',
-        );
+  async guardar(archivo: ArchivoParaGuardar): Promise<ArchivoGuardado> {
+    const carpetaNormalizada = archivo.carpeta
+      .replace(/\\/g, '/')
+      .replace(/\.\./g, '')
+      .replace(/^\/+/, '')
+      .replace(/\/+/g, '/');
 
-    const carpetaDestino =
-      join(
-        this.raiz,
-        carpetaNormalizada,
-      );
+    const carpetaDestino = join(this.raiz, carpetaNormalizada);
 
-    await mkdir(
-      carpetaDestino,
-      {
-        recursive:
-          true,
-      },
-    );
+    await mkdir(carpetaDestino, {
+      recursive: true,
+    });
 
-    const nombreAlmacenado =
-      `${Date.now()}-${randomUUID()}.${archivo.extension}`;
+    const nombreAlmacenado = `${Date.now()}-${randomUUID()}.${archivo.extension}`;
 
-    const rutaAbsoluta =
-      join(
-        carpetaDestino,
-        nombreAlmacenado,
-      );
+    const rutaAbsoluta = join(carpetaDestino, nombreAlmacenado);
 
-    await writeFile(
-      rutaAbsoluta,
-      archivo.buffer,
-    );
+    await writeFile(rutaAbsoluta, archivo.buffer);
 
-    const rutaRelativa =
-      relative(
-        process.cwd(),
-        rutaAbsoluta,
-      )
-        .split(
-          sep,
-        )
-        .join(
-          '/',
-        );
+    const rutaRelativa = relative(process.cwd(), rutaAbsoluta)
+      .split(sep)
+      .join('/');
 
     return {
       nombreAlmacenado,
       rutaAbsoluta,
       rutaRelativa,
-      urlPublica:
-        `/${rutaRelativa}`,
+      urlPublica: `/${rutaRelativa}`,
     };
   }
 
-  async eliminar(
-    rutaRelativa:
-      string,
-  ):
-    Promise<void> {
-    const rutaAbsoluta =
-      normalize(
-        join(
-          process.cwd(),
-          rutaRelativa,
-        ),
-      );
+  async eliminar(rutaRelativa: string): Promise<void> {
+    const rutaAbsoluta = normalize(join(process.cwd(), rutaRelativa));
 
-    const relativaALaRaiz =
-      relative(
-        this.raiz,
-        rutaAbsoluta,
-      );
+    const relativaALaRaiz = relative(this.raiz, rutaAbsoluta);
 
     if (
-      relativaALaRaiz.startsWith(
-        '..',
-      ) ||
-      relativaALaRaiz.includes(
-        `..${sep}`,
-      )
+      relativaALaRaiz.startsWith('..') ||
+      relativaALaRaiz.includes(`..${sep}`)
     ) {
       return;
     }
 
-    await rm(
-      rutaAbsoluta,
-      {
-        force:
-          true,
-      },
-    );
+    await rm(rutaAbsoluta, {
+      force: true,
+    });
   }
 
-  async leer(
-    rutaRelativa:
-      string,
-  ):
-    Promise<Buffer> {
-    const rutaAbsoluta =
-      normalize(
-        join(
-          process.cwd(),
-          rutaRelativa,
-        ),
-      );
+  async leer(rutaRelativa: string): Promise<Buffer> {
+    const rutaAbsoluta = normalize(join(process.cwd(), rutaRelativa));
 
-    const relativaALaRaiz =
-      relative(
-        this.raiz,
-        rutaAbsoluta,
-      );
+    const relativaALaRaiz = relative(this.raiz, rutaAbsoluta);
 
     if (
       relativaALaRaiz.startsWith('..') ||
@@ -174,8 +76,6 @@ export class AlmacenamientoLocalService
       throw new Error('Ruta de archivo no permitida');
     }
 
-    return readFile(
-      rutaAbsoluta,
-    );
+    return readFile(rutaAbsoluta);
   }
 }

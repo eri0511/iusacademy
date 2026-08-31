@@ -13,16 +13,8 @@ export const PALETA_GRUPOS = [
   '#9333EA',
 ] as const;
 
-export function obtenerColorGrupo(
-  indice: number,
-): string {
-  const posicion =
-    Math.abs(
-      indice,
-    ) %
-    PALETA_GRUPOS.length;
+export function obtenerColorGrupo(indice: number): string {
+  const posicion = Math.abs(indice) % PALETA_GRUPOS.length;
 
-  return PALETA_GRUPOS[
-    posicion
-  ];
+  return PALETA_GRUPOS[posicion];
 }

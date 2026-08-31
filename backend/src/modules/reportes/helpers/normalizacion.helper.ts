@@ -1,7 +1,4 @@
-import {
-  TipoDatoReporte,
-  ValorCeldaReporte,
-} from '../tipos/reportes.types';
+import { TipoDatoReporte, ValorCeldaReporte } from '../tipos/reportes.types';
 import {
   formatearFechaHoraReporte,
   formatearFechaReporte,
@@ -45,9 +42,7 @@ export function normalizarValorCelda(
   switch (tipo) {
     case TipoDatoReporte.NUMERO:
     case TipoDatoReporte.DECIMAL:
-      return typeof valor === 'number'
-        ? valor
-        : normalizarTextoReporte(valor);
+      return typeof valor === 'number' ? valor : normalizarTextoReporte(valor);
     case TipoDatoReporte.PORCENTAJE:
       return typeof valor === 'number'
         ? formatearPorcentajeReporte(valor)
@@ -65,9 +60,7 @@ export function normalizarValorCelda(
         ? formatearFechaHoraReporte(valor)
         : normalizarTextoReporte(valor);
     case TipoDatoReporte.BOOLEANO:
-      return typeof valor === 'boolean'
-        ? valor
-        : normalizarTextoReporte(valor);
+      return typeof valor === 'boolean' ? valor : normalizarTextoReporte(valor);
     case TipoDatoReporte.TEXTO:
     default:
       return typeof valor === 'number'

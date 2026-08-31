@@ -1,11 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 import {
   AlineacionReporte,
@@ -18,13 +13,9 @@ import {
   ValorCeldaReporte,
 } from '../reportes';
 
-import {
-  CalificacionesService,
-} from './calificaciones.service';
+import { CalificacionesService } from './calificaciones.service';
 
-import type {
-  UsuarioAutenticado,
-} from './interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
 type FilaReporteLibro = Record<string, ValorCeldaReporte>;
 
@@ -44,24 +35,22 @@ export class CalificacionesReportesService {
   ): Promise<ArchivoReporteGenerado> {
     const formato = this.normalizarFormato(formatoSolicitado);
 
-    const libro =
-      await this.calificacionesService.obtenerLibroDocente(
-        usuario,
-        cursoId,
-        hitoId,
-      );
+    const libro = await this.calificacionesService.obtenerLibroDocente(
+      usuario,
+      cursoId,
+      hitoId,
+    );
 
-    const generador =
-      await this.prisma.usuario.findUnique({
-        where: {
-          id: usuario.id,
-        },
-        select: {
-          nombres: true,
-          apellidoPaterno: true,
-          apellidoMaterno: true,
-        },
-      });
+    const generador = await this.prisma.usuario.findUnique({
+      where: {
+        id: usuario.id,
+      },
+      select: {
+        nombres: true,
+        apellidoPaterno: true,
+        apellidoMaterno: true,
+      },
+    });
 
     const nombreGenerador = generador
       ? [
@@ -73,19 +62,15 @@ export class CalificacionesReportesService {
           .join(' ')
       : 'Docente';
 
-    const actividadesContinua =
-      libro.actividades.filter(
-        (actividad) =>
-          actividad.componente === 'CONTINUA' &&
-          actividad.estado !== 'ANULADA',
-      );
+    const actividadesContinua = libro.actividades.filter(
+      (actividad) =>
+        actividad.componente === 'CONTINUA' && actividad.estado !== 'ANULADA',
+    );
 
-    const actividadesProcesual =
-      libro.actividades.filter(
-        (actividad) =>
-          actividad.componente === 'PROCESUAL' &&
-          actividad.estado !== 'ANULADA',
-      );
+    const actividadesProcesual = libro.actividades.filter(
+      (actividad) =>
+        actividad.componente === 'PROCESUAL' && actividad.estado !== 'ANULADA',
+    );
 
     const construirSeccion = (
       id: string,
@@ -93,53 +78,47 @@ export class CalificacionesReportesService {
       actividades: typeof libro.actividades,
       componente: 'CONTINUA' | 'PROCESUAL',
     ) => {
-      const filas: FilaReporteLibro[] =
-        libro.estudiantes.map((estudiante) => {
-          const fila: FilaReporteLibro = {
-            estudiante: [
-              estudiante.apellidoPaterno,
-              estudiante.apellidoMaterno,
-              estudiante.nombres,
-            ]
-              .filter(Boolean)
-              .join(' '),
-            correo: estudiante.correo,
-          };
+      const filas: FilaReporteLibro[] = libro.estudiantes.map((estudiante) => {
+        const fila: FilaReporteLibro = {
+          estudiante: [
+            estudiante.apellidoPaterno,
+            estudiante.apellidoMaterno,
+            estudiante.nombres,
+          ]
+            .filter(Boolean)
+            .join(' '),
+          correo: estudiante.correo,
+        };
 
-          for (const actividad of actividades) {
-            const calificacion =
-              actividad.calificaciones.find(
-                (item) => item.estudianteId === estudiante.id,
-              );
-
-            fila[`actividad_${actividad.id}`] = calificacion
-              ? this.dosDecimales(calificacion.notaFinal)
-              : 'Pend.';
-          }
-
-          const resumen =
-            componente === 'CONTINUA'
-              ? estudiante.continua
-              : estudiante.procesual;
-
-          fila.promedio = this.dosDecimales(
-            resumen.promedioSobre100,
+        for (const actividad of actividades) {
+          const calificacion = actividad.calificaciones.find(
+            (item) => item.estudianteId === estudiante.id,
           );
-          fila.aporte = this.dosDecimales(
-            resumen.notaExacta,
-          );
-          fila.aporteMaximo = resumen.maximo;
-          fila.notaFinal = resumen.notaRedondeada;
-          fila.notaFinalMaximo = resumen.maximo;
-          fila.estado =
-            resumen.actividadesCalificadas === 0
-              ? 'Sin calificaciones'
-              : resumen.actividadesPendientes > 0
-                ? 'En seguimiento'
-                : 'Completo';
 
-          return fila;
-        });
+          fila[`actividad_${actividad.id}`] = calificacion
+            ? this.dosDecimales(calificacion.notaFinal)
+            : 'Pend.';
+        }
+
+        const resumen =
+          componente === 'CONTINUA'
+            ? estudiante.continua
+            : estudiante.procesual;
+
+        fila.promedio = this.dosDecimales(resumen.promedioSobre100);
+        fila.aporte = this.dosDecimales(resumen.notaExacta);
+        fila.aporteMaximo = resumen.maximo;
+        fila.notaFinal = resumen.notaRedondeada;
+        fila.notaFinalMaximo = resumen.maximo;
+        fila.estado =
+          resumen.actividadesCalificadas === 0
+            ? 'Sin calificaciones'
+            : resumen.actividadesPendientes > 0
+              ? 'En seguimiento'
+              : 'Completo';
+
+        return fila;
+      });
 
       return {
         id,
@@ -172,42 +151,42 @@ export class CalificacionesReportesService {
             clave: 'promedio',
             etiqueta: 'Promedio /100',
             tipo: TipoDatoReporte.DECIMAL,
-            ancho: .85,
+            ancho: 0.85,
             alineacion: AlineacionReporte.DERECHA,
           },
           {
             clave: 'aporte',
             etiqueta: 'Aporte exacto',
             tipo: TipoDatoReporte.DECIMAL,
-            ancho: .85,
+            ancho: 0.85,
             alineacion: AlineacionReporte.DERECHA,
           },
           {
             clave: 'aporteMaximo',
             etiqueta: 'Sobre',
             tipo: TipoDatoReporte.NUMERO,
-            ancho: .55,
+            ancho: 0.55,
             alineacion: AlineacionReporte.CENTRO,
           },
           {
             clave: 'notaFinal',
             etiqueta: 'Nota final',
             tipo: TipoDatoReporte.NUMERO,
-            ancho: .75,
+            ancho: 0.75,
             alineacion: AlineacionReporte.CENTRO,
           },
           {
             clave: 'notaFinalMaximo',
             etiqueta: 'Sobre',
             tipo: TipoDatoReporte.NUMERO,
-            ancho: .55,
+            ancho: 0.55,
             alineacion: AlineacionReporte.CENTRO,
           },
           {
             clave: 'estado',
             etiqueta: 'Seguimiento',
             tipo: TipoDatoReporte.TEXTO,
-            ancho: .95,
+            ancho: 0.95,
             alineacion: AlineacionReporte.CENTRO,
           },
         ],
@@ -245,8 +224,7 @@ export class CalificacionesReportesService {
           'Puntaje continua': libro.hito.puntajeContinua,
           'Puntaje procesual': libro.hito.puntajeProcesual,
         },
-        textoPie:
-          'IusAcademy · Formación jurídica por competencias · UNIFRANZ',
+        textoPie: 'IusAcademy · Formación jurídica por competencias · UNIFRANZ',
       },
       opciones: {
         orientacion: OrientacionReporte.HORIZONTAL,
@@ -321,19 +299,15 @@ export class CalificacionesReportesService {
     );
   }
 
-  private normalizarFormato(
-    formatoSolicitado: string,
-  ): FormatoReporte {
-    const formato = formatoSolicitado
-      .trim()
-      .toUpperCase();
+  private normalizarFormato(formatoSolicitado: string): FormatoReporte {
+    const formato = formatoSolicitado.trim().toUpperCase();
 
     if (
       formato === FormatoReporte.PDF ||
       formato === FormatoReporte.EXCEL ||
       formato === FormatoReporte.CSV
     ) {
-      return formato as FormatoReporte;
+      return formato;
     }
 
     throw new BadRequestException(
@@ -343,9 +317,7 @@ export class CalificacionesReportesService {
 
   private dosDecimales(valor: unknown): number {
     const numero = Number(valor ?? 0);
-    return Number.isFinite(numero)
-      ? Number(numero.toFixed(2))
-      : 0;
+    return Number.isFinite(numero) ? Number(numero.toFixed(2)) : 0;
   }
 
   private etiquetaOrigen(valor: unknown): string {

@@ -1,43 +1,23 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import {
-  AuthModule,
-} from '../auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
-import {
-  AlmacenamientoArchivos,
-} from './almacenamiento/almacenamiento.interface';
+import { AlmacenamientoArchivos } from './almacenamiento/almacenamiento.interface';
 
-import {
-  AlmacenamientoLocalService,
-} from './almacenamiento/almacenamiento-local.service';
+import { AlmacenamientoLocalService } from './almacenamiento/almacenamiento-local.service';
 
-import {
-  ArchivosController,
-} from './archivos.controller';
+import { ArchivosController } from './archivos.controller';
 
-import {
-  ArchivosService,
-} from './archivos.service';
+import { ArchivosService } from './archivos.service';
 
-import {
-  ProcesadorPdfService,
-} from './procesamiento/procesador-pdf.service';
+import { ProcesadorPdfService } from './procesamiento/procesador-pdf.service';
 
-import {
-  OcrPdfService,
-} from './procesamiento/ocr-pdf.service';
+import { OcrPdfService } from './procesamiento/ocr-pdf.service';
 
 @Module({
-  imports: [
-    AuthModule,
-  ],
+  imports: [AuthModule],
 
-  controllers: [
-    ArchivosController,
-  ],
+  controllers: [ArchivosController],
 
   providers: [
     ArchivosService,
@@ -45,17 +25,12 @@ import {
     OcrPdfService,
     AlmacenamientoLocalService,
     {
-      provide:
-        AlmacenamientoArchivos,
+      provide: AlmacenamientoArchivos,
 
-      useExisting:
-        AlmacenamientoLocalService,
+      useExisting: AlmacenamientoLocalService,
     },
   ],
 
-  exports: [
-    ArchivosService,
-    AlmacenamientoArchivos,
-  ],
+  exports: [ArchivosService, AlmacenamientoArchivos],
 })
 export class ArchivosModule {}

@@ -25,6 +25,58 @@ import {
 import AulaModal from '../aula/AulaModal';
 import Toast from '../shared/Toast';
 import SelectorTipoTarea from './SelectorTipoTarea';
+import ConfiguracionRespuestaEscritaDocente from './ConfiguracionRespuestaEscritaDocente';
+import ConfiguracionCasoPracticoDocente from './ConfiguracionCasoPracticoDocente';
+import ConfiguracionRedaccionJuridicaDocente from './ConfiguracionRedaccionJuridicaDocente';
+import ConfiguracionExposicionDocente from './ConfiguracionExposicionDocente';
+import ConfiguracionDocumentoColaborativoDocente from './ConfiguracionDocumentoColaborativoDocente';
+
+import {
+  leerConfiguracionRespuesta,
+} from '../../utils/tareas/respuestaEscrita';
+
+import {
+  leerConfiguracionCaso,
+  configCasoInicial,
+} from '../../utils/tareas/casoPractico';
+
+import {
+  leerConfiguracionRedaccion,
+  configRedaccionInicial,
+} from '../../utils/tareas/redaccionJuridica';
+
+import {
+  leerConfiguracionExposicion,
+  configExposicionInicial,
+} from '../../utils/tareas/exposicion';
+
+import {
+  leerConfiguracionDocumentoColaborativo,
+} from '../../utils/tareas/documentoColaborativo';
+
+import {
+  tieneConfiguracionComponente,
+} from '../../utils/tareas/mixta';
+
+import type {
+  ConfiguracionRespuestaEscrita,
+} from '../../utils/tareas/respuestaEscrita';
+
+import type {
+  ConfiguracionCasoPractico,
+} from '../../utils/tareas/casoPractico';
+
+import type {
+  ConfiguracionRedaccionJuridica,
+} from '../../utils/tareas/redaccionJuridica';
+
+import type {
+  ConfiguracionExposicion,
+} from '../../utils/tareas/exposicion';
+
+import type {
+  ConfiguracionDocumentoColaborativo,
+} from '../../utils/tareas/documentoColaborativo';
 
 import {
   useAulaContext,
@@ -68,6 +120,10 @@ type Paso =
   | 2
   | 3
   | 4;
+
+type ModoRubrica =
+  | 'PREDETERMINADA'
+  | 'PERSONALIZADA';
 
 const ahoraLocal = () => {
   const fecha =
@@ -213,6 +269,19 @@ type EstadoFormulario = {
   tamanioMaximoArchivoMb: number;
   extensionesPermitidas: string[];
   permitirEditarEntrega: boolean;
+  configRespuesta:
+    ConfiguracionRespuestaEscrita | null;
+  configCaso:
+    ConfiguracionCasoPractico | null;
+  configRedaccion:
+    ConfiguracionRedaccionJuridica | null;
+  configExposicion:
+    ConfiguracionExposicion | null;
+  configDocumentoColaborativo:
+    ConfiguracionDocumentoColaborativo | null;
+  archivosConsigna: File[];
+  archivoRubrica: File | null;
+  modoRubrica: ModoRubrica;
 };
 
 function leerNumeroEditable(
@@ -301,7 +370,7 @@ function inicial(): EstadoFormulario {
     exigirContenidoEditor: true,
     exigirArchivo: true,
     maximoArchivos: 5,
-    tamanioMaximoArchivoMb: 10,
+    tamanioMaximoArchivoMb: 30,
     extensionesPermitidas: [
       'pdf',
       'doc',
@@ -313,6 +382,14 @@ function inicial(): EstadoFormulario {
       'pptx',
     ],
     permitirEditarEntrega: true,
+    configRespuesta: null,
+    configCaso: null,
+    configRedaccion: null,
+    configExposicion: null,
+    configDocumentoColaborativo: null,
+    archivosConsigna: [],
+    archivoRubrica: null,
+    modoRubrica: 'PREDETERMINADA',
   };
 }
 
@@ -432,6 +509,44 @@ function desdeTarea(
     tamanioMaximoArchivoMb: tarea.tamanioMaximoArchivoMb,
     extensionesPermitidas: tarea.extensionesPermitidas,
     permitirEditarEntrega: tarea.permitirEditarEntrega,
+    configRespuesta:
+      tarea.tipo ===
+        'RESPUESTA_ESCRITA'
+        ? leerConfiguracionRespuesta(
+            tarea.configuracionTipo,
+          )
+        : null,
+    configCaso:
+      tarea.tipo ===
+        'CASO_PRACTICO'
+        ? leerConfiguracionCaso(
+            tarea.configuracionTipo,
+          )
+        : null,
+    configRedaccion:
+      tarea.tipo ===
+        'REDACCION_JURIDICA'
+        ? leerConfiguracionRedaccion(
+            tarea.configuracionTipo,
+          )
+        : null,
+    configExposicion:
+      tarea.tipo ===
+        'EXPOSICION'
+        ? leerConfiguracionExposicion(
+            tarea.configuracionTipo,
+          )
+        : null,
+    configDocumentoColaborativo:
+      tarea.tipo ===
+        'DOCUMENTO_COLABORATIVO'
+        ? leerConfiguracionDocumentoColaborativo(
+            tarea.configuracionTipo,
+          )
+        : null,
+    archivosConsigna: [],
+    archivoRubrica: null,
+    modoRubrica: 'PREDETERMINADA',
   };
 }
 
@@ -1345,6 +1460,56 @@ export default function FormularioTareaInteligente({
           ...configuracionBase,
           ...configuracionGrupo,
           ...configuracionAfinidad,
+          ...(
+            form.tipo ===
+              'RESPUESTA_ESCRITA' &&
+            form.configRespuesta
+              ? {
+                  respuestaEscrita:
+                    form.configRespuesta,
+                }
+              : {}
+          ),
+          ...(
+            form.tipo ===
+              'CASO_PRACTICO' &&
+            form.configCaso
+              ? {
+                  casoPractico:
+                    form.configCaso,
+                }
+              : {}
+          ),
+          ...(
+            form.tipo ===
+              'REDACCION_JURIDICA' &&
+            form.configRedaccion
+              ? {
+                  redaccionJuridica:
+                    form.configRedaccion,
+                }
+              : {}
+          ),
+          ...(
+            form.tipo ===
+              'EXPOSICION' &&
+            form.configExposicion
+              ? {
+                  exposicion:
+                    form.configExposicion,
+                }
+              : {}
+          ),
+          ...(
+            form.tipo ===
+              'DOCUMENTO_COLABORATIVO' &&
+            form.configDocumentoColaborativo
+              ? {
+                  documentoColaborativo:
+                    form.configDocumentoColaborativo,
+                }
+              : {}
+          ),
         };
 
         return Object.keys(
@@ -1470,7 +1635,7 @@ export default function FormularioTareaInteligente({
     tamanioMaximoArchivoMb:
       usaArchivos
         ? form.tamanioMaximoArchivoMb
-        : 10,
+        : 30,
     extensionesPermitidas:
       usaArchivos
         ? form.extensionesPermitidas
@@ -1601,6 +1766,49 @@ export default function FormularioTareaInteligente({
                     },
                   ]
               : [],
+
+          configRespuesta:
+            tipo ===
+              'RESPUESTA_ESCRITA'
+              ? actual.configRespuesta ??
+                {
+                  areaDerecho:
+                    'OBLIGACIONES',
+                  minPalabras:
+                    200,
+                  maxPalabras:
+                    1200,
+                  estructuraGuiada:
+                    true,
+                  exigirCitas:
+                    true,
+                  minCitas:
+                    2,
+                  bancoNormativo:
+                    [],
+                }
+              : actual.configRespuesta,
+
+          configCaso:
+            tipo ===
+              'CASO_PRACTICO'
+              ? actual.configCaso ??
+                configCasoInicial()
+              : actual.configCaso,
+
+          configRedaccion:
+            tipo ===
+              'REDACCION_JURIDICA'
+              ? actual.configRedaccion ??
+                configRedaccionInicial()
+              : actual.configRedaccion,
+
+          configExposicion:
+            tipo ===
+              'EXPOSICION'
+              ? actual.configExposicion ??
+                configExposicionInicial()
+              : actual.configExposicion,
         }),
       );
 
@@ -1964,6 +2172,35 @@ export default function FormularioTareaInteligente({
               />
             </label>
 
+            <div className="tarea-adjunto-config">
+              <div>
+                <strong>Material de la consigna</strong>
+                <small>Adjunta PDFs, documentos o imágenes con instrucciones para tus estudiantes.</small>
+              </div>
+
+              <label className="tarea-adjunto-config__selector">
+                <FileUp size={16} />
+                <span>Seleccionar archivos</span>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.webp"
+                  onChange={(evento) =>
+                    setForm((actual) => ({
+                      ...actual,
+                      archivosConsigna: Array.from(evento.target.files ?? []),
+                    }))
+                  }
+                />
+              </label>
+
+              {form.archivosConsigna.length > 0 && (
+                <small className="tarea-adjunto-config__lista">
+                  {form.archivosConsigna.map((archivo) => archivo.name).join(' · ')}
+                </small>
+              )}
+            </div>
+
             {form.tipo ===
               'MIXTA' && (
               <div className="tarea-componentes">
@@ -2093,6 +2330,202 @@ export default function FormularioTareaInteligente({
                           size={15}
                         />
                       </button>
+
+                      {tieneConfiguracionComponente(
+                        componente.tipo,
+                      ) && (
+                        <div className="tarea-componente__config">
+                          {componente.tipo ===
+                            'TEXTO' && (
+                            <ConfiguracionRespuestaEscritaDocente
+                              valor={
+                                (componente.configuracion?.['respuestaEscrita'] as ConfiguracionRespuestaEscrita) ??
+                                null
+                              }
+                              onChange={(
+                                nueva,
+                              ) =>
+                                setForm(
+                                  (
+                                    actual,
+                                  ) => ({
+                                    ...actual,
+                                    componentes: actual.componentes.map(
+                                      (
+                                        item,
+                                        i,
+                                      ) =>
+                                        i ===
+                                        indice
+                                          ? {
+                                              ...item,
+                                              configuracion: {
+                                                ...item.configuracion,
+                                                respuestaEscrita:
+                                                  nueva,
+                                              },
+                                            }
+                                          : item,
+                                    ),
+                                  }),
+                                )
+                              }
+                            />
+                          )}
+
+                          {componente.tipo ===
+                            'DOCUMENTO_COLABORATIVO' && (
+                            <ConfiguracionDocumentoColaborativoDocente
+                              valor={
+                                (componente.configuracion?.['documentoColaborativo'] as ConfiguracionDocumentoColaborativo) ??
+                                null
+                              }
+                              onChange={(
+                                nueva,
+                              ) =>
+                                setForm(
+                                  (
+                                    actual,
+                                  ) => ({
+                                    ...actual,
+                                    componentes: actual.componentes.map(
+                                      (
+                                        item,
+                                        i,
+                                      ) =>
+                                        i ===
+                                        indice
+                                          ? {
+                                              ...item,
+                                              configuracion: {
+                                                ...item.configuracion,
+                                                documentoColaborativo:
+                                                  nueva,
+                                              },
+                                            }
+                                          : item,
+                                    ),
+                                  }),
+                                )
+                              }
+                            />
+                          )}
+
+                          {componente.tipo ===
+                            'CASO_PRACTICO' && (
+                            <ConfiguracionCasoPracticoDocente
+                              valor={
+                                (componente.configuracion?.['casoPractico'] as ConfiguracionCasoPractico) ??
+                                null
+                              }
+                              onChange={(
+                                nueva,
+                              ) =>
+                                setForm(
+                                  (
+                                    actual,
+                                  ) => ({
+                                    ...actual,
+                                    componentes: actual.componentes.map(
+                                      (
+                                        item,
+                                        i,
+                                      ) =>
+                                        i ===
+                                        indice
+                                          ? {
+                                              ...item,
+                                              configuracion: {
+                                                ...item.configuracion,
+                                                casoPractico:
+                                                  nueva,
+                                              },
+                                            }
+                                          : item,
+                                    ),
+                                  }),
+                                )
+                              }
+                            />
+                          )}
+
+                          {componente.tipo ===
+                            'REDACCION_JURIDICA' && (
+                            <ConfiguracionRedaccionJuridicaDocente
+                              valor={
+                                (componente.configuracion?.['redaccionJuridica'] as ConfiguracionRedaccionJuridica) ??
+                                null
+                              }
+                              onChange={(
+                                nueva,
+                              ) =>
+                                setForm(
+                                  (
+                                    actual,
+                                  ) => ({
+                                    ...actual,
+                                    componentes: actual.componentes.map(
+                                      (
+                                        item,
+                                        i,
+                                      ) =>
+                                        i ===
+                                        indice
+                                          ? {
+                                              ...item,
+                                              configuracion: {
+                                                ...item.configuracion,
+                                                redaccionJuridica:
+                                                  nueva,
+                                              },
+                                            }
+                                          : item,
+                                    ),
+                                  }),
+                                )
+                              }
+                            />
+                          )}
+
+                          {componente.tipo ===
+                            'EXPOSICION' && (
+                            <ConfiguracionExposicionDocente
+                              valor={
+                                (componente.configuracion?.['exposicion'] as ConfiguracionExposicion) ??
+                                null
+                              }
+                              onChange={(
+                                nueva,
+                              ) =>
+                                setForm(
+                                  (
+                                    actual,
+                                  ) => ({
+                                    ...actual,
+                                    componentes: actual.componentes.map(
+                                      (
+                                        item,
+                                        i,
+                                      ) =>
+                                        i ===
+                                        indice
+                                          ? {
+                                              ...item,
+                                              configuracion: {
+                                                ...item.configuracion,
+                                                exposicion:
+                                                  nueva,
+                                              },
+                                            }
+                                          : item,
+                                    ),
+                                  }),
+                                )
+                              }
+                            />
+                          )}
+                        </div>
+                      )}
                     </div>
                   ),
                 )}
@@ -2688,7 +3121,9 @@ export default function FormularioTareaInteligente({
                   </div>
                 )}
 
-                {usaGruposPlataforma && (
+                {usaGruposPlataforma &&
+                  form.tipo !==
+                    'DOCUMENTO_COLABORATIVO' && (
                   <div className="tarea-responsable-entrega">
                     <div className="tarea-responsable-entrega__texto">
                       <strong>
@@ -2736,23 +3171,39 @@ export default function FormularioTareaInteligente({
                   />
 
                   <span>
-                    <strong>
-                      {afinidad
-                        ? 'Entrega oficial por el representante'
-                        : form.responsableEntregaGrupo ===
-                            'SOLO_REPRESENTANTE'
-                          ? 'Entrega oficial por el representante'
-                          : 'Entrega oficial por cualquier integrante'}
-                    </strong>
+                    {form.tipo ===
+                    'DOCUMENTO_COLABORATIVO' ? (
+                      <>
+                        <strong>
+                          Participación colaborativa de todo el grupo
+                        </strong>
 
-                    <small>
-                      {afinidad
-                        ? 'El creador del equipo será el representante inicial y realizará la única entrega oficial del equipo.'
-                        : form.responsableEntregaGrupo ===
-                            'SOLO_REPRESENTANTE'
-                          ? 'Solo el representante podrá crear o reemplazar la entrega oficial del equipo.'
-                          : 'Cualquier integrante podrá crear o reemplazar la única entrega oficial mientras la tarea permita cambios.'}
-                    </small>
+                        <small>
+                          Todos los integrantes del grupo redactan juntos el documento.
+                          El reporte resaltará el aporte de cada estudiante.
+                        </small>
+                      </>
+                    ) : (
+                      <>
+                        <strong>
+                          {afinidad
+                            ? 'Entrega oficial por el representante'
+                            : form.responsableEntregaGrupo ===
+                                'SOLO_REPRESENTANTE'
+                              ? 'Entrega oficial por el representante'
+                              : 'Entrega oficial por cualquier integrante'}
+                        </strong>
+
+                        <small>
+                          {afinidad
+                            ? 'El creador del equipo será el representante inicial y realizará la única entrega oficial del equipo.'
+                            : form.responsableEntregaGrupo ===
+                                'SOLO_REPRESENTANTE'
+                              ? 'Solo el representante podrá crear o reemplazar la entrega oficial del equipo.'
+                              : 'Cualquier integrante podrá crear o reemplazar la única entrega oficial mientras la tarea permita cambios.'}
+                        </small>
+                      </>
+                    )}
                   </span>
                 </div>
               </div>
@@ -3439,9 +3890,9 @@ export default function FormularioTareaInteligente({
               </i>
             </label>
 
-            {form.esCalificable && (
-              <div className="tarea-evaluacion__panel">
-                <div className="tarea-evaluacion__grid">
+             {form.esCalificable && (
+               <div className="tarea-evaluacion__panel">
+                 <div className="tarea-evaluacion__grid">
                   <label>
                     <span>
                       Componente
@@ -3734,9 +4185,79 @@ export default function FormularioTareaInteligente({
                           </span>
                         </div>
                       </label>
-                    </div>
-                  </div>
-                )}
+                 </div>
+
+                 <div className="tarea-rubrica-selector">
+                   <div className="tarea-rubrica-selector__titulo">
+                     <strong>Rúbrica de calificación</strong>
+                     <small>Elige una rúbrica base de IusAcademy o importa la propia del docente.</small>
+                   </div>
+
+                   <div className="tarea-rubrica-selector__opciones">
+                     <label className={form.modoRubrica === 'PREDETERMINADA' ? 'activa' : ''}>
+                       <input
+                         type="radio"
+                         name="modo-rubrica"
+                         checked={form.modoRubrica === 'PREDETERMINADA'}
+                         onChange={() =>
+                           setForm((actual) => ({
+                             ...actual,
+                             modoRubrica: 'PREDETERMINADA',
+                             archivoRubrica: null,
+                           }))
+                         }
+                       />
+                       <span>
+                         <b>Predeterminada</b>
+                         <small>Plantilla sugerida y editable al revisar.</small>
+                       </span>
+                     </label>
+
+                     <label className={form.modoRubrica === 'PERSONALIZADA' ? 'activa' : ''}>
+                       <input
+                         type="radio"
+                         name="modo-rubrica"
+                         checked={form.modoRubrica === 'PERSONALIZADA'}
+                         onChange={() =>
+                           setForm((actual) => ({
+                             ...actual,
+                             modoRubrica: 'PERSONALIZADA',
+                           }))
+                         }
+                       />
+                       <span>
+                         <b>Personalizada</b>
+                         <small>Importa criterios y niveles desde Excel.</small>
+                       </span>
+                     </label>
+                   </div>
+                 </div>
+
+                 {form.modoRubrica === 'PERSONALIZADA' && (
+                 <div className="tarea-adjunto-config tarea-adjunto-config--rubrica">
+                   <div>
+                     <strong>Rúbrica desde Excel</strong>
+                     <small>Sube un archivo .xlsx o .xls para importar los criterios de evaluación.</small>
+                   </div>
+
+                   <label className="tarea-adjunto-config__selector">
+                     <FileUp size={16} />
+                     <span>{form.archivoRubrica ? form.archivoRubrica.name : 'Seleccionar Excel'}</span>
+                     <input
+                       type="file"
+                       accept=".xls,.xlsx"
+                       onChange={(evento) =>
+                         setForm((actual) => ({
+                           ...actual,
+                           archivoRubrica: evento.target.files?.[0] ?? null,
+                         }))
+                       }
+                     />
+                   </label>
+                 </div>
+                 )}
+               </div>
+             )}
               </div>
             )}
 
@@ -3956,7 +4477,7 @@ export default function FormularioTareaInteligente({
                                         actual.tamanioMaximoArchivoMb,
                                         1,
                                         50,
-                                        10,
+                                        30,
                                       ),
                                   }),
                                 )
@@ -4077,6 +4598,122 @@ export default function FormularioTareaInteligente({
                           </small>
                         </span>
                       </div>
+                    )}
+
+                    {form.tipo ===
+                      'RESPUESTA_ESCRITA' && (
+                      <ConfiguracionRespuestaEscritaDocente
+                        valor={
+                          form.configRespuesta
+                        }
+                        onChange={(
+                          configuracion:
+                            ConfiguracionRespuestaEscrita,
+                        ) =>
+                          setForm(
+                            (
+                              actual,
+                            ) => ({
+                              ...actual,
+                              configRespuesta:
+                                configuracion,
+                            }),
+                          )
+                        }
+                      />
+                    )}
+
+                    {form.tipo ===
+                      'CASO_PRACTICO' && (
+                      <ConfiguracionCasoPracticoDocente
+                        valor={
+                          form.configCaso
+                        }
+                        onChange={(
+                          configuracion:
+                            ConfiguracionCasoPractico,
+                        ) =>
+                          setForm(
+                            (
+                              actual,
+                            ) => ({
+                              ...actual,
+                              configCaso:
+                                configuracion,
+                            }),
+                          )
+                        }
+                      />
+                    )}
+
+                    {form.tipo ===
+                      'REDACCION_JURIDICA' && (
+                      <ConfiguracionRedaccionJuridicaDocente
+                        valor={
+                          form.configRedaccion
+                        }
+                        onChange={(
+                          configuracion:
+                            ConfiguracionRedaccionJuridica,
+                        ) =>
+                          setForm(
+                            (
+                              actual,
+                            ) => ({
+                              ...actual,
+                              configRedaccion:
+                                configuracion,
+                            }),
+                          )
+                        }
+                      />
+                    )}
+
+                     {form.tipo ===
+                      'EXPOSICION' && (
+                      <ConfiguracionExposicionDocente
+                        valor={
+                          form.configExposicion
+                        }
+                        onChange={(
+                          configuracion:
+                            ConfiguracionExposicion,
+                        ) =>
+                          setForm(
+                            (
+                              actual,
+                            ) => ({
+                              ...actual,
+                              configExposicion:
+                                configuracion,
+                            }),
+                          )
+                        }
+                      />
+                    )}
+
+                    {form.tipo ===
+                      'DOCUMENTO_COLABORATIVO' && (
+                      <ConfiguracionDocumentoColaborativoDocente
+                        valor={
+                          form.configDocumentoColaborativo
+                        }
+                        onChange={(
+                          configuracion:
+                            | ConfiguracionDocumentoColaborativo
+                            | null,
+                        ) =>
+                          setForm(
+                            (
+                              actual,
+                            ) => ({
+                              ...actual,
+                              configDocumentoColaborativo:
+                                configuracion,
+                            }),
+                          )
+                        }
+                      />
                     )}
                   </>
                 )}
@@ -4326,6 +4963,152 @@ const styles = `
     align-content: start;
     gap: 14px;
     padding: 2px 2px 6px;
+  }
+
+  .tarea-adjunto-config {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 13px 14px;
+    border: 1px solid var(--app-border);
+    border-radius: 14px;
+    background: var(--app-surface-alt);
+  }
+
+  .tarea-adjunto-config > div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .tarea-adjunto-config strong {
+    color: var(--app-text);
+    font-size: 13px;
+  }
+
+  .tarea-adjunto-config small {
+    color: var(--app-text-muted);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .tarea-adjunto-config__selector {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+    padding: 8px 11px;
+    border: 1px solid var(--app-accent);
+    border-radius: 9px;
+    color: var(--app-accent-dark);
+    background: var(--app-surface);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .tarea-adjunto-config__selector:hover {
+    background: var(--app-accent-soft);
+  }
+
+  .tarea-adjunto-config__selector input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .tarea-adjunto-config__lista {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tarea-rubrica-selector {
+    display: grid;
+    gap: 10px;
+    padding: 13px 14px;
+    border: 1px solid var(--app-border);
+    border-radius: 14px;
+    background: var(--app-surface-alt);
+  }
+
+  .tarea-rubrica-selector__titulo {
+    display: grid;
+    gap: 3px;
+  }
+
+  .tarea-rubrica-selector__titulo strong {
+    color: var(--app-text);
+    font-size: 13px;
+  }
+
+  .tarea-rubrica-selector__titulo small {
+    color: var(--app-text-muted);
+    font-size: 11px;
+  }
+
+  .tarea-rubrica-selector__opciones {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .tarea-rubrica-selector__opciones label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: var(--app-surface);
+    cursor: pointer;
+  }
+
+  .tarea-rubrica-selector__opciones label.activa {
+    border-color: var(--app-accent);
+    background: var(--app-accent-soft);
+  }
+
+  .tarea-rubrica-selector__opciones input {
+    margin-top: 3px;
+    accent-color: var(--app-accent);
+  }
+
+  .tarea-rubrica-selector__opciones span {
+    display: grid;
+    gap: 2px;
+  }
+
+  .tarea-rubrica-selector__opciones b {
+    color: var(--app-text);
+    font-size: 12px;
+  }
+
+  .tarea-rubrica-selector__opciones small {
+    color: var(--app-text-muted);
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  @media (max-width: 620px) {
+    .tarea-adjunto-config {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .tarea-adjunto-config__selector {
+      justify-content: center;
+    }
+
+    .tarea-rubrica-selector__opciones {
+      grid-template-columns: 1fr;
+    }
   }
 
   .tarea-form__titulo {
@@ -4607,6 +5390,15 @@ const styles = `
     display: grid;
     grid-template-columns: 190px minmax(0, 1fr) 38px;
     gap: 7px;
+  }
+
+  .tarea-componente__config {
+    grid-column: 1 / -1;
+    margin-top: 6px;
+    padding: 9px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: var(--app-surface);
   }
 
   .tarea-componente .icono-peligro {

@@ -1,44 +1,24 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import {
-  AuthModule,
-} from '../auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
-import {
-  ReportesModule,
-} from '../reportes/reportes.module';
+import { ReportesModule } from '../reportes/reportes.module';
 
-import {
-  CalificacionesController,
-} from './calificaciones.controller';
+import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 
-import {
-  CalificacionesReportesService,
-} from './calificaciones-reportes.service';
+import { CalificacionesController } from './calificaciones.controller';
 
-import {
-  CalificacionesService,
-} from './calificaciones.service';
+import { CalificacionesReportesService } from './calificaciones-reportes.service';
+
+import { CalificacionesService } from './calificaciones.service';
 
 @Module({
-  imports: [
-    AuthModule,
-    ReportesModule,
-  ],
+  imports: [AuthModule, ReportesModule, NotificacionesModule],
 
-  controllers: [
-    CalificacionesController,
-  ],
+  controllers: [CalificacionesController],
 
-  providers: [
-    CalificacionesService,
-    CalificacionesReportesService,
-  ],
+  providers: [CalificacionesService, CalificacionesReportesService],
 
-  exports: [
-    CalificacionesService,
-  ],
+  exports: [CalificacionesService],
 })
 export class CalificacionesModule {}

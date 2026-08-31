@@ -4,21 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import {
-  createHash,
-} from 'node:crypto';
+import { createHash } from 'node:crypto';
 
-import {
-  EstadoReporteEmitido,
-} from '../../generated/prisma/client';
+import { EstadoReporteEmitido } from '../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-import {
-  generarCodigoUnicoReporte,
-} from './helpers/codigos.helper';
+import { generarCodigoUnicoReporte } from './helpers/codigos.helper';
 
 import type {
   ArchivoReporteGenerado,
@@ -30,14 +22,9 @@ import type {
   ResultadoVerificacionReporte,
 } from './interfaces/reporte-verificable.interface';
 
-import {
-  FilaReporte,
-  FormatoReporte,
-} from './tipos/reportes.types';
+import { FilaReporte, FormatoReporte } from './tipos/reportes.types';
 
-import {
-  ReportesService,
-} from './reportes.service';
+import { ReportesService } from './reportes.service';
 
 @Injectable()
 export class ReportesVerificacionService {
@@ -52,11 +39,9 @@ export class ReportesVerificacionService {
     datos: DatosRegistroReporte,
     nombreArchivo?: string,
   ): Promise<ArchivoReporteGenerado> {
-    const codigo =
-      generarCodigoUnicoReporte(formato);
+    const codigo = generarCodigoUnicoReporte(formato);
 
-    const urlVerificacion =
-      this.construirUrlVerificacion(codigo);
+    const urlVerificacion = this.construirUrlVerificacion(codigo);
 
     await this.prisma.reporteEmitido.create({
       data: {
@@ -67,9 +52,7 @@ export class ReportesVerificacionService {
         generadoPorId: datos.generadoPorId,
 
         filtros: datos.filtros
-          ? JSON.parse(
-              JSON.stringify(datos.filtros),
-            )
+          ? JSON.parse(JSON.stringify(datos.filtros))
           : undefined,
 
         expiraEn: datos.expiraEn,
@@ -77,26 +60,24 @@ export class ReportesVerificacionService {
     });
 
     try {
-      const archivo =
-        await this.reportesService.generar(
-          formato,
-          {
-            ...definicion,
+      const archivo = await this.reportesService.generar(
+        formato,
+        {
+          ...definicion,
 
-            metadatos: {
-              ...definicion.metadatos,
-              codigoUnico: codigo,
-            },
-
-            opciones: {
-              ...definicion.opciones,
-              incluirQr:
-                formato === FormatoReporte.PDF,
-              contenidoQr: urlVerificacion,
-            },
+          metadatos: {
+            ...definicion.metadatos,
+            codigoUnico: codigo,
           },
-          nombreArchivo,
-        );
+
+          opciones: {
+            ...definicion.opciones,
+            incluirQr: formato === FormatoReporte.PDF,
+            contenidoQr: urlVerificacion,
+          },
+        },
+        nombreArchivo,
+      );
 
       const hashSha256 = createHash('sha256')
         .update(archivo.contenido)
@@ -108,17 +89,13 @@ export class ReportesVerificacionService {
         },
 
         data: {
-          estado:
-            EstadoReporteEmitido.VALIDO,
+          estado: EstadoReporteEmitido.VALIDO,
 
-          nombreArchivo:
-            archivo.nombreArchivo,
+          nombreArchivo: archivo.nombreArchivo,
 
-          mimeType:
-            archivo.mimeType,
+          mimeType: archivo.mimeType,
 
-          cantidadRegistros:
-            archivo.cantidadRegistros,
+          cantidadRegistros: archivo.cantidadRegistros,
 
           hashSha256,
           finalizadoEn: new Date(),
@@ -133,11 +110,9 @@ export class ReportesVerificacionService {
         },
 
         data: {
-          estado:
-            EstadoReporteEmitido.ERROR,
+          estado: EstadoReporteEmitido.ERROR,
 
-          errorGeneracion:
-            this.mensajeSeguro(error),
+          errorGeneracion: this.mensajeSeguro(error),
 
           finalizadoEn: new Date(),
         },
@@ -184,40 +159,32 @@ export class ReportesVerificacionService {
   async verificar(
     codigoRecibido: string,
   ): Promise<ResultadoVerificacionReporte> {
-    const codigo =
-      this.normalizarCodigo(codigoRecibido);
+    const codigo = this.normalizarCodigo(codigoRecibido);
 
-    const reporte =
-      await this.prisma.reporteEmitido.findUnique({
-        where: {
-          codigo,
-        },
+    const reporte = await this.prisma.reporteEmitido.findUnique({
+      where: {
+        codigo,
+      },
 
-        include: {
-          generadoPor: {
-            select: {
-              nombres: true,
-              apellidoPaterno: true,
-            },
+      include: {
+        generadoPor: {
+          select: {
+            nombres: true,
+            apellidoPaterno: true,
           },
         },
-      });
+      },
+    });
 
     if (!reporte) {
-      throw new NotFoundException(
-        'No existe un reporte con ese código.',
-      );
+      throw new NotFoundException('No existe un reporte con ese código.');
     }
 
     const expirado = Boolean(
-      reporte.expiraEn
-      && reporte.expiraEn <= new Date(),
+      reporte.expiraEn && reporte.expiraEn <= new Date(),
     );
 
-    const valido =
-      reporte.estado
-        === EstadoReporteEmitido.VALIDO
-      && !expirado;
+    const valido = reporte.estado === EstadoReporteEmitido.VALIDO && !expirado;
 
     const nombreGenerador = [
       reporte.generadoPor?.nombres,
@@ -232,9 +199,7 @@ export class ReportesVerificacionService {
       codigo: reporte.codigo,
 
       estado:
-        expirado
-        && reporte.estado
-          === EstadoReporteEmitido.VALIDO
+        expirado && reporte.estado === EstadoReporteEmitido.VALIDO
           ? 'EXPIRADO'
           : reporte.estado,
 
@@ -242,22 +207,17 @@ export class ReportesVerificacionService {
       tipo: reporte.tipo,
       formato: reporte.formato,
       nombreArchivo: reporte.nombreArchivo,
-      cantidadRegistros:
-        reporte.cantidadRegistros,
+      cantidadRegistros: reporte.cantidadRegistros,
 
       generadoEn: reporte.generadoEn,
       finalizadoEn: reporte.finalizadoEn,
       expiraEn: reporte.expiraEn,
       anuladoEn: reporte.anuladoEn,
-      motivoAnulacion:
-        reporte.motivoAnulacion,
+      motivoAnulacion: reporte.motivoAnulacion,
 
-      generadoPor:
-        nombreGenerador
-        || 'Administrador de IusAcademy',
+      generadoPor: nombreGenerador || 'Administrador de IusAcademy',
 
-      institucion:
-        'IusAcademy · UNIFRANZ',
+      institucion: 'IusAcademy · UNIFRANZ',
     };
   }
 
@@ -269,11 +229,9 @@ export class ReportesVerificacionService {
     motivoRecibido: string,
     administradorId: number,
   ) {
-    const codigo =
-      this.normalizarCodigo(codigoRecibido);
+    const codigo = this.normalizarCodigo(codigoRecibido);
 
-    const motivo =
-      motivoRecibido.trim();
+    const motivo = motivoRecibido.trim();
 
     if (motivo.length < 5) {
       throw new BadRequestException(
@@ -287,35 +245,22 @@ export class ReportesVerificacionService {
       );
     }
 
-    const reporte =
-      await this.prisma.reporteEmitido.findUnique({
-        where: {
-          codigo,
-        },
-      });
+    const reporte = await this.prisma.reporteEmitido.findUnique({
+      where: {
+        codigo,
+      },
+    });
 
     if (!reporte) {
-      throw new NotFoundException(
-        'No existe un reporte con ese código.',
-      );
+      throw new NotFoundException('No existe un reporte con ese código.');
     }
 
-    if (
-      reporte.estado
-      === EstadoReporteEmitido.ANULADO
-    ) {
-      throw new BadRequestException(
-        'El reporte ya se encuentra anulado.',
-      );
+    if (reporte.estado === EstadoReporteEmitido.ANULADO) {
+      throw new BadRequestException('El reporte ya se encuentra anulado.');
     }
 
-    if (
-      reporte.estado
-      !== EstadoReporteEmitido.VALIDO
-    ) {
-      throw new BadRequestException(
-        'Solo se pueden anular reportes válidos.',
-      );
+    if (reporte.estado !== EstadoReporteEmitido.VALIDO) {
+      throw new BadRequestException('Solo se pueden anular reportes válidos.');
     }
 
     return this.prisma.reporteEmitido.update({
@@ -324,17 +269,13 @@ export class ReportesVerificacionService {
       },
 
       data: {
-        estado:
-          EstadoReporteEmitido.ANULADO,
+        estado: EstadoReporteEmitido.ANULADO,
 
-        anuladoEn:
-          new Date(),
+        anuladoEn: new Date(),
 
-        anuladoPorId:
-          administradorId,
+        anuladoPorId: administradorId,
 
-        motivoAnulacion:
-          motivo,
+        motivoAnulacion: motivo,
       },
 
       select: {
@@ -355,35 +296,26 @@ export class ReportesVerificacionService {
     });
   }
 
-  private construirUrlVerificacion(
-    codigo: string,
-  ): string {
+  private construirUrlVerificacion(codigo: string): string {
     const base = (
-      process.env.REPORTES_URL_VERIFICACION
-      ?? 'http://localhost:5173/verificar-reporte'
+      process.env.REPORTES_URL_VERIFICACION ??
+      'http://localhost:5173/verificar-reporte'
     ).replace(/\/$/, '');
 
     return `${base}/${encodeURIComponent(codigo)}`;
   }
 
-  private normalizarCodigo(
-    codigoRecibido: string,
-  ): string {
-    const codigo =
-      codigoRecibido.trim().toUpperCase();
+  private normalizarCodigo(codigoRecibido: string): string {
+    const codigo = codigoRecibido.trim().toUpperCase();
 
     if (!codigo) {
-      throw new BadRequestException(
-        'El código del reporte es obligatorio.',
-      );
+      throw new BadRequestException('El código del reporte es obligatorio.');
     }
 
     return codigo;
   }
 
-  private mensajeSeguro(
-    error: unknown,
-  ): string {
+  private mensajeSeguro(error: unknown): string {
     return error instanceof Error
       ? error.message.slice(0, 500)
       : 'Error desconocido durante la generación.';

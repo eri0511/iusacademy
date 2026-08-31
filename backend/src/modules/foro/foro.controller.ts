@@ -15,283 +15,157 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import type {
-  Request,
-  Response,
-} from 'express';
+import type { Request, Response } from 'express';
 
-import {
-  Rol,
-} from '../../generated/prisma/client';
+import { Rol } from '../../generated/prisma/client';
 
-import {
-  Roles,
-} from '../auth/decorators/roles.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
-import {
-  JwtAuthGuard,
-} from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-import {
-  RolesGuard,
-} from '../auth/guards/roles.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
-import {
-  ActualizarComentarioForoDto,
-} from './dto/actualizar-comentario-foro.dto';
+import { ActualizarComentarioForoDto } from './dto/actualizar-comentario-foro.dto';
 
-import {
-  ActualizarForoDto,
-} from './dto/actualizar-foro.dto';
+import { ActualizarForoDto } from './dto/actualizar-foro.dto';
 
-import {
-  ActualizarRespuestaForoDto,
-} from './dto/actualizar-respuesta-foro.dto';
+import { ActualizarRespuestaForoDto } from './dto/actualizar-respuesta-foro.dto';
 
-import {
-  CambiarEstadoForoDto,
-} from './dto/cambiar-estado-foro.dto';
+import { CambiarEstadoForoDto } from './dto/cambiar-estado-foro.dto';
 
-import {
-  CambiarFijadoForoDto,
-} from './dto/cambiar-fijado-foro.dto';
+import { CambiarFijadoForoDto } from './dto/cambiar-fijado-foro.dto';
 
-import {
-  BloquearRespuestaForoDto,
-} from './dto/bloquear-respuesta-foro.dto';
+import { BloquearRespuestaForoDto } from './dto/bloquear-respuesta-foro.dto';
 
-import {
-  CrearComentarioForoDto,
-} from './dto/crear-comentario-foro.dto';
+import { CrearComentarioForoDto } from './dto/crear-comentario-foro.dto';
 
-import {
-  CrearForoDto,
-} from './dto/crear-foro.dto';
+import { CrearForoDto } from './dto/crear-foro.dto';
 
-import {
-  CrearRespuestaForoDto,
-} from './dto/crear-respuesta-foro.dto';
+import { CrearRespuestaForoDto } from './dto/crear-respuesta-foro.dto';
 
-import {
-  DuplicarForoDto,
-} from './dto/duplicar-foro.dto';
+import { DuplicarForoDto } from './dto/duplicar-foro.dto';
 
-import {
-  ExtenderPlazoForoDto,
-} from './dto/extender-plazo-foro.dto';
+import { ExtenderPlazoForoDto } from './dto/extender-plazo-foro.dto';
 
-import {
-  ModerarComentarioForoDto,
-} from './dto/moderar-comentario-foro.dto';
+import { ModerarComentarioForoDto } from './dto/moderar-comentario-foro.dto';
 
-import {
-  ModerarRespuestaForoDto,
-} from './dto/moderar-respuesta-foro.dto';
+import { ModerarRespuestaForoDto } from './dto/moderar-respuesta-foro.dto';
 
-import {
-  PublicarNotasForoDto,
-} from './dto/publicar-notas-foro.dto';
+import { PublicarNotasForoDto } from './dto/publicar-notas-foro.dto';
 
-import {
-  ReabrirNotasForoDto,
-} from './dto/reabrir-notas-foro.dto';
+import { ReabrirNotasForoDto } from './dto/reabrir-notas-foro.dto';
 
-import {
-  ListarForosQueryDto,
-} from './dto/listar-foros-query.dto';
+import { ListarForosQueryDto } from './dto/listar-foros-query.dto';
 
-import {
-  CalificarForoMasivamenteDto,
-} from './dto/calificar-foro-masivamente.dto';
+import { CalificarForoMasivamenteDto } from './dto/calificar-foro-masivamente.dto';
 
-import {
-  GuardarCalificacionForoDto,
-} from './dto/guardar-calificacion-foro.dto';
+import { GuardarCalificacionForoDto } from './dto/guardar-calificacion-foro.dto';
 
-import {
-  GuardarCriterioRubricaForoDto,
-} from './dto/guardar-criterio-rubrica-foro.dto';
+import { GuardarCriterioRubricaForoDto } from './dto/guardar-criterio-rubrica-foro.dto';
 
-import {
-  ForoAdministracionService,
-} from './foro-administracion.service';
+import { ForoAdministracionService } from './foro-administracion.service';
 
-import {
-  ForoCalificacionMasivaService,
-} from './foro-calificacion-masiva.service';
+import { ForoCalificacionMasivaService } from './foro-calificacion-masiva.service';
 
-import {
-  ForoCalificacionService,
-} from './foro-calificacion.service';
+import { ForoCalificacionService } from './foro-calificacion.service';
 
-import {
-  ForoCicloVidaService,
-} from './foro-ciclo-vida.service';
+import { ForoCicloVidaService } from './foro-ciclo-vida.service';
 
-import {
-  ForoComentariosService,
-} from './foro-comentarios.service';
+import { ForoComentariosService } from './foro-comentarios.service';
 
-import {
-  ForoEstadisticasService,
-} from './foro-estadisticas.service';
+import { ForoEstadisticasService } from './foro-estadisticas.service';
 
-import {
-  ForoLibroCalificacionesService,
-} from './foro-libro-calificaciones.service';
+import { ForoLibroCalificacionesService } from './foro-libro-calificaciones.service';
 
-import {
-  ForoLecturasService,
-} from './foro-lecturas.service';
+import { ForoLecturasService } from './foro-lecturas.service';
 
-import {
-  ForoModeracionService,
-} from './foro-moderacion.service';
+import { ForoModeracionService } from './foro-moderacion.service';
 
-import {
-  ForoPublicacionNotasService,
-} from './foro-publicacion-notas.service';
+import { ForoPublicacionNotasService } from './foro-publicacion-notas.service';
 
-import {
-  ForoRespuestasService,
-} from './foro-respuestas.service';
+import { ForoRespuestasService } from './foro-respuestas.service';
 
-import {
-  ForoService,
-} from './foro.service';
+import { ForoService } from './foro.service';
 
-import {
-  enviarArchivoReporte,
-} from '../reportes/helpers/respuesta-reporte.helper';
+import { enviarArchivoReporte } from '../reportes/helpers/respuesta-reporte.helper';
 
-import {
-  ForoReportesService,
-} from './foro-reportes.service';
+import { ForoReportesService } from './foro-reportes.service';
 
-import type {
-  UsuarioAutenticado,
-} from './interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
-type RequestAutenticada =
-  Request & {
-    user:
-      UsuarioAutenticado;
-  };
+type RequestAutenticada = Request & {
+  user: UsuarioAutenticado;
+};
 
-@Controller(
-  'foro',
-)
-@UseGuards(
-  JwtAuthGuard,
-  RolesGuard,
-)
+@Controller('foro')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ForoController {
   constructor(
-    private readonly foroService:
-      ForoService,
+    private readonly foroService: ForoService,
 
-    private readonly respuestasService:
-      ForoRespuestasService,
+    private readonly respuestasService: ForoRespuestasService,
 
-    private readonly comentariosService:
-      ForoComentariosService,
+    private readonly comentariosService: ForoComentariosService,
 
-    private readonly administracionService:
-      ForoAdministracionService,
+    private readonly administracionService: ForoAdministracionService,
 
-    private readonly cicloVidaService:
-      ForoCicloVidaService,
+    private readonly cicloVidaService: ForoCicloVidaService,
 
-    private readonly moderacionService:
-      ForoModeracionService,
+    private readonly moderacionService: ForoModeracionService,
 
-    private readonly calificacionService:
-      ForoCalificacionService,
+    private readonly calificacionService: ForoCalificacionService,
 
-    private readonly calificacionMasivaService:
-      ForoCalificacionMasivaService,
+    private readonly calificacionMasivaService: ForoCalificacionMasivaService,
 
-    private readonly publicacionNotasService:
-      ForoPublicacionNotasService,
+    private readonly publicacionNotasService: ForoPublicacionNotasService,
 
-    private readonly libroCalificacionesService:
-      ForoLibroCalificacionesService,
+    private readonly libroCalificacionesService: ForoLibroCalificacionesService,
 
-    private readonly lecturasService:
-      ForoLecturasService,
+    private readonly lecturasService: ForoLecturasService,
 
-    private readonly estadisticasService:
-      ForoEstadisticasService,
+    private readonly estadisticasService: ForoEstadisticasService,
 
-    private readonly reportesForoService:
-      ForoReportesService,
+    private readonly reportesForoService: ForoReportesService,
   ) {}
 
-  @Post(
-    'cursos/:cursoId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Post('cursos/:cursoId')
+  @Roles(Rol.DOCENTE)
   crearForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
     @Body()
-    datos:
-      CrearForoDto,
+    datos: CrearForoDto,
   ) {
-    return this.foroService.crearForo(
-      request.user,
-      cursoId,
-      datos,
-    );
+    return this.foroService.crearForo(request.user, cursoId, datos);
   }
 
-  @Get(
-    'cursos/:cursoId',
-  )
+  @Get('cursos/:cursoId')
   @Header(
     'Cache-Control',
     'no-store, no-cache, must-revalidate, proxy-revalidate',
   )
-  @Roles(
-    Rol.DOCENTE,
-    Rol.ESTUDIANTE,
-  )
+  @Roles(Rol.DOCENTE, Rol.ESTUDIANTE)
   async listarForos(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
     @Query()
-    filtros:
-      ListarForosQueryDto,
+    filtros: ListarForosQueryDto,
   ) {
-    const foros =
-      await this.foroService.listarForos(
+    const foros = await this.foroService.listarForos(
       request.user,
       cursoId,
       filtros,
     );
 
-    const forosConIndicadores =
-      await this.lecturasService.enriquecerListado(
+    const forosConIndicadores = await this.lecturasService.enriquecerListado(
       request.user,
       cursoId,
       foros,
@@ -303,102 +177,58 @@ export class ForoController {
     );
   }
 
-  @Get(
-    'cursos/:cursoId/:foroId',
-  )
+  @Get('cursos/:cursoId/:foroId')
   @Header(
     'Cache-Control',
     'no-store, no-cache, must-revalidate, proxy-revalidate',
   )
-  @Roles(
-    Rol.DOCENTE,
-    Rol.ESTUDIANTE,
-  )
+  @Roles(Rol.DOCENTE, Rol.ESTUDIANTE)
   async obtenerDetalle(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
   ) {
-    const foro =
-      await this.foroService.obtenerDetalle(
+    const foro = await this.foroService.obtenerDetalle(
       request.user,
       cursoId,
       foroId,
     );
 
-    await this.lecturasService.registrarLectura(
-      request.user,
-      cursoId,
-      foroId,
-    );
+    await this.lecturasService.registrarLectura(request.user, cursoId, foroId);
 
     return foro;
   }
 
-  @Post(
-    'cursos/:cursoId/:foroId/lectura',
-  )
-  @Roles(
-    Rol.DOCENTE,
-    Rol.ESTUDIANTE,
-  )
+  @Post('cursos/:cursoId/:foroId/lectura')
+  @Roles(Rol.DOCENTE, Rol.ESTUDIANTE)
   registrarLectura(
     @Req()
     request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
+    @Param('cursoId', ParseIntPipe)
     cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
+    @Param('foroId', ParseIntPipe)
     foroId: number,
   ) {
-    return this.lecturasService.registrarLectura(
-      request.user,
-      cursoId,
-      foroId,
-    );
+    return this.lecturasService.registrarLectura(request.user, cursoId, foroId);
   }
 
-  @Get(
-    'cursos/:cursoId/:foroId/lecturas/resumen',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('cursos/:cursoId/:foroId/lecturas/resumen')
+  @Roles(Rol.DOCENTE)
   obtenerResumenLecturas(
     @Req()
     request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
+    @Param('cursoId', ParseIntPipe)
     cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
+    @Param('foroId', ParseIntPipe)
     foroId: number,
   ) {
     return this.lecturasService.obtenerResumenDocente(
@@ -408,26 +238,16 @@ export class ForoController {
     );
   }
 
-  @Get(
-    'cursos/:cursoId/:foroId/estadisticas',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('cursos/:cursoId/:foroId/estadisticas')
+  @Roles(Rol.DOCENTE)
   obtenerEstadisticas(
     @Req()
     request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
+    @Param('cursoId', ParseIntPipe)
     cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
+    @Param('foroId', ParseIntPipe)
     foroId: number,
   ) {
     return this.estadisticasService.obtenerEstadisticas(
@@ -437,34 +257,20 @@ export class ForoController {
     );
   }
 
-  @Put(
-    'cursos/:cursoId/:foroId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Put('cursos/:cursoId/:foroId')
+  @Roles(Rol.DOCENTE)
   actualizarForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
     @Body()
-    datos:
-      ActualizarForoDto,
+    datos: ActualizarForoDto,
   ) {
     return this.foroService.actualizarForo(
       request.user,
@@ -474,145 +280,75 @@ export class ForoController {
     );
   }
 
-  @Patch(
-    'cursos/:cursoId/:foroId/estado',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Patch('cursos/:cursoId/:foroId/estado')
+  @Roles(Rol.DOCENTE)
   cambiarEstadoForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
     @Body()
-    datos:
-      CambiarEstadoForoDto,
+    datos: CambiarEstadoForoDto,
   ) {
-    return this.foroService.cambiarEstado(
-      request.user,
-      cursoId,
-      foroId,
-      datos,
-    );
+    return this.foroService.cambiarEstado(request.user, cursoId, foroId, datos);
   }
 
-  @Post(
-    'cursos/:cursoId/:foroId/respuestas',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Post('cursos/:cursoId/:foroId/respuestas')
+  @Roles(Rol.ESTUDIANTE)
   crearRespuesta(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
     @Body()
-    datos:
-      CrearRespuestaForoDto,
+    datos: CrearRespuestaForoDto,
   ) {
-    return this.respuestasService.crear(
-      request.user,
-      cursoId,
-      foroId,
-      datos,
-    );
+    return this.respuestasService.crear(request.user, cursoId, foroId, datos);
   }
 
-  @Get(
-    'cursos/:cursoId/:foroId/respuestas',
-  )
+  @Get('cursos/:cursoId/:foroId/respuestas')
   @Header(
     'Cache-Control',
     'no-store, no-cache, must-revalidate, proxy-revalidate',
   )
-  @Roles(
-    Rol.DOCENTE,
-    Rol.ESTUDIANTE,
-  )
+  @Roles(Rol.DOCENTE, Rol.ESTUDIANTE)
   listarRespuestas(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
   ) {
-    return this.respuestasService.listar(
-      request.user,
-      cursoId,
-      foroId,
-    );
+    return this.respuestasService.listar(request.user, cursoId, foroId);
   }
 
-  @Put(
-    'cursos/:cursoId/respuestas/:respuestaId',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Put('cursos/:cursoId/respuestas/:respuestaId')
+  @Roles(Rol.ESTUDIANTE)
   actualizarRespuesta(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'respuestaId',
-      ParseIntPipe,
-    )
-    respuestaId:
-      number,
+    @Param('respuestaId', ParseIntPipe)
+    respuestaId: number,
 
     @Body()
-    datos:
-      ActualizarRespuestaForoDto,
+    datos: ActualizarRespuestaForoDto,
   ) {
     return this.respuestasService.actualizar(
       request.user,
@@ -622,66 +358,35 @@ export class ForoController {
     );
   }
 
-  @Delete(
-    'cursos/:cursoId/respuestas/:respuestaId',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Delete('cursos/:cursoId/respuestas/:respuestaId')
+  @Roles(Rol.ESTUDIANTE)
   eliminarRespuesta(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'respuestaId',
-      ParseIntPipe,
-    )
-    respuestaId:
-      number,
+    @Param('respuestaId', ParseIntPipe)
+    respuestaId: number,
   ) {
-    return this.respuestasService.eliminar(
-      request.user,
-      cursoId,
-      respuestaId,
-    );
+    return this.respuestasService.eliminar(request.user, cursoId, respuestaId);
   }
 
-  @Post(
-    'cursos/:cursoId/respuestas/:respuestaId/comentarios',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Post('cursos/:cursoId/respuestas/:respuestaId/comentarios')
+  @Roles(Rol.ESTUDIANTE)
   crearComentario(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'respuestaId',
-      ParseIntPipe,
-    )
-    respuestaId:
-      number,
+    @Param('respuestaId', ParseIntPipe)
+    respuestaId: number,
 
     @Body()
-    datos:
-      CrearComentarioForoDto,
+    datos: CrearComentarioForoDto,
   ) {
     return this.comentariosService.crear(
       request.user,
@@ -691,34 +396,20 @@ export class ForoController {
     );
   }
 
-  @Put(
-    'cursos/:cursoId/comentarios/:comentarioId',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Put('cursos/:cursoId/comentarios/:comentarioId')
+  @Roles(Rol.ESTUDIANTE)
   actualizarComentario(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'comentarioId',
-      ParseIntPipe,
-    )
-    comentarioId:
-      number,
+    @Param('comentarioId', ParseIntPipe)
+    comentarioId: number,
 
     @Body()
-    datos:
-      ActualizarComentarioForoDto,
+    datos: ActualizarComentarioForoDto,
   ) {
     return this.comentariosService.actualizar(
       request.user,
@@ -728,30 +419,17 @@ export class ForoController {
     );
   }
 
-  @Delete(
-    'cursos/:cursoId/comentarios/:comentarioId',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Delete('cursos/:cursoId/comentarios/:comentarioId')
+  @Roles(Rol.ESTUDIANTE)
   eliminarComentario(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'comentarioId',
-      ParseIntPipe,
-    )
-    comentarioId:
-      number,
+    @Param('comentarioId', ParseIntPipe)
+    comentarioId: number,
   ) {
     return this.comentariosService.eliminar(
       request.user,
@@ -760,34 +438,20 @@ export class ForoController {
     );
   }
 
-  @Post(
-    'cursos/:cursoId/:foroId/duplicar',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Post('cursos/:cursoId/:foroId/duplicar')
+  @Roles(Rol.DOCENTE)
   duplicarForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
     @Body()
-    datos:
-      DuplicarForoDto,
+    datos: DuplicarForoDto,
   ) {
     return this.administracionService.duplicarForo(
       request.user,
@@ -797,30 +461,17 @@ export class ForoController {
     );
   }
 
-  @Delete(
-    'cursos/:cursoId/:foroId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Delete('cursos/:cursoId/:foroId')
+  @Roles(Rol.DOCENTE)
   eliminarForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
   ) {
     return this.administracionService.eliminarForo(
       request.user,
@@ -829,30 +480,17 @@ export class ForoController {
     );
   }
 
-  @Get(
-    'cursos/:cursoId/:foroId/historial',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('cursos/:cursoId/:foroId/historial')
+  @Roles(Rol.DOCENTE)
   obtenerHistorialForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
   ) {
     return this.administracionService.obtenerHistorial(
       request.user,
@@ -861,35 +499,20 @@ export class ForoController {
     );
   }
 
-
-  @Patch(
-    'cursos/:cursoId/:foroId/fijado',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Patch('cursos/:cursoId/:foroId/fijado')
+  @Roles(Rol.DOCENTE)
   cambiarFijadoForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
     @Body()
-    datos:
-      CambiarFijadoForoDto,
+    datos: CambiarFijadoForoDto,
   ) {
     return this.cicloVidaService.cambiarFijado(
       request.user,
@@ -899,34 +522,20 @@ export class ForoController {
     );
   }
 
-  @Patch(
-    'cursos/:cursoId/:foroId/plazo',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Patch('cursos/:cursoId/:foroId/plazo')
+  @Roles(Rol.DOCENTE)
   extenderPlazoForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
     @Body()
-    datos:
-      ExtenderPlazoForoDto,
+    datos: ExtenderPlazoForoDto,
   ) {
     return this.cicloVidaService.extenderPlazo(
       request.user,
@@ -936,30 +545,17 @@ export class ForoController {
     );
   }
 
-  @Patch(
-    'cursos/:cursoId/:foroId/sincronizar-estado',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Patch('cursos/:cursoId/:foroId/sincronizar-estado')
+  @Roles(Rol.DOCENTE)
   sincronizarEstadoForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
   ) {
     return this.cicloVidaService.sincronizarEstado(
       request.user,
@@ -968,35 +564,20 @@ export class ForoController {
     );
   }
 
-
-  @Patch(
-    'cursos/:cursoId/respuestas/:respuestaId/moderar',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Patch('cursos/:cursoId/respuestas/:respuestaId/moderar')
+  @Roles(Rol.DOCENTE)
   moderarRespuesta(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'respuestaId',
-      ParseIntPipe,
-    )
-    respuestaId:
-      number,
+    @Param('respuestaId', ParseIntPipe)
+    respuestaId: number,
 
     @Body()
-    datos:
-      ModerarRespuestaForoDto,
+    datos: ModerarRespuestaForoDto,
   ) {
     return this.moderacionService.moderarRespuesta(
       request.user,
@@ -1006,34 +587,20 @@ export class ForoController {
     );
   }
 
-  @Patch(
-    'cursos/:cursoId/respuestas/:respuestaId/bloqueo',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Patch('cursos/:cursoId/respuestas/:respuestaId/bloqueo')
+  @Roles(Rol.DOCENTE)
   bloquearRespuesta(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'respuestaId',
-      ParseIntPipe,
-    )
-    respuestaId:
-      number,
+    @Param('respuestaId', ParseIntPipe)
+    respuestaId: number,
 
     @Body()
-    datos:
-      BloquearRespuestaForoDto,
+    datos: BloquearRespuestaForoDto,
   ) {
     return this.moderacionService.bloquearRespuesta(
       request.user,
@@ -1043,34 +610,20 @@ export class ForoController {
     );
   }
 
-  @Patch(
-    'cursos/:cursoId/comentarios/:comentarioId/moderar',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Patch('cursos/:cursoId/comentarios/:comentarioId/moderar')
+  @Roles(Rol.DOCENTE)
   moderarComentario(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'comentarioId',
-      ParseIntPipe,
-    )
-    comentarioId:
-      number,
+    @Param('comentarioId', ParseIntPipe)
+    comentarioId: number,
 
     @Body()
-    datos:
-      ModerarComentarioForoDto,
+    datos: ModerarComentarioForoDto,
   ) {
     return this.moderacionService.moderarComentario(
       request.user,
@@ -1080,30 +633,17 @@ export class ForoController {
     );
   }
 
-  @Get(
-    'cursos/:cursoId/:foroId/moderacion',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('cursos/:cursoId/:foroId/moderacion')
+  @Roles(Rol.DOCENTE)
   listarContenidoModerado(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
   ) {
     return this.moderacionService.listarContenidoModerado(
       request.user,
@@ -1112,130 +652,69 @@ export class ForoController {
     );
   }
 
-
-  @Get(
-    'cursos/:cursoId/:foroId/calificaciones/panel',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('cursos/:cursoId/:foroId/calificaciones/panel')
+  @Roles(Rol.DOCENTE)
   obtenerPanelCalificacion(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
   ) {
-    return this.calificacionService.obtenerPanel(
+    return this.calificacionService.obtenerPanel(request.user, cursoId, foroId);
+  }
+
+  @Get('cursos/:cursoId/:foroId/calificaciones/exportar/:formato')
+  @Roles(Rol.DOCENTE)
+  async exportarCalificacionesForo(
+    @Req()
+    request: RequestAutenticada,
+
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
+
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
+
+    @Param('formato')
+    formato: string,
+
+    @Res()
+    response: Response,
+  ) {
+    const archivo = await this.reportesForoService.generarCalificaciones(
       request.user,
       cursoId,
       foroId,
+      formato,
     );
+
+    enviarArchivoReporte(response, archivo);
   }
 
-  @Get(
-    'cursos/:cursoId/:foroId/calificaciones/exportar/:formato',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
-  async exportarCalificacionesForo(
-    @Req()
-    request:
-      RequestAutenticada,
-
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
-
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
-
-    @Param(
-      'formato',
-    )
-    formato:
-      string,
-
-    @Res()
-    response:
-      Response,
-  ) {
-    const archivo =
-      await this.reportesForoService.generarCalificaciones(
-        request.user,
-        cursoId,
-        foroId,
-        formato,
-      );
-
-    enviarArchivoReporte(
-      response,
-      archivo,
-    );
-  }
-
-
-  @Put(
-    'cursos/:cursoId/:foroId/calificaciones/grupos/:origen/:grupoId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Put('cursos/:cursoId/:foroId/calificaciones/grupos/:origen/:grupoId')
+  @Roles(Rol.DOCENTE)
   guardarCalificacionGrupalForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
-    @Param(
-      'origen',
-    )
-    origen:
-      string,
+    @Param('origen')
+    origen: string,
 
-    @Param(
-      'grupoId',
-      ParseIntPipe,
-    )
-    grupoId:
-      number,
+    @Param('grupoId', ParseIntPipe)
+    grupoId: number,
 
     @Body()
-    datos:
-      GuardarCalificacionForoDto,
+    datos: GuardarCalificacionForoDto,
   ) {
     return this.calificacionService.guardarCalificacionGrupo(
       request.user,
@@ -1247,41 +726,23 @@ export class ForoController {
     );
   }
 
-  @Put(
-    'cursos/:cursoId/:foroId/calificaciones/estudiantes/:estudianteId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Put('cursos/:cursoId/:foroId/calificaciones/estudiantes/:estudianteId')
+  @Roles(Rol.DOCENTE)
   guardarCalificacionForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
-    @Param(
-      'estudianteId',
-      ParseIntPipe,
-    )
-    estudianteId:
-      number,
+    @Param('estudianteId', ParseIntPipe)
+    estudianteId: number,
 
     @Body()
-    datos:
-      GuardarCalificacionForoDto,
+    datos: GuardarCalificacionForoDto,
   ) {
     return this.calificacionService.guardarCalificacion(
       request.user,
@@ -1295,45 +756,25 @@ export class ForoController {
   @Put(
     'cursos/:cursoId/:foroId/calificaciones/estudiantes/:estudianteId/criterios/:criterioId',
   )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Roles(Rol.DOCENTE)
   guardarCriterioRubrica(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
-    @Param(
-      'estudianteId',
-      ParseIntPipe,
-    )
-    estudianteId:
-      number,
+    @Param('estudianteId', ParseIntPipe)
+    estudianteId: number,
 
-    @Param(
-      'criterioId',
-      ParseIntPipe,
-    )
-    criterioId:
-      number,
+    @Param('criterioId', ParseIntPipe)
+    criterioId: number,
 
     @Body()
-    datos:
-      GuardarCriterioRubricaForoDto,
+    datos: GuardarCriterioRubricaForoDto,
   ) {
     return this.calificacionService.guardarCriterioRubrica(
       request.user,
@@ -1345,37 +786,20 @@ export class ForoController {
     );
   }
 
-  @Get(
-    'cursos/:cursoId/:foroId/calificaciones/estudiantes/:estudianteId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('cursos/:cursoId/:foroId/calificaciones/estudiantes/:estudianteId')
+  @Roles(Rol.DOCENTE)
   obtenerCalificacionEstudiante(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
-    @Param(
-      'estudianteId',
-      ParseIntPipe,
-    )
-    estudianteId:
-      number,
+    @Param('estudianteId', ParseIntPipe)
+    estudianteId: number,
   ) {
     return this.calificacionService.obtenerCalificacionEstudiante(
       request.user,
@@ -1385,35 +809,20 @@ export class ForoController {
     );
   }
 
-
-  @Post(
-    'cursos/:cursoId/:foroId/calificaciones/masivas/previsualizar',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Post('cursos/:cursoId/:foroId/calificaciones/masivas/previsualizar')
+  @Roles(Rol.DOCENTE)
   previsualizarCalificacionMasiva(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
     @Body()
-    datos:
-      CalificarForoMasivamenteDto,
+    datos: CalificarForoMasivamenteDto,
   ) {
     return this.calificacionMasivaService.previsualizar(
       request.user,
@@ -1423,34 +832,20 @@ export class ForoController {
     );
   }
 
-  @Post(
-    'cursos/:cursoId/:foroId/calificaciones/masivas/aplicar',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Post('cursos/:cursoId/:foroId/calificaciones/masivas/aplicar')
+  @Roles(Rol.DOCENTE)
   aplicarCalificacionMasiva(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
     @Body()
-    datos:
-      CalificarForoMasivamenteDto,
+    datos: CalificarForoMasivamenteDto,
   ) {
     return this.calificacionMasivaService.aplicar(
       request.user,
@@ -1460,31 +855,17 @@ export class ForoController {
     );
   }
 
-
-  @Get(
-    'cursos/:cursoId/:foroId/calificaciones/publicacion/previsualizar',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('cursos/:cursoId/:foroId/calificaciones/publicacion/previsualizar')
+  @Roles(Rol.DOCENTE)
   previsualizarPublicacionNotas(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
   ) {
     return this.publicacionNotasService.previsualizarPublicacion(
       request.user,
@@ -1493,34 +874,20 @@ export class ForoController {
     );
   }
 
-  @Patch(
-    'cursos/:cursoId/:foroId/calificaciones/publicar',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Patch('cursos/:cursoId/:foroId/calificaciones/publicar')
+  @Roles(Rol.DOCENTE)
   publicarNotasForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
     @Body()
-    datos:
-      PublicarNotasForoDto,
+    datos: PublicarNotasForoDto,
   ) {
     return this.publicacionNotasService.publicarNotas(
       request.user,
@@ -1530,34 +897,20 @@ export class ForoController {
     );
   }
 
-  @Patch(
-    'cursos/:cursoId/:foroId/calificaciones/reabrir',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Patch('cursos/:cursoId/:foroId/calificaciones/reabrir')
+  @Roles(Rol.DOCENTE)
   reabrirNotasForo(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
 
     @Body()
-    datos:
-      ReabrirNotasForoDto,
+    datos: ReabrirNotasForoDto,
   ) {
     return this.publicacionNotasService.reabrirNotas(
       request.user,
@@ -1567,30 +920,17 @@ export class ForoController {
     );
   }
 
-  @Get(
-    'estudiante/cursos/:cursoId/:foroId/calificacion',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Get('estudiante/cursos/:cursoId/:foroId/calificacion')
+  @Roles(Rol.ESTUDIANTE)
   obtenerNotaPublicadaEstudiante(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'foroId',
-      ParseIntPipe,
-    )
-    foroId:
-      number,
+    @Param('foroId', ParseIntPipe)
+    foroId: number,
   ) {
     return this.publicacionNotasService.obtenerNotasPublicadasEstudiante(
       request.user,
@@ -1599,24 +939,14 @@ export class ForoController {
     );
   }
 
-
-  @Get(
-    'libro/cursos/:cursoId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('libro/cursos/:cursoId')
+  @Roles(Rol.DOCENTE)
   obtenerLibroCompletoDocente(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
   ) {
     return this.libroCalificacionesService.obtenerLibroCompletoDocente(
       request.user,
@@ -1624,30 +954,17 @@ export class ForoController {
     );
   }
 
-  @Get(
-    'libro/cursos/:cursoId/estudiantes/:estudianteId',
-  )
-  @Roles(
-    Rol.DOCENTE,
-  )
+  @Get('libro/cursos/:cursoId/estudiantes/:estudianteId')
+  @Roles(Rol.DOCENTE)
   obtenerLibroEstudianteDocente(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'estudianteId',
-      ParseIntPipe,
-    )
-    estudianteId:
-      number,
+    @Param('estudianteId', ParseIntPipe)
+    estudianteId: number,
   ) {
     return this.libroCalificacionesService.obtenerLibroEstudianteDocente(
       request.user,
@@ -1656,28 +973,18 @@ export class ForoController {
     );
   }
 
-  @Get(
-    'libro/estudiante/cursos/:cursoId',
-  )
-  @Roles(
-    Rol.ESTUDIANTE,
-  )
+  @Get('libro/estudiante/cursos/:cursoId')
+  @Roles(Rol.ESTUDIANTE)
   obtenerMiLibro(
     @Req()
-    request:
-      RequestAutenticada,
+    request: RequestAutenticada,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
   ) {
     return this.libroCalificacionesService.obtenerMiLibro(
       request.user,
       cursoId,
     );
   }
-
 }

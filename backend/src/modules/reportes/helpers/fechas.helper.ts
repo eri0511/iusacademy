@@ -1,6 +1,4 @@
-import {
-  REPORTES_CONFIG,
-} from '../constants/reportes.constants';
+import { REPORTES_CONFIG } from '../constants/reportes.constants';
 
 export interface OpcionesFormatoFecha {
   locale?: string;
@@ -12,9 +10,8 @@ function esFechaValida(fecha: Date): boolean {
 }
 
 export function convertirAFecha(valor: Date | string | number): Date {
-  const fecha = valor instanceof Date
-    ? new Date(valor.getTime())
-    : new Date(valor);
+  const fecha =
+    valor instanceof Date ? new Date(valor.getTime()) : new Date(valor);
 
   if (!esFechaValida(fecha)) {
     throw new TypeError('El valor recibido no representa una fecha válida');
@@ -33,15 +30,12 @@ export function formatearFechaReporte(
 
   const fecha = convertirAFecha(valor);
 
-  return new Intl.DateTimeFormat(
-    opciones.locale ?? REPORTES_CONFIG.locale,
-    {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      timeZone: opciones.zonaHoraria ?? REPORTES_CONFIG.zonaHoraria,
-    },
-  ).format(fecha);
+  return new Intl.DateTimeFormat(opciones.locale ?? REPORTES_CONFIG.locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: opciones.zonaHoraria ?? REPORTES_CONFIG.zonaHoraria,
+  }).format(fecha);
 }
 
 export function formatearFechaHoraReporte(
@@ -54,18 +48,15 @@ export function formatearFechaHoraReporte(
 
   const fecha = convertirAFecha(valor);
 
-  return new Intl.DateTimeFormat(
-    opciones.locale ?? REPORTES_CONFIG.locale,
-    {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: opciones.zonaHoraria ?? REPORTES_CONFIG.zonaHoraria,
-    },
-  ).format(fecha);
+  return new Intl.DateTimeFormat(opciones.locale ?? REPORTES_CONFIG.locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: opciones.zonaHoraria ?? REPORTES_CONFIG.zonaHoraria,
+  }).format(fecha);
 }
 
 export function formatearFechaArchivo(

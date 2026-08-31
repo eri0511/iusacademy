@@ -3,7 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
+} from '@nestjs/common';
 
 import {
   AccionHistorialForo,
@@ -15,19 +15,19 @@ import {
   Rol,
   TipoEvaluacionForo,
   VisibilidadRespuestasForo,
-} from "../../generated/prisma/client";
+} from '../../generated/prisma/client';
 
-import { PrismaService } from "../../prisma/prisma.service";
+import { PrismaService } from '../../prisma/prisma.service';
 
-import { ActualizarRespuestaForoDto } from "./dto/actualizar-respuesta-foro.dto";
+import { ActualizarRespuestaForoDto } from './dto/actualizar-respuesta-foro.dto';
 
-import { CrearRespuestaForoDto } from "./dto/crear-respuesta-foro.dto";
+import { CrearRespuestaForoDto } from './dto/crear-respuesta-foro.dto';
 
-import { GuardarBorradorRespuestaForoDto } from "./dto/guardar-borrador-respuesta-foro.dto";
+import { GuardarBorradorRespuestaForoDto } from './dto/guardar-borrador-respuesta-foro.dto';
 
-import { ForoReglasService } from "./foro-reglas.service";
+import { ForoReglasService } from './foro-reglas.service';
 
-import type { UsuarioAutenticado } from "./interfaces/usuario-autenticado.interface";
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
 @Injectable()
 export class ForoRespuestasService {
@@ -39,7 +39,7 @@ export class ForoRespuestasService {
 
   private async resolverParticipacion(
     usuario: UsuarioAutenticado,
-    foro: Awaited<ReturnType<ForoReglasService["obtenerForo"]>>,
+    foro: Awaited<ReturnType<ForoReglasService['obtenerForo']>>,
     grupoCursoId?: number,
     equipoAfinidadId?: number,
   ) {
@@ -151,7 +151,7 @@ export class ForoRespuestasService {
 
     if (respuestaPublicada) {
       throw new BadRequestException(
-        "Ya existe una respuesta publicada para esta participación",
+        'Ya existe una respuesta publicada para esta participación',
       );
     }
 
@@ -164,10 +164,10 @@ export class ForoRespuestasService {
       },
     });
 
-    const titulo = datos.titulo?.trim() ?? borradorExistente?.titulo ?? "";
+    const titulo = datos.titulo?.trim() ?? borradorExistente?.titulo ?? '';
 
     const contenido =
-      datos.contenido?.trim() ?? borradorExistente?.contenido ?? "";
+      datos.contenido?.trim() ?? borradorExistente?.contenido ?? '';
 
     if (
       foro.palabrasMaximasRespuesta !== null &&
@@ -225,7 +225,7 @@ export class ForoRespuestasService {
     });
 
     return {
-      mensaje: "Borrador guardado correctamente",
+      mensaje: 'Borrador guardado correctamente',
       respuesta: borrador,
     };
   }
@@ -387,7 +387,7 @@ export class ForoRespuestasService {
       datos.contenido,
       foro.palabrasMinimasRespuesta,
       foro.palabrasMaximasRespuesta,
-      "respuesta",
+      'respuesta',
     );
 
     this.reglas.validarModalidadIds(
@@ -440,7 +440,7 @@ export class ForoRespuestasService {
 
       if (existente) {
         throw new BadRequestException(
-          "Tu grupo ya publicó una respuesta principal",
+          'Tu grupo ya publicó una respuesta principal',
         );
       }
     }
@@ -481,7 +481,7 @@ export class ForoRespuestasService {
 
       if (existente) {
         throw new BadRequestException(
-          "Tu equipo ya publicó una respuesta principal",
+          'Tu equipo ya publicó una respuesta principal',
         );
       }
     }
@@ -504,7 +504,7 @@ export class ForoRespuestasService {
 
       if (existente) {
         throw new BadRequestException(
-          "Ya publicaste una respuesta principal en este foro",
+          'Ya publicaste una respuesta principal en este foro',
         );
       }
     }
@@ -535,7 +535,7 @@ export class ForoRespuestasService {
           },
 
           data: {
-            estado: "BLOQUEADO",
+            estado: 'BLOQUEADO',
             bloqueadoEn: ahora,
           },
         });
@@ -568,7 +568,7 @@ export class ForoRespuestasService {
       );
 
       return {
-        mensaje: "Respuesta publicada correctamente",
+        mensaje: 'Respuesta publicada correctamente',
         respuesta,
       };
     });
@@ -619,14 +619,12 @@ export class ForoRespuestasService {
     });
 
     if (!respuesta) {
-      throw new NotFoundException("La respuesta no existe");
+      throw new NotFoundException('La respuesta no existe');
     }
 
     this.reglas.validarForoDisponible(respuesta.tema);
 
-    const esAutor =
-      respuesta.autorId ===
-      usuario.id;
+    const esAutor = respuesta.autorId === usuario.id;
 
     /*
      * La respuesta principal pertenece al representante que la publicó.
@@ -635,7 +633,7 @@ export class ForoRespuestasService {
      */
     if (!esAutor) {
       throw new ForbiddenException(
-        "Solo el representante que publicó la respuesta puede modificarla",
+        'Solo el representante que publicó la respuesta puede modificarla',
       );
     }
 
@@ -658,7 +656,7 @@ export class ForoRespuestasService {
 
     if (respuesta.estado !== EstadoRespuestaForo.BORRADOR) {
       throw new BadRequestException(
-        "La respuesta ya fue publicada y no es un borrador",
+        'La respuesta ya fue publicada y no es un borrador',
       );
     }
 
@@ -710,7 +708,7 @@ export class ForoRespuestasService {
     });
 
     return {
-      mensaje: "Borrador actualizado correctamente",
+      mensaje: 'Borrador actualizado correctamente',
       respuesta: borrador,
     };
   }
@@ -729,12 +727,12 @@ export class ForoRespuestasService {
     );
 
     if (respuesta.estado !== EstadoRespuestaForo.BORRADOR) {
-      throw new BadRequestException("La respuesta ya fue publicada");
+      throw new BadRequestException('La respuesta ya fue publicada');
     }
 
     if (!respuesta.titulo.trim() || !respuesta.contenido.trim()) {
       throw new BadRequestException(
-        "Completa el título y el contenido antes de publicar",
+        'Completa el título y el contenido antes de publicar',
       );
     }
 
@@ -742,7 +740,7 @@ export class ForoRespuestasService {
       respuesta.contenido,
       respuesta.tema.palabrasMinimasRespuesta,
       respuesta.tema.palabrasMaximasRespuesta,
-      "respuesta",
+      'respuesta',
     );
 
     const filtroParticipacion = this.construirFiltroParticipacion(
@@ -770,7 +768,7 @@ export class ForoRespuestasService {
 
     if (publicadaExistente) {
       throw new BadRequestException(
-        "Ya existe una respuesta publicada para esta participación",
+        'Ya existe una respuesta publicada para esta participación',
       );
     }
 
@@ -832,7 +830,7 @@ export class ForoRespuestasService {
             id: respuesta.equipoAfinidadId,
           },
           data: {
-            estado: "BLOQUEADO",
+            estado: 'BLOQUEADO',
             bloqueadoEn: ahora,
           },
         });
@@ -866,7 +864,7 @@ export class ForoRespuestasService {
     });
 
     return {
-      mensaje: "Borrador publicado correctamente",
+      mensaje: 'Borrador publicado correctamente',
       respuesta: publicada,
     };
   }
@@ -887,13 +885,13 @@ export class ForoRespuestasService {
 
     if (respuesta.estado === EstadoRespuestaForo.BORRADOR) {
       throw new BadRequestException(
-        "Utiliza la ruta de borradores para modificar esta respuesta",
+        'Utiliza la ruta de borradores para modificar esta respuesta',
       );
     }
 
     if (!respuesta.tema.permitirEditarRespuestas) {
       throw new ForbiddenException(
-        "El docente no permite editar respuestas en este foro",
+        'El docente no permite editar respuestas en este foro',
       );
     }
 
@@ -903,7 +901,7 @@ export class ForoRespuestasService {
       contenido,
       respuesta.tema.palabrasMinimasRespuesta,
       respuesta.tema.palabrasMaximasRespuesta,
-      "respuesta",
+      'respuesta',
     );
 
     const actualizada = await this.prisma.$transaction(async (transaccion) => {
@@ -943,7 +941,7 @@ export class ForoRespuestasService {
     });
 
     return {
-      mensaje: "Respuesta actualizada correctamente",
+      mensaje: 'Respuesta actualizada correctamente',
       respuesta: actualizada,
     };
   }
@@ -966,7 +964,7 @@ export class ForoRespuestasService {
       !respuesta.tema.permitirEliminarRespuestas
     ) {
       throw new ForbiddenException(
-        "El docente no permite eliminar respuestas en este foro",
+        'El docente no permite eliminar respuestas en este foro',
       );
     }
 
@@ -1010,7 +1008,7 @@ export class ForoRespuestasService {
     });
 
     return {
-      mensaje: "Respuesta retirada correctamente",
+      mensaje: 'Respuesta retirada correctamente',
     };
   }
 
@@ -1093,7 +1091,7 @@ export class ForoRespuestasService {
       },
 
       orderBy: {
-        publicadoEn: "asc",
+        publicadoEn: 'asc',
       },
 
       include: {
@@ -1187,7 +1185,7 @@ export class ForoRespuestasService {
             comentarioPadreId: null,
           },
           orderBy: {
-            publicadoEn: "asc",
+            publicadoEn: 'asc',
           },
           include: {
             autor: {
@@ -1204,7 +1202,7 @@ export class ForoRespuestasService {
                 estaOculto: false,
               },
               orderBy: {
-                publicadoEn: "asc",
+                publicadoEn: 'asc',
               },
               include: {
                 autor: {

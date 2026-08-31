@@ -10,9 +10,7 @@ import {
   Rol,
 } from '../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 type UsuarioAutenticado = {
   id: number;
@@ -23,220 +21,155 @@ type UsuarioAutenticado = {
   rol: Rol;
 };
 
-type EstadoTemporalHito =
-  | 'FINALIZADO'
-  | 'EN_CURSO'
-  | 'PROXIMO'
-  | 'PENDIENTE';
+type EstadoTemporalHito = 'FINALIZADO' | 'EN_CURSO' | 'PROXIMO' | 'PENDIENTE';
 
 @Injectable()
 export class AulaCursoService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private obtenerEstadoTemporalHito(
-    fechaInicio:
-      Date,
+    fechaInicio: Date,
 
-    fechaFin:
-      Date,
+    fechaFin: Date,
 
-    ahora =
-      new Date(),
+    ahora = new Date(),
   ): EstadoTemporalHito {
-    if (
-      ahora >
-      fechaFin
-    ) {
+    if (ahora > fechaFin) {
       return 'FINALIZADO';
     }
 
-    if (
-      ahora >=
-        fechaInicio &&
-      ahora <=
-        fechaFin
-    ) {
+    if (ahora >= fechaInicio && ahora <= fechaFin) {
       return 'EN_CURSO';
     }
 
     return 'PROXIMO';
   }
 
-  private construirPermisos(
-    rol:
-      Rol,
-  ) {
-    const esDocente =
-      rol ===
-      Rol.DOCENTE;
+  private construirPermisos(rol: Rol) {
+    const esDocente = rol === Rol.DOCENTE;
 
     return {
-      puedeAdministrar:
-        esDocente,
+      puedeAdministrar: esDocente,
 
-      puedePublicar:
-        esDocente,
+      puedePublicar: esDocente,
 
-      puedeCrearForos:
-        esDocente,
+      puedeCrearForos: esDocente,
 
-      puedeCrearTareas:
-        esDocente,
+      puedeCrearTareas: esDocente,
 
-      puedeCrearQuizzes:
-        esDocente,
+      puedeCrearQuizzes: esDocente,
 
-      puedeCalificar:
-        esDocente,
+      puedeCalificar: esDocente,
 
-      puedeVerEstudiantes:
-        esDocente,
+      puedeVerEstudiantes: esDocente,
 
-      puedeComentar:
-        rol ===
-          Rol.DOCENTE ||
-        rol ===
-          Rol.ESTUDIANTE,
+      puedeComentar: rol === Rol.DOCENTE || rol === Rol.ESTUDIANTE,
 
-      puedeResponderForos:
-        rol ===
-          Rol.DOCENTE ||
-        rol ===
-          Rol.ESTUDIANTE,
+      puedeResponderForos: rol === Rol.DOCENTE || rol === Rol.ESTUDIANTE,
 
-      puedeEntregarTareas:
-        rol ===
-        Rol.ESTUDIANTE,
+      puedeEntregarTareas: rol === Rol.ESTUDIANTE,
 
-      puedeResolverQuizzes:
-        rol ===
-        Rol.ESTUDIANTE,
+      puedeResolverQuizzes: rol === Rol.ESTUDIANTE,
 
-      puedeVerPropiasCalificaciones:
-        rol ===
-        Rol.ESTUDIANTE,
+      puedeVerPropiasCalificaciones: rol === Rol.ESTUDIANTE,
     };
   }
 
   private async verificarAccesoCurso(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
   ) {
-    if (
-      usuario.rol !==
-        Rol.DOCENTE &&
-      usuario.rol !==
-        Rol.ESTUDIANTE
-    ) {
-      throw new ForbiddenException(
-        'Tu rol no tiene acceso al aula virtual',
-      );
+    if (usuario.rol !== Rol.DOCENTE && usuario.rol !== Rol.ESTUDIANTE) {
+      throw new ForbiddenException('Tu rol no tiene acceso al aula virtual');
     }
 
-    const curso =
-      await this.prisma.curso.findUnique({
-        where: {
-          id:
-            cursoId,
+    const curso = await this.prisma.curso.findUnique({
+      where: {
+        id: cursoId,
+      },
+
+      select: {
+        id: true,
+        materiaId: true,
+        docenteId: true,
+        planificacionId: true,
+        gestion: true,
+        paralelo: true,
+        semestre: true,
+        cupoMaximo: true,
+        estado: true,
+        finalizadoEn: true,
+        creadoEn: true,
+        actualizadoEn: true,
+
+        materia: {
+          select: {
+            id: true,
+            nombre: true,
+            codigo: true,
+            semestre: true,
+            descripcion: true,
+            estado: true,
+          },
         },
 
-        select: {
-          id: true,
-          materiaId: true,
-          docenteId: true,
-          planificacionId: true,
-          gestion: true,
-          paralelo: true,
-          semestre: true,
-          cupoMaximo: true,
-          estado: true,
-          finalizadoEn: true,
-          creadoEn: true,
-          actualizadoEn: true,
-
-          materia: {
-            select: {
-              id: true,
-              nombre: true,
-              codigo: true,
-              semestre: true,
-              descripcion: true,
-              estado: true,
-            },
+        docente: {
+          select: {
+            id: true,
+            nombres: true,
+            apellidoPaterno: true,
+            apellidoMaterno: true,
+            fotoPerfilUrl: true,
           },
+        },
 
-          docente: {
-            select: {
-              id: true,
-              nombres: true,
-              apellidoPaterno: true,
-              apellidoMaterno: true,
-              fotoPerfilUrl: true,
-            },
-          },
+        planificacion: {
+          select: {
+            id: true,
+            gestion: true,
+            descripcion: true,
+            estaActiva: true,
 
-          planificacion: {
-            select: {
-              id: true,
-              gestion: true,
-              descripcion: true,
-              estaActiva: true,
-
-              hitos: {
-                orderBy: {
-                  numero:
-                    'asc',
-                },
-
-                select: {
-                  id: true,
-                  numero: true,
-                  codigo: true,
-                  nombre: true,
-                  descripcion: true,
-                  fechaInicio: true,
-                  fechaFin: true,
-                  puntajeTotal: true,
-                  puntajeContinua: true,
-                  puntajeProcesual: true,
-                },
+            hitos: {
+              orderBy: {
+                numero: 'asc',
               },
-            },
-          },
 
-          _count: {
-            select: {
-              inscripciones: {
-                where: {
-                  estado:
-                    EstadoInscripcion.ACTIVA,
-                },
+              select: {
+                id: true,
+                numero: true,
+                codigo: true,
+                nombre: true,
+                descripcion: true,
+                fechaInicio: true,
+                fechaFin: true,
+                puntajeTotal: true,
+                puntajeContinua: true,
+                puntajeProcesual: true,
               },
             },
           },
         },
-      });
+
+        _count: {
+          select: {
+            inscripciones: {
+              where: {
+                estado: EstadoInscripcion.ACTIVA,
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!curso) {
-      throw new NotFoundException(
-        'El curso solicitado no existe',
-      );
+      throw new NotFoundException('El curso solicitado no existe');
     }
 
-    if (
-      usuario.rol ===
-      Rol.DOCENTE
-    ) {
-      if (
-        curso.docenteId !==
-        usuario.id
-      ) {
+    if (usuario.rol === Rol.DOCENTE) {
+      if (curso.docenteId !== usuario.id) {
         throw new ForbiddenException(
           'No tienes permiso para ingresar a un curso asignado a otro docente',
         );
@@ -244,29 +177,25 @@ export class AulaCursoService {
 
       return {
         curso,
-        inscripcion:
-          null,
+        inscripcion: null,
       };
     }
 
-    const inscripcion =
-      await this.prisma.inscripcionCurso.findFirst({
-        where: {
-          cursoId,
-          estudianteId:
-            usuario.id,
+    const inscripcion = await this.prisma.inscripcionCurso.findFirst({
+      where: {
+        cursoId,
+        estudianteId: usuario.id,
 
-          estado:
-            EstadoInscripcion.ACTIVA,
-        },
+        estado: EstadoInscripcion.ACTIVA,
+      },
 
-        select: {
-          id: true,
-          estado: true,
-          inscritoEn: true,
-          retiradoEn: true,
-        },
-      });
+      select: {
+        id: true,
+        estado: true,
+        inscritoEn: true,
+        retiradoEn: true,
+      },
+    });
 
     if (!inscripcion) {
       throw new ForbiddenException(
@@ -281,32 +210,25 @@ export class AulaCursoService {
   }
 
   private async asociarPlanificacionSiCorresponde(
-    cursoId:
-      number,
+    cursoId: number,
 
-    gestion:
-      string,
+    gestion: string,
 
-    planificacionId:
-      number | null,
+    planificacionId: number | null,
   ) {
-    if (
-      planificacionId !==
-      null
-    ) {
+    if (planificacionId !== null) {
       return;
     }
 
-    const planificacion =
-      await this.prisma.planificacionAcademica.findUnique({
-        where: {
-          gestion,
-        },
+    const planificacion = await this.prisma.planificacionAcademica.findUnique({
+      where: {
+        gestion,
+      },
 
-        select: {
-          id: true,
-        },
-      });
+      select: {
+        id: true,
+      },
+    });
 
     if (!planificacion) {
       return;
@@ -314,353 +236,225 @@ export class AulaCursoService {
 
     await this.prisma.curso.update({
       where: {
-        id:
-          cursoId,
+        id: cursoId,
       },
 
       data: {
-        planificacionId:
-          planificacion.id,
+        planificacionId: planificacion.id,
       },
     });
   }
 
   private construirPlanificacion(
-    planificacion:
-      {
-        id: number;
-        gestion: string;
-        descripcion: string | null;
-        estaActiva: boolean;
+    planificacion: {
+      id: number;
+      gestion: string;
+      descripcion: string | null;
+      estaActiva: boolean;
 
-        hitos: {
-          id: number;
-          numero: number;
-          codigo: string;
-          nombre: string;
-          descripcion: string | null;
-          fechaInicio: Date;
-          fechaFin: Date;
-          puntajeTotal: number;
-          puntajeContinua: number;
-          puntajeProcesual: number;
-        }[];
-      } |
-      null,
+      hitos: {
+        id: number;
+        numero: number;
+        codigo: string;
+        nombre: string;
+        descripcion: string | null;
+        fechaInicio: Date;
+        fechaFin: Date;
+        puntajeTotal: number;
+        puntajeContinua: number;
+        puntajeProcesual: number;
+      }[];
+    } | null,
   ) {
     if (!planificacion) {
       return {
-        tienePlanificacion:
-          false,
+        tienePlanificacion: false,
 
-        id:
-          null,
+        id: null,
 
-        gestion:
-          null,
+        gestion: null,
 
-        descripcion:
-          null,
+        descripcion: null,
 
-        estaActiva:
-          false,
+        estaActiva: false,
 
-        hitoActualId:
-          null,
+        hitoActualId: null,
 
-        proximoHitoId:
-          null,
+        proximoHitoId: null,
 
-        estado:
-          'SIN_PLANIFICACION' as const,
+        estado: 'SIN_PLANIFICACION' as const,
 
-        hitos:
-          [],
+        hitos: [],
       };
     }
 
-    const ahora =
-      new Date();
+    const ahora = new Date();
 
-    const hitos =
-      planificacion.hitos.map(
-        (
-          hito,
-        ) => ({
-          ...hito,
+    const hitos = planificacion.hitos.map((hito) => ({
+      ...hito,
 
-          estado:
-            this.obtenerEstadoTemporalHito(
-              hito.fechaInicio,
-              hito.fechaFin,
-              ahora,
-            ),
-        }),
-      );
+      estado: this.obtenerEstadoTemporalHito(
+        hito.fechaInicio,
+        hito.fechaFin,
+        ahora,
+      ),
+    }));
 
-    const hitoActual =
-      hitos.find(
-        (
-          hito,
-        ) =>
-          hito.estado ===
-          'EN_CURSO',
-      ) ??
-      null;
+    const hitoActual = hitos.find((hito) => hito.estado === 'EN_CURSO') ?? null;
 
-    const proximoHito =
-      hitos.find(
-        (
-          hito,
-        ) =>
-          hito.estado ===
-          'PROXIMO',
-      ) ??
-      null;
+    const proximoHito = hitos.find((hito) => hito.estado === 'PROXIMO') ?? null;
 
     const todosFinalizados =
-      hitos.length >
-        0 &&
-      hitos.every(
-        (
-          hito,
-        ) =>
-          hito.estado ===
-          'FINALIZADO',
-      );
+      hitos.length > 0 && hitos.every((hito) => hito.estado === 'FINALIZADO');
 
     return {
-      tienePlanificacion:
-        true,
+      tienePlanificacion: true,
 
-      id:
-        planificacion.id,
+      id: planificacion.id,
 
-      gestion:
-        planificacion.gestion,
+      gestion: planificacion.gestion,
 
-      descripcion:
-        planificacion.descripcion,
+      descripcion: planificacion.descripcion,
 
-      estaActiva:
-        planificacion.estaActiva,
+      estaActiva: planificacion.estaActiva,
 
-      hitoActualId:
-        hitoActual?.id ??
-        null,
+      hitoActualId: hitoActual?.id ?? null,
 
-      proximoHitoId:
-        proximoHito?.id ??
-        null,
+      proximoHitoId: proximoHito?.id ?? null,
 
-      estado:
-        hitoActual
-          ? 'EN_CURSO' as const
-          : proximoHito
-            ? 'PROXIMA' as const
-            : todosFinalizados
-              ? 'FINALIZADA' as const
-              : 'SIN_HITOS' as const,
+      estado: hitoActual
+        ? ('EN_CURSO' as const)
+        : proximoHito
+          ? ('PROXIMA' as const)
+          : todosFinalizados
+            ? ('FINALIZADA' as const)
+            : ('SIN_HITOS' as const),
 
       hitos,
     };
   }
 
   async obtenerAulaCurso(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
   ) {
-    let acceso =
-      await this.verificarAccesoCurso(
-        usuario,
-        cursoId,
-      );
+    let acceso = await this.verificarAccesoCurso(usuario, cursoId);
 
-    if (
-      acceso.curso.planificacionId ===
-      null
-    ) {
+    if (acceso.curso.planificacionId === null) {
       await this.asociarPlanificacionSiCorresponde(
         acceso.curso.id,
         acceso.curso.gestion,
         acceso.curso.planificacionId,
       );
 
-      acceso =
-        await this.verificarAccesoCurso(
-          usuario,
-          cursoId,
-        );
+      acceso = await this.verificarAccesoCurso(usuario, cursoId);
     }
 
-    const curso =
-      acceso.curso;
+    const curso = acceso.curso;
 
-    const estudiantesInscritos =
-      curso._count.inscripciones;
+    const estudiantesInscritos = curso._count.inscripciones;
 
     return {
       usuario: {
-        id:
-          usuario.id,
+        id: usuario.id,
 
-        rol:
-          usuario.rol,
+        rol: usuario.rol,
 
-        nombres:
-          usuario.nombres,
+        nombres: usuario.nombres,
 
-        apellidoPaterno:
-          usuario.apellidoPaterno,
+        apellidoPaterno: usuario.apellidoPaterno,
       },
 
-      permisos:
-        this.construirPermisos(
-          usuario.rol,
-        ),
+      permisos: this.construirPermisos(usuario.rol),
 
-      inscripcion:
-        acceso.inscripcion,
+      inscripcion: acceso.inscripcion,
 
       curso: {
-        id:
-          curso.id,
+        id: curso.id,
 
-        materiaId:
-          curso.materiaId,
+        materiaId: curso.materiaId,
 
-        docenteId:
-          curso.docenteId,
+        docenteId: curso.docenteId,
 
-        gestion:
-          curso.gestion,
+        gestion: curso.gestion,
 
-        paralelo:
-          curso.paralelo,
+        paralelo: curso.paralelo,
 
-        semestre:
-          curso.semestre,
+        semestre: curso.semestre,
 
-        cupoMaximo:
-          curso.cupoMaximo,
+        cupoMaximo: curso.cupoMaximo,
 
-        estado:
-          curso.estado,
+        estado: curso.estado,
 
-        finalizadoEn:
-          curso.finalizadoEn,
+        finalizadoEn: curso.finalizadoEn,
 
-        creadoEn:
-          curso.creadoEn,
+        creadoEn: curso.creadoEn,
 
-        actualizadoEn:
-          curso.actualizadoEn,
+        actualizadoEn: curso.actualizadoEn,
 
-        materia:
-          curso.materia,
+        materia: curso.materia,
 
-        docente:
-          curso.docente,
+        docente: curso.docente,
 
         estudiantesInscritos,
 
         cuposDisponibles:
-          curso.cupoMaximo ===
-          null
+          curso.cupoMaximo === null
             ? null
-            : Math.max(
-                curso.cupoMaximo -
-                  estudiantesInscritos,
-                0,
-              ),
+            : Math.max(curso.cupoMaximo - estudiantesInscritos, 0),
 
-        estaDisponible:
-          curso.estado ===
-          EstadoCurso.ACTIVO,
+        estaDisponible: curso.estado === EstadoCurso.ACTIVO,
       },
 
-      planificacion:
-        this.construirPlanificacion(
-          curso.planificacion,
-        ),
+      planificacion: this.construirPlanificacion(curso.planificacion),
     };
   }
 
   async obtenerHitosCurso(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
   ) {
-    const aula =
-      await this.obtenerAulaCurso(
-        usuario,
-        cursoId,
-      );
+    const aula = await this.obtenerAulaCurso(usuario, cursoId);
 
     return {
       curso: {
-        id:
-          aula.curso.id,
+        id: aula.curso.id,
 
-        gestion:
-          aula.curso.gestion,
+        gestion: aula.curso.gestion,
 
-        paralelo:
-          aula.curso.paralelo,
+        paralelo: aula.curso.paralelo,
 
-        estado:
-          aula.curso.estado,
+        estado: aula.curso.estado,
 
-        materia:
-          aula.curso.materia,
+        materia: aula.curso.materia,
       },
 
-      permisos:
-        aula.permisos,
+      permisos: aula.permisos,
 
-      planificacion:
-        aula.planificacion,
+      planificacion: aula.planificacion,
     };
   }
 
   async obtenerHitoCurso(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    hitoId:
-      number,
+    hitoId: number,
   ) {
-    const aula =
-      await this.obtenerAulaCurso(
-        usuario,
-        cursoId,
-      );
+    const aula = await this.obtenerAulaCurso(usuario, cursoId);
 
-    if (
-      !aula.planificacion
-        .tienePlanificacion
-    ) {
+    if (!aula.planificacion.tienePlanificacion) {
       throw new NotFoundException(
         'La gestión del curso todavía no tiene una planificación académica',
       );
     }
 
-    const hito =
-      aula.planificacion.hitos.find(
-        (
-          elemento,
-        ) =>
-          elemento.id ===
-          hitoId,
-      );
+    const hito = aula.planificacion.hitos.find(
+      (elemento) => elemento.id === hitoId,
+    );
 
     if (!hito) {
       throw new NotFoundException(
@@ -670,46 +464,33 @@ export class AulaCursoService {
 
     return {
       curso: {
-        id:
-          aula.curso.id,
+        id: aula.curso.id,
 
-        gestion:
-          aula.curso.gestion,
+        gestion: aula.curso.gestion,
 
-        paralelo:
-          aula.curso.paralelo,
+        paralelo: aula.curso.paralelo,
 
-        estado:
-          aula.curso.estado,
+        estado: aula.curso.estado,
 
-        materia:
-          aula.curso.materia,
+        materia: aula.curso.materia,
 
-        docente:
-          aula.curso.docente,
+        docente: aula.curso.docente,
       },
 
-      permisos:
-        aula.permisos,
+      permisos: aula.permisos,
 
       planificacion: {
-        id:
-          aula.planificacion.id,
+        id: aula.planificacion.id,
 
-        gestion:
-          aula.planificacion.gestion,
+        gestion: aula.planificacion.gestion,
 
-        estaActiva:
-          aula.planificacion.estaActiva,
+        estaActiva: aula.planificacion.estaActiva,
 
-        estado:
-          aula.planificacion.estado,
+        estado: aula.planificacion.estado,
 
-        hitoActualId:
-          aula.planificacion.hitoActualId,
+        hitoActualId: aula.planificacion.hitoActualId,
 
-        proximoHitoId:
-          aula.planificacion.proximoHitoId,
+        proximoHitoId: aula.planificacion.proximoHitoId,
       },
 
       hito,

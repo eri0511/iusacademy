@@ -1,11 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 import {
   AlineacionReporte,
@@ -18,107 +13,66 @@ import {
   ValorCeldaReporte,
 } from '../reportes';
 
-import {
-  TareasEvaluacionService,
-} from './tareas-evaluacion.service';
+import { TareasEvaluacionService } from './tareas-evaluacion.service';
 
-import type {
-  UsuarioAutenticado,
-} from './interfaces/usuario-autenticado.interface';
+import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
-type FilaResumenTarea = Record<
-  string,
-  ValorCeldaReporte
-> & {
-  estudiantes:
-    number;
+type FilaResumenTarea = Record<string, ValorCeldaReporte> & {
+  estudiantes: number;
 
-  calificadas:
-    number;
+  calificadas: number;
 
-  pendientes:
-    number;
+  pendientes: number;
 
-  sinEntrega:
-    number;
+  sinEntrega: number;
 
-  puntajeMaximo:
-    number;
+  puntajeMaximo: number;
 };
 
-type FilaCalificacionPdf = Record<
-  string,
-  ValorCeldaReporte
-> & {
-  estudiante:
-    string;
+type FilaCalificacionPdf = Record<string, ValorCeldaReporte> & {
+  estudiante: string;
 
-  grupo:
-    string;
+  grupo: string;
 
-  entrega:
-    string;
+  entrega: string;
 
-  notaBase:
-    number | null;
+  notaBase: number | null;
 
-  descuento:
-    number | null;
+  descuento: number | null;
 
-  ajuste:
-    number | null;
+  ajuste: number | null;
 
-  notaFinal:
-    number | null;
+  notaFinal: number | null;
 
-  estado:
-    string;
+  estado: string;
 };
 
-type FilaRetroalimentacionPdf = Record<
-  string,
-  ValorCeldaReporte
-> & {
-  estudiante:
-    string;
+type FilaRetroalimentacionPdf = Record<string, ValorCeldaReporte> & {
+  estudiante: string;
 
-  retroalimentacion:
-    string;
+  retroalimentacion: string;
 };
 
-type FilaCalificacionCompleta = Record<
-  string,
-  ValorCeldaReporte
-> & {
-  estudiante:
-    string;
+type FilaCalificacionCompleta = Record<string, ValorCeldaReporte> & {
+  estudiante: string;
 
-  correo:
-    string;
+  correo: string;
 
-  grupo:
-    string;
+  grupo: string;
 
-  entrega:
-    string;
+  entrega: string;
 
-  notaBase:
-    number | null;
+  notaBase: number | null;
 
-  descuento:
-    number | null;
+  descuento: number | null;
 
-  ajuste:
-    number | null;
+  ajuste: number | null;
 
-  notaFinal:
-    number | null;
+  notaFinal: number | null;
 
-  estado:
-    string;
+  estado: string;
 
-  retroalimentacion:
-    string;
+  retroalimentacion: string;
 };
 
 type FilaReporteTarea =
@@ -130,277 +84,164 @@ type FilaReporteTarea =
 @Injectable()
 export class TareasReportesService {
   constructor(
-    private readonly prisma:
-      PrismaService,
+    private readonly prisma: PrismaService,
 
-    private readonly evaluacionService:
-      TareasEvaluacionService,
+    private readonly evaluacionService: TareasEvaluacionService,
 
-    private readonly reportesVerificacionService:
-      ReportesVerificacionService,
+    private readonly reportesVerificacionService: ReportesVerificacionService,
   ) {}
 
   async generarCalificaciones(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
 
-    cursoId:
-      number,
+    cursoId: number,
 
-    tareaId:
-      number,
+    tareaId: number,
 
-    formatoSolicitado:
-      string,
+    formatoSolicitado: string,
   ): Promise<ArchivoReporteGenerado> {
-    const formato =
-      this.normalizarFormato(
-        formatoSolicitado,
-      );
+    const formato = this.normalizarFormato(formatoSolicitado);
 
-    const panel =
-      await this.evaluacionService.obtenerPanel(
-        usuario,
-        cursoId,
-        tareaId,
-      );
+    const panel = await this.evaluacionService.obtenerPanel(
+      usuario,
+      cursoId,
+      tareaId,
+    );
 
-    if (
-      !panel.tarea.esCalificable
-    ) {
-      throw new BadRequestException(
-        'La tarea no es calificable.',
-      );
+    if (!panel.tarea.esCalificable) {
+      throw new BadRequestException('La tarea no es calificable.');
     }
 
-    const puntajeMaximo =
-      Number(
-        panel.tarea.puntajeMaximo ??
-          100,
-      );
+    const puntajeMaximo = Number(panel.tarea.puntajeMaximo ?? 100);
 
-    const esGrupal =
-      panel.tarea.modalidad ===
-      'GRUPAL';
+    const esGrupal = panel.tarea.modalidad === 'GRUPAL';
 
-    const nombreGenerador =
-      await this.obtenerNombreGenerador(
-        usuario,
-      );
+    const nombreGenerador = await this.obtenerNombreGenerador(usuario);
 
-    const filasCompletas:
-      FilaCalificacionCompleta[] =
-      panel.calificaciones.map(
-        (
-          item,
-        ) => {
-          const calificacion =
-            item.calificacion;
+    const filasCompletas: FilaCalificacionCompleta[] = panel.calificaciones.map(
+      (item) => {
+        const calificacion = item.calificacion;
 
-          return {
-            estudiante: [
-              item.estudiante.nombres,
-              item.estudiante.apellidoPaterno,
-              item.estudiante.apellidoMaterno,
-            ]
-              .filter(
-                Boolean,
-              )
-              .join(
-                ' ',
-              ),
+        return {
+          estudiante: [
+            item.estudiante.nombres,
+            item.estudiante.apellidoPaterno,
+            item.estudiante.apellidoMaterno,
+          ]
+            .filter(Boolean)
+            .join(' '),
 
-            correo:
-              item.estudiante.correo ??
-              '—',
+          correo: item.estudiante.correo ?? '—',
 
-            grupo:
-              esGrupal
-                ? item.grupo?.nombre ??
-                  'Sin grupo'
-                : '—',
+          grupo: esGrupal ? (item.grupo?.nombre ?? 'Sin grupo') : '—',
 
-            entrega:
-              !item.entrega
-                ? 'No presentó'
-                : item.entrega.entregadaTarde ||
-                    item.entrega.estado ===
-                      'TARDIA'
-                  ? 'Fuera de plazo'
-                  : 'A tiempo',
+          entrega: !item.entrega
+            ? 'No presentó'
+            : item.entrega.entregadaTarde || item.entrega.estado === 'TARDIA'
+              ? 'Fuera de plazo'
+              : 'A tiempo',
 
-            notaBase:
-              this.numeroONull(
-                calificacion?.notaBase,
-              ),
+          notaBase: this.numeroONull(calificacion?.notaBase),
 
-            descuento:
-              this.numeroONull(
-                calificacion?.descuentoRetraso,
-              ),
+          descuento: this.numeroONull(calificacion?.descuentoRetraso),
 
-            ajuste:
-              this.numeroONull(
-                calificacion?.ajusteIndividual,
-              ),
+          ajuste: this.numeroONull(calificacion?.ajusteIndividual),
 
-            notaFinal:
-              this.numeroONull(
-                calificacion?.notaFinal,
-              ),
+          notaFinal: this.numeroONull(calificacion?.notaFinal),
 
-            estado:
-              this.etiqueta(
-                calificacion?.estado ??
-                  'PENDIENTE',
-              ),
+          estado: this.etiqueta(calificacion?.estado ?? 'PENDIENTE'),
 
-            retroalimentacion:
-              calificacion?.retroalimentacion?.trim() ||
-              '—',
-          };
-        },
-      );
+          retroalimentacion: calificacion?.retroalimentacion?.trim() || '—',
+        };
+      },
+    );
 
-    const sinEntrega =
-      panel.calificaciones.filter(
-        (
-          item,
-        ) =>
-          !item.entrega,
-      ).length;
+    const sinEntrega = panel.calificaciones.filter(
+      (item) => !item.entrega,
+    ).length;
 
-    const resumen:
-      FilaResumenTarea = {
-        estudiantes:
-          panel.resumen.totalEstudiantes,
+    const resumen: FilaResumenTarea = {
+      estudiantes: panel.resumen.totalEstudiantes,
 
-        calificadas:
-          panel.resumen.calificadas,
+      calificadas: panel.resumen.calificadas,
 
-        pendientes:
-          Math.max(
-            0,
-            panel.resumen.totalEstudiantes -
-              panel.resumen.calificadas,
+      pendientes: Math.max(
+        0,
+        panel.resumen.totalEstudiantes - panel.resumen.calificadas,
+      ),
+
+      sinEntrega,
+
+      puntajeMaximo,
+    };
+
+    const definicion: DefinicionReporte<FilaReporteTarea> = {
+      metadatos: {
+        titulo: 'Calificaciones de la tarea',
+
+        subtitulo: panel.tarea.titulo,
+
+        descripcion:
+          'Resumen académico de entregas, calificaciones y retroalimentación de la tarea.',
+
+        generadoPor: nombreGenerador,
+
+        filtros: {
+          Estado: this.etiqueta(panel.tarea.estado),
+
+          'Estado de notas': this.etiqueta(
+            panel.tarea.estadoActividadCalificable ?? 'PENDIENTE',
           ),
 
-        sinEntrega,
+          Modalidad: this.etiqueta(panel.tarea.modalidad),
 
-        puntajeMaximo,
-      };
-
-    const definicion:
-      DefinicionReporte<FilaReporteTarea> = {
-        metadatos: {
-          titulo:
-            'Calificaciones de la tarea',
-
-          subtitulo:
-            panel.tarea.titulo,
-
-          descripcion:
-            'Resumen académico de entregas, calificaciones y retroalimentación de la tarea.',
-
-          generadoPor:
-            nombreGenerador,
-
-          filtros: {
-            Estado:
-              this.etiqueta(
-                panel.tarea.estado,
-              ),
-
-            'Estado de notas':
-              this.etiqueta(
-                panel.tarea.estadoActividadCalificable ??
-                  'PENDIENTE',
-              ),
-
-            Modalidad:
-              this.etiqueta(
-                panel.tarea.modalidad,
-              ),
-
-            Componente:
-              this.etiqueta(
-                panel.tarea.componente,
-              ),
-          },
-
-          textoPie:
-            'IusAcademy · Formación jurídica por competencias · UNIFRANZ',
+          Componente: this.etiqueta(panel.tarea.componente),
         },
 
-        opciones: {
-          orientacion:
-            OrientacionReporte.HORIZONTAL,
+        textoPie: 'IusAcademy · Formación jurídica por competencias · UNIFRANZ',
+      },
 
-          incluirQr:
-            true,
+      opciones: {
+        orientacion: OrientacionReporte.HORIZONTAL,
 
-          incluirFiltros:
-            true,
+        incluirQr: true,
 
-          incluirFechaHora:
-            true,
+        incluirFiltros: true,
 
-          nombreHojaExcel:
-            'Calificaciones',
+        incluirFechaHora: true,
 
-          incluirBomCsv:
-            true,
-        },
+        nombreHojaExcel: 'Calificaciones',
 
-        secciones:
-          formato ===
-          FormatoReporte.PDF
-            ? this.construirSeccionesPdf(
-                resumen,
-                filasCompletas,
-                esGrupal,
-              )
-            : this.construirSeccionesDatos(
-                resumen,
-                filasCompletas,
-                esGrupal,
-              ),
-      };
+        incluirBomCsv: true,
+      },
+
+      secciones:
+        formato === FormatoReporte.PDF
+          ? this.construirSeccionesPdf(resumen, filasCompletas, esGrupal)
+          : this.construirSeccionesDatos(resumen, filasCompletas, esGrupal),
+    };
 
     return this.reportesVerificacionService.generarVerificable(
       formato,
       definicion,
       {
-        tipo:
-          'TAREA_CALIFICACIONES',
+        tipo: 'TAREA_CALIFICACIONES',
 
-        generadoPorId:
-          usuario.id,
+        generadoPorId: usuario.id,
 
         filtros: {
           cursoId,
           tareaId,
 
-          estado:
-            String(
-              panel.tarea.estado,
-            ),
+          estado: String(panel.tarea.estado),
 
-          estadoActividadCalificable:
-            String(
-              panel.tarea.estadoActividadCalificable ??
-                'PENDIENTE',
-            ),
+          estadoActividadCalificable: String(
+            panel.tarea.estadoActividadCalificable ?? 'PENDIENTE',
+          ),
 
-          modalidad:
-            String(
-              panel.tarea.modalidad,
-            ),
+          modalidad: String(panel.tarea.modalidad),
 
-          componente:
-            String(
-              panel.tarea.componente,
-            ),
+          componente: String(panel.tarea.componente),
         },
       },
       `calificaciones-tarea-${tareaId}-iusacademy`,
@@ -408,516 +249,361 @@ export class TareasReportesService {
   }
 
   private construirSeccionesPdf(
-    resumen:
-      FilaResumenTarea,
+    resumen: FilaResumenTarea,
 
-    filas:
-      FilaCalificacionCompleta[],
+    filas: FilaCalificacionCompleta[],
 
-    esGrupal:
-      boolean,
+    esGrupal: boolean,
   ): DefinicionReporte<FilaReporteTarea>['secciones'] {
-    const detalle:
-      FilaCalificacionPdf[] =
-      filas.map(
-        (
-          fila,
-        ) => ({
-          estudiante:
-            fila.estudiante,
+    const detalle: FilaCalificacionPdf[] = filas.map((fila) => ({
+      estudiante: fila.estudiante,
 
-          grupo:
-            fila.grupo,
+      grupo: fila.grupo,
 
-          entrega:
-            fila.entrega,
+      entrega: fila.entrega,
 
-          notaBase:
-            fila.notaBase,
+      notaBase: fila.notaBase,
 
-          descuento:
-            fila.descuento,
+      descuento: fila.descuento,
 
-          ajuste:
-            fila.ajuste,
+      ajuste: fila.ajuste,
 
-          notaFinal:
-            fila.notaFinal,
+      notaFinal: fila.notaFinal,
 
-          estado:
-            fila.estado,
-        }),
-      );
+      estado: fila.estado,
+    }));
 
-    const retroalimentaciones:
-      FilaRetroalimentacionPdf[] =
-      filas.map(
-        (
-          fila,
-        ) => ({
-          estudiante:
-            fila.estudiante,
+    const retroalimentaciones: FilaRetroalimentacionPdf[] = filas.map(
+      (fila) => ({
+        estudiante: fila.estudiante,
 
-          retroalimentacion:
-            fila.retroalimentacion,
-        }),
-      );
+        retroalimentacion: fila.retroalimentacion,
+      }),
+    );
 
-    const columnasDetalle:
-      NonNullable<
-        DefinicionReporte<FilaReporteTarea>['secciones']
-      >[number]['columnas'] = [
-        {
-          clave:
-            'estudiante',
+    const columnasDetalle: NonNullable<
+      DefinicionReporte<FilaReporteTarea>['secciones']
+    >[number]['columnas'] = [
+      {
+        clave: 'estudiante',
 
-          etiqueta:
-            'Estudiante',
+        etiqueta: 'Estudiante',
 
-          tipo:
-            TipoDatoReporte.TEXTO,
+        tipo: TipoDatoReporte.TEXTO,
 
-          ancho:
-            esGrupal
-              ? 1.85
-              : 2.1,
-        },
+        ancho: esGrupal ? 1.85 : 2.1,
+      },
 
-        ...(esGrupal
-          ? [
-              {
-                clave:
-                  'grupo',
+      ...(esGrupal
+        ? [
+            {
+              clave: 'grupo',
 
-                etiqueta:
-                  'Grupo',
+              etiqueta: 'Grupo',
 
-                tipo:
-                  TipoDatoReporte.TEXTO,
+              tipo: TipoDatoReporte.TEXTO,
 
-                ancho:
-                  1.1,
+              ancho: 1.1,
 
-                alineacion:
-                  AlineacionReporte.CENTRO,
-              },
-            ]
-          : []),
+              alineacion: AlineacionReporte.CENTRO,
+            },
+          ]
+        : []),
 
-        {
-          clave:
-            'entrega',
+      {
+        clave: 'entrega',
 
-          etiqueta:
-            'Entrega',
+        etiqueta: 'Entrega',
 
-          tipo:
-            TipoDatoReporte.TEXTO,
+        tipo: TipoDatoReporte.TEXTO,
 
-          ancho:
-            1.1,
+        ancho: 1.1,
 
-          alineacion:
-            AlineacionReporte.CENTRO,
-        },
+        alineacion: AlineacionReporte.CENTRO,
+      },
 
-        {
-          clave:
-            'notaBase',
+      {
+        clave: 'notaBase',
 
-          etiqueta:
-            'Base',
+        etiqueta: 'Base',
 
-          tipo:
-            TipoDatoReporte.DECIMAL,
+        tipo: TipoDatoReporte.DECIMAL,
 
-          ancho:
-            .8,
+        ancho: 0.8,
 
-          alineacion:
-            AlineacionReporte.DERECHA,
-        },
+        alineacion: AlineacionReporte.DERECHA,
+      },
 
-        {
-          clave:
-            'descuento',
+      {
+        clave: 'descuento',
 
-          etiqueta:
-            'Desc.',
+        etiqueta: 'Desc.',
 
-          tipo:
-            TipoDatoReporte.DECIMAL,
+        tipo: TipoDatoReporte.DECIMAL,
 
-          ancho:
-            .8,
+        ancho: 0.8,
 
-          alineacion:
-            AlineacionReporte.DERECHA,
-        },
+        alineacion: AlineacionReporte.DERECHA,
+      },
 
-        {
-          clave:
-            'ajuste',
+      {
+        clave: 'ajuste',
 
-          etiqueta:
-            'Ajuste',
+        etiqueta: 'Ajuste',
 
-          tipo:
-            TipoDatoReporte.DECIMAL,
+        tipo: TipoDatoReporte.DECIMAL,
 
-          ancho:
-            .8,
+        ancho: 0.8,
 
-          alineacion:
-            AlineacionReporte.DERECHA,
-        },
+        alineacion: AlineacionReporte.DERECHA,
+      },
 
-        {
-          clave:
-            'notaFinal',
+      {
+        clave: 'notaFinal',
 
-          etiqueta:
-            'Final',
+        etiqueta: 'Final',
 
-          tipo:
-            TipoDatoReporte.DECIMAL,
+        tipo: TipoDatoReporte.DECIMAL,
 
-          ancho:
-            .9,
+        ancho: 0.9,
 
-          alineacion:
-            AlineacionReporte.DERECHA,
-        },
+        alineacion: AlineacionReporte.DERECHA,
+      },
 
-        {
-          clave:
-            'estado',
+      {
+        clave: 'estado',
 
-          etiqueta:
-            'Estado',
+        etiqueta: 'Estado',
 
-          tipo:
-            TipoDatoReporte.TEXTO,
+        tipo: TipoDatoReporte.TEXTO,
 
-          ancho:
-            1.05,
+        ancho: 1.05,
 
-          alineacion:
-            AlineacionReporte.CENTRO,
-        },
-      ];
+        alineacion: AlineacionReporte.CENTRO,
+      },
+    ];
 
     return [
       {
-        id:
-          'resumen',
+        id: 'resumen',
 
-        titulo:
-          'Resumen general',
+        titulo: 'Resumen general',
 
-        filas: [
-          resumen,
-        ],
+        filas: [resumen],
 
-        mostrarNumeroFila:
-          false,
+        mostrarNumeroFila: false,
 
-        columnas:
-          this.columnasResumen(),
+        columnas: this.columnasResumen(),
       },
 
       {
-        id:
-          'calificaciones',
+        id: 'calificaciones',
 
-        titulo:
-          'Detalle de calificaciones',
+        titulo: 'Detalle de calificaciones',
 
-        descripcion:
-          `${resumen.calificadas} calificados · ${resumen.pendientes} pendientes · ${resumen.sinEntrega} sin entrega`,
+        descripcion: `${resumen.calificadas} calificados · ${resumen.pendientes} pendientes · ${resumen.sinEntrega} sin entrega`,
 
-        mostrarEncabezado:
-          true,
+        mostrarEncabezado: true,
 
-        mostrarNumeroFila:
-          true,
+        mostrarNumeroFila: true,
 
-        columnas:
-          columnasDetalle,
+        columnas: columnasDetalle,
 
-        filas:
-          detalle,
+        filas: detalle,
       },
 
       {
-        id:
-          'retroalimentacion',
+        id: 'retroalimentacion',
 
-        titulo:
-          'Retroalimentación',
+        titulo: 'Retroalimentación',
 
-        descripcion:
-          'Observaciones registradas para cada estudiante.',
+        descripcion: 'Observaciones registradas para cada estudiante.',
 
-        mostrarEncabezado:
-          true,
+        mostrarEncabezado: true,
 
-        mostrarNumeroFila:
-          true,
+        mostrarNumeroFila: true,
 
         columnas: [
           {
-            clave:
-              'estudiante',
+            clave: 'estudiante',
 
-            etiqueta:
-              'Estudiante',
+            etiqueta: 'Estudiante',
 
-            tipo:
-              TipoDatoReporte.TEXTO,
+            tipo: TipoDatoReporte.TEXTO,
 
-            ancho:
-              2.1,
+            ancho: 2.1,
           },
 
           {
-            clave:
-              'retroalimentacion',
+            clave: 'retroalimentacion',
 
-            etiqueta:
-              'Retroalimentación',
+            etiqueta: 'Retroalimentación',
 
-            tipo:
-              TipoDatoReporte.TEXTO,
+            tipo: TipoDatoReporte.TEXTO,
 
-            ancho:
-              5.9,
+            ancho: 5.9,
           },
         ],
 
-        filas:
-          retroalimentaciones,
+        filas: retroalimentaciones,
       },
     ];
   }
 
   private construirSeccionesDatos(
-    resumen:
-      FilaResumenTarea,
+    resumen: FilaResumenTarea,
 
-    filas:
-      FilaCalificacionCompleta[],
+    filas: FilaCalificacionCompleta[],
 
-    esGrupal:
-      boolean,
+    esGrupal: boolean,
   ): DefinicionReporte<FilaReporteTarea>['secciones'] {
-    const columnasDetalle:
-      NonNullable<
-        DefinicionReporte<FilaReporteTarea>['secciones']
-      >[number]['columnas'] = [
-        {
-          clave:
-            'estudiante',
-
-          etiqueta:
-            'Estudiante',
-
-          tipo:
-            TipoDatoReporte.TEXTO,
-
-          ancho:
-            1.6,
-        },
-
-        {
-          clave:
-            'correo',
-
-          etiqueta:
-            'Correo',
-
-          tipo:
-            TipoDatoReporte.TEXTO,
-
-          ancho:
-            1.8,
-        },
-
-        ...(esGrupal
-          ? [
-              {
-                clave:
-                  'grupo',
-
-                etiqueta:
-                  'Grupo',
-
-                tipo:
-                  TipoDatoReporte.TEXTO,
-
-                ancho:
-                  1.1,
-
-                alineacion:
-                  AlineacionReporte.CENTRO,
-              },
-            ]
-          : []),
-
-        {
-          clave:
-            'entrega',
-
-          etiqueta:
-            'Entrega',
-
-          tipo:
-            TipoDatoReporte.TEXTO,
-
-          ancho:
-            1.05,
-
-          alineacion:
-            AlineacionReporte.CENTRO,
-        },
-
-        {
-          clave:
-            'notaBase',
-
-          etiqueta:
-            'Base',
-
-          tipo:
-            TipoDatoReporte.DECIMAL,
-
-          ancho:
-            .75,
-
-          alineacion:
-            AlineacionReporte.DERECHA,
-        },
-
-        {
-          clave:
-            'descuento',
-
-          etiqueta:
-            'Desc.',
-
-          tipo:
-            TipoDatoReporte.DECIMAL,
-
-          ancho:
-            .75,
-
-          alineacion:
-            AlineacionReporte.DERECHA,
-        },
-
-        {
-          clave:
-            'ajuste',
-
-          etiqueta:
-            'Ajuste',
-
-          tipo:
-            TipoDatoReporte.DECIMAL,
-
-          ancho:
-            .75,
-
-          alineacion:
-            AlineacionReporte.DERECHA,
-        },
-
-        {
-          clave:
-            'notaFinal',
-
-          etiqueta:
-            'Final',
-
-          tipo:
-            TipoDatoReporte.DECIMAL,
-
-          ancho:
-            .8,
-
-          alineacion:
-            AlineacionReporte.DERECHA,
-        },
-
-        {
-          clave:
-            'estado',
-
-          etiqueta:
-            'Estado',
-
-          tipo:
-            TipoDatoReporte.TEXTO,
-
-          ancho:
-            .9,
-
-          alineacion:
-            AlineacionReporte.CENTRO,
-        },
-
-        {
-          clave:
-            'retroalimentacion',
-
-          etiqueta:
-            'Retroalimentación',
-
-          tipo:
-            TipoDatoReporte.TEXTO,
-
-          ancho:
-            2,
-        },
-      ];
-
-    return [
+    const columnasDetalle: NonNullable<
+      DefinicionReporte<FilaReporteTarea>['secciones']
+    >[number]['columnas'] = [
       {
-        id:
-          'resumen',
+        clave: 'estudiante',
 
-        titulo:
-          'Resumen general',
+        etiqueta: 'Estudiante',
 
-        filas: [
-          resumen,
-        ],
+        tipo: TipoDatoReporte.TEXTO,
 
-        mostrarNumeroFila:
-          false,
-
-        columnas:
-          this.columnasResumen(),
+        ancho: 1.6,
       },
 
       {
-        id:
-          'calificaciones',
+        clave: 'correo',
 
-        titulo:
-          'Detalle de calificaciones',
+        etiqueta: 'Correo',
 
-        descripcion:
-          `${resumen.calificadas} calificados · ${resumen.pendientes} pendientes · ${resumen.sinEntrega} sin entrega`,
+        tipo: TipoDatoReporte.TEXTO,
 
-        mostrarEncabezado:
-          true,
+        ancho: 1.8,
+      },
 
-        mostrarNumeroFila:
-          true,
+      ...(esGrupal
+        ? [
+            {
+              clave: 'grupo',
 
-        columnas:
-          columnasDetalle,
+              etiqueta: 'Grupo',
+
+              tipo: TipoDatoReporte.TEXTO,
+
+              ancho: 1.1,
+
+              alineacion: AlineacionReporte.CENTRO,
+            },
+          ]
+        : []),
+
+      {
+        clave: 'entrega',
+
+        etiqueta: 'Entrega',
+
+        tipo: TipoDatoReporte.TEXTO,
+
+        ancho: 1.05,
+
+        alineacion: AlineacionReporte.CENTRO,
+      },
+
+      {
+        clave: 'notaBase',
+
+        etiqueta: 'Base',
+
+        tipo: TipoDatoReporte.DECIMAL,
+
+        ancho: 0.75,
+
+        alineacion: AlineacionReporte.DERECHA,
+      },
+
+      {
+        clave: 'descuento',
+
+        etiqueta: 'Desc.',
+
+        tipo: TipoDatoReporte.DECIMAL,
+
+        ancho: 0.75,
+
+        alineacion: AlineacionReporte.DERECHA,
+      },
+
+      {
+        clave: 'ajuste',
+
+        etiqueta: 'Ajuste',
+
+        tipo: TipoDatoReporte.DECIMAL,
+
+        ancho: 0.75,
+
+        alineacion: AlineacionReporte.DERECHA,
+      },
+
+      {
+        clave: 'notaFinal',
+
+        etiqueta: 'Final',
+
+        tipo: TipoDatoReporte.DECIMAL,
+
+        ancho: 0.8,
+
+        alineacion: AlineacionReporte.DERECHA,
+      },
+
+      {
+        clave: 'estado',
+
+        etiqueta: 'Estado',
+
+        tipo: TipoDatoReporte.TEXTO,
+
+        ancho: 0.9,
+
+        alineacion: AlineacionReporte.CENTRO,
+      },
+
+      {
+        clave: 'retroalimentacion',
+
+        etiqueta: 'Retroalimentación',
+
+        tipo: TipoDatoReporte.TEXTO,
+
+        ancho: 2,
+      },
+    ];
+
+    return [
+      {
+        id: 'resumen',
+
+        titulo: 'Resumen general',
+
+        filas: [resumen],
+
+        mostrarNumeroFila: false,
+
+        columnas: this.columnasResumen(),
+      },
+
+      {
+        id: 'calificaciones',
+
+        titulo: 'Detalle de calificaciones',
+
+        descripcion: `${resumen.calificadas} calificados · ${resumen.pendientes} pendientes · ${resumen.sinEntrega} sin entrega`,
+
+        mostrarEncabezado: true,
+
+        mostrarNumeroFila: true,
+
+        columnas: columnasDetalle,
 
         filas,
       },
@@ -929,180 +615,106 @@ export class TareasReportesService {
   >[number]['columnas'] {
     return [
       {
-        clave:
-          'estudiantes',
+        clave: 'estudiantes',
 
-        etiqueta:
-          'Estudiantes',
+        etiqueta: 'Estudiantes',
 
-        tipo:
-          TipoDatoReporte.NUMERO,
+        tipo: TipoDatoReporte.NUMERO,
 
-        alineacion:
-          AlineacionReporte.CENTRO,
+        alineacion: AlineacionReporte.CENTRO,
       },
 
       {
-        clave:
-          'calificadas',
+        clave: 'calificadas',
 
-        etiqueta:
-          'Calificados',
+        etiqueta: 'Calificados',
 
-        tipo:
-          TipoDatoReporte.NUMERO,
+        tipo: TipoDatoReporte.NUMERO,
 
-        alineacion:
-          AlineacionReporte.CENTRO,
+        alineacion: AlineacionReporte.CENTRO,
       },
 
       {
-        clave:
-          'pendientes',
+        clave: 'pendientes',
 
-        etiqueta:
-          'Pendientes',
+        etiqueta: 'Pendientes',
 
-        tipo:
-          TipoDatoReporte.NUMERO,
+        tipo: TipoDatoReporte.NUMERO,
 
-        alineacion:
-          AlineacionReporte.CENTRO,
+        alineacion: AlineacionReporte.CENTRO,
       },
 
       {
-        clave:
-          'sinEntrega',
+        clave: 'sinEntrega',
 
-        etiqueta:
-          'Sin entrega',
+        etiqueta: 'Sin entrega',
 
-        tipo:
-          TipoDatoReporte.NUMERO,
+        tipo: TipoDatoReporte.NUMERO,
 
-        alineacion:
-          AlineacionReporte.CENTRO,
+        alineacion: AlineacionReporte.CENTRO,
       },
 
       {
-        clave:
-          'puntajeMaximo',
+        clave: 'puntajeMaximo',
 
-        etiqueta:
-          'Puntaje máximo',
+        etiqueta: 'Puntaje máximo',
 
-        tipo:
-          TipoDatoReporte.NUMERO,
+        tipo: TipoDatoReporte.NUMERO,
 
-        alineacion:
-          AlineacionReporte.CENTRO,
+        alineacion: AlineacionReporte.CENTRO,
       },
     ];
   }
 
   private async obtenerNombreGenerador(
-    usuario:
-      UsuarioAutenticado,
+    usuario: UsuarioAutenticado,
   ): Promise<string> {
-    const datos =
-      await this.prisma.usuario.findUnique({
-        where: {
-          id:
-            usuario.id,
-        },
+    const datos = await this.prisma.usuario.findUnique({
+      where: {
+        id: usuario.id,
+      },
 
-        select: {
-          nombres:
-            true,
+      select: {
+        nombres: true,
 
-          apellidoPaterno:
-            true,
-        },
-      });
+        apellidoPaterno: true,
+      },
+    });
 
-    const nombre =
-      [
-        datos?.nombres,
-        datos?.apellidoPaterno,
-      ]
-        .filter(
-          Boolean,
-        )
-        .join(
-          ' ',
-        )
-        .trim();
+    const nombre = [datos?.nombres, datos?.apellidoPaterno]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
 
-    return (
-      nombre ||
-      usuario.correo
-    );
+    return nombre || usuario.correo;
   }
 
-  private numeroONull(
-    valor:
-      unknown,
-  ): number | null {
-    if (
-      valor === null ||
-      valor === undefined
-    ) {
+  private numeroONull(valor: unknown): number | null {
+    if (valor === null || valor === undefined) {
       return null;
     }
 
-    const resultado =
-      Number(
-        valor,
-      );
+    const resultado = Number(valor);
 
-    return Number.isFinite(
-      resultado,
-    )
-      ? resultado
-      : null;
+    return Number.isFinite(resultado) ? resultado : null;
   }
 
-  private etiqueta(
-    valor:
-      unknown,
-  ): string {
-    return String(
-      valor ??
-        '—',
-    )
-      .replaceAll(
-        '_',
-        ' ',
-      )
+  private etiqueta(valor: unknown): string {
+    return String(valor ?? '—')
+      .replaceAll('_', ' ')
       .toLowerCase()
-      .replace(
-        /^./,
-        (
-          caracter,
-        ) =>
-          caracter.toUpperCase(),
-      );
+      .replace(/^./, (caracter) => caracter.toUpperCase());
   }
 
-  private normalizarFormato(
-    formato:
-      string,
-  ): FormatoReporte {
-    const valor =
-      formato
-        .trim()
-        .toUpperCase();
+  private normalizarFormato(formato: string): FormatoReporte {
+    const valor = formato.trim().toUpperCase();
 
     if (
-      valor ===
-        FormatoReporte.PDF ||
-      valor ===
-        FormatoReporte.EXCEL ||
-      valor ===
-        FormatoReporte.CSV
+      valor === FormatoReporte.PDF ||
+      valor === FormatoReporte.EXCEL ||
+      valor === FormatoReporte.CSV
     ) {
-      return valor as
-        FormatoReporte;
+      return valor;
     }
 
     throw new BadRequestException(

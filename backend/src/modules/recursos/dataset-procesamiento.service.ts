@@ -7,62 +7,39 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 
-import {
-  EstadoProcesamientoDataset,
-} from '../../generated/prisma/client';
+import { EstadoProcesamientoDataset } from '../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-import {
-  ArchivosService,
-} from '../archivos/archivos.service';
+import { ArchivosService } from '../archivos/archivos.service';
 
 @Injectable()
 export class DatasetProcesamientoService
   implements OnModuleInit, OnModuleDestroy
 {
-  private readonly logger =
-    new Logger(
-      DatasetProcesamientoService.name,
-    );
+  private readonly logger = new Logger(DatasetProcesamientoService.name);
 
-  private temporizador:
-    NodeJS.Timeout |
-    null =
-    null;
+  private temporizador: NodeJS.Timeout | null = null;
 
-  private ejecutando =
-    false;
+  private ejecutando = false;
 
   constructor(
-    private readonly prisma:
-      PrismaService,
+    private readonly prisma: PrismaService,
 
-    private readonly archivosService:
-      ArchivosService,
+    private readonly archivosService: ArchivosService,
   ) {}
 
   onModuleInit() {
-    this.temporizador =
-      setInterval(
-        () => {
-          void this.procesarPendientes();
-        },
-        5000,
-      );
+    this.temporizador = setInterval(() => {
+      void this.procesarPendientes();
+    }, 5000);
 
     void this.procesarPendientes();
   }
 
   onModuleDestroy() {
-    if (
-      this.temporizador
-    ) {
-      clearInterval(
-        this.temporizador,
-      );
+    if (this.temporizador) {
+      clearInterval(this.temporizador);
     }
   }
 
@@ -70,45 +47,31 @@ export class DatasetProcesamientoService
     void this.procesarPendientes();
   }
 
-  async reintentar(
-    versionId:
-      number,
-  ) {
-    const version =
-      await this.prisma.recursoContenidoVersion.findUnique({
-        where: {
-          id:
-            versionId,
-        },
+  async reintentar(versionId: number) {
+    const version = await this.prisma.recursoContenidoVersion.findUnique({
+      where: {
+        id: versionId,
+      },
 
-        select: {
-          id:
-            true,
+      select: {
+        id: true,
 
-          esVigente:
-            true,
+        esVigente: true,
 
-          estadoDataset:
-            true,
+        estadoDataset: true,
 
-          contenido: {
-            select: {
-              estaActivo:
-                true,
+        contenido: {
+          select: {
+            estaActivo: true,
 
-              disponibleParaQuiz:
-                true,
-            },
+            disponibleParaQuiz: true,
           },
         },
-      });
+      },
+    });
 
-    if (
-      !version
-    ) {
-      throw new NotFoundException(
-        'La versión del recurso no existe',
-      );
+    if (!version) {
+      throw new NotFoundException('La versión del recurso no existe');
     }
 
     if (
@@ -121,151 +84,109 @@ export class DatasetProcesamientoService
       );
     }
 
-    if (
-      version.estadoDataset ===
-        EstadoProcesamientoDataset.PROCESANDO
-    ) {
+    if (version.estadoDataset === EstadoProcesamientoDataset.PROCESANDO) {
       return {
-        mensaje:
-          'El dataset ya se está procesando',
+        mensaje: 'El dataset ya se está procesando',
       };
     }
 
     await this.prisma.recursoContenidoVersion.update({
       where: {
-        id:
-          versionId,
+        id: versionId,
       },
 
       data: {
-        estadoDataset:
-          EstadoProcesamientoDataset.PENDIENTE,
+        estadoDataset: EstadoProcesamientoDataset.PENDIENTE,
 
-        progresoDataset:
-          0,
+        progresoDataset: 0,
 
-        errorDataset:
-          null,
+        errorDataset: null,
 
-        procesadoDatasetEn:
-          null,
+        procesadoDatasetEn: null,
       },
     });
 
     this.despertar();
 
     return {
-      mensaje:
-        'El dataset fue enviado nuevamente a procesamiento',
+      mensaje: 'El dataset fue enviado nuevamente a procesamiento',
     };
   }
 
   private async tomarSiguientePendiente() {
-    return this.prisma.$transaction(
-      async (
-        tx,
-      ) => {
-        const version =
-          await tx.recursoContenidoVersion.findFirst({
-            where: {
-              esVigente:
-                true,
+    return this.prisma.$transaction(async (tx) => {
+      const version = await tx.recursoContenidoVersion.findFirst({
+        where: {
+          esVigente: true,
 
-              estadoDataset:
-                EstadoProcesamientoDataset.PENDIENTE,
+          estadoDataset: EstadoProcesamientoDataset.PENDIENTE,
 
-              contenido: {
-                estaActivo:
-                  true,
+          contenido: {
+            estaActivo: true,
 
-                disponibleParaQuiz:
-                  true,
-              },
-            },
+            disponibleParaQuiz: true,
+          },
+        },
 
-            orderBy: {
-              creadoEn:
-                'asc',
-            },
+        orderBy: {
+          creadoEn: 'asc',
+        },
 
+        include: {
+          archivo: true,
+
+          contenido: {
             include: {
-              archivo:
-                true,
-
-              contenido: {
-                include: {
-                  recurso:
-                    true,
-                },
-              },
+              recurso: true,
             },
-          });
+          },
+        },
+      });
 
-        if (
-          !version
-        ) {
-          return null;
-        }
+      if (!version) {
+        return null;
+      }
 
-        const reservado =
-          await tx.recursoContenidoVersion.updateMany({
-            where: {
-              id:
-                version.id,
+      const reservado = await tx.recursoContenidoVersion.updateMany({
+        where: {
+          id: version.id,
 
-              estadoDataset:
-                EstadoProcesamientoDataset.PENDIENTE,
-            },
+          estadoDataset: EstadoProcesamientoDataset.PENDIENTE,
+        },
 
-            data: {
-              estadoDataset:
-                EstadoProcesamientoDataset.PROCESANDO,
+        data: {
+          estadoDataset: EstadoProcesamientoDataset.PROCESANDO,
 
-              progresoDataset:
-                2,
+          progresoDataset: 2,
 
-              errorDataset:
-                null,
+          errorDataset: null,
 
-              intentosDataset: {
-                increment:
-                  1,
-              },
-            },
-          });
+          intentosDataset: {
+            increment: 1,
+          },
+        },
+      });
 
-        if (
-          reservado.count !==
-          1
-        ) {
-          return null;
-        }
+      if (reservado.count !== 1) {
+        return null;
+      }
 
-        return version;
-      },
-    );
+      return version;
+    });
   }
 
   async procesarPendientes() {
-    if (
-      this.ejecutando
-    ) {
+    if (this.ejecutando) {
       return;
     }
 
-    this.ejecutando =
-      true;
+    this.ejecutando = true;
 
     try {
-      while (
-        true
-      ) {
-        const version =
-          await this.tomarSiguientePendiente();
+      while (true) {
+        const version = await this.tomarSiguientePendiente();
 
-        if (
-          !version
-        ) {
+        if (!version) {
           break;
         }
 
@@ -276,164 +197,101 @@ export class DatasetProcesamientoService
         );
       }
     } finally {
-      this.ejecutando =
-        false;
+      this.ejecutando = false;
     }
   }
 
   private async actualizarProgreso(
-    versionId:
-      number,
+    versionId: number,
 
-    progreso:
-      number,
+    progreso: number,
   ) {
-    const normalizado =
-      Math.max(
-        2,
-        Math.min(
-          99,
-          Math.round(
-            progreso,
-          ),
-        ),
-      );
+    const normalizado = Math.max(2, Math.min(99, Math.round(progreso)));
 
     await this.prisma.recursoContenidoVersion.updateMany({
       where: {
-        id:
-          versionId,
+        id: versionId,
 
-        estadoDataset:
-          EstadoProcesamientoDataset.PROCESANDO,
+        estadoDataset: EstadoProcesamientoDataset.PROCESANDO,
       },
 
       data: {
-        progresoDataset:
-          normalizado,
+        progresoDataset: normalizado,
       },
     });
   }
 
   private async procesarVersion(
-    versionId:
-      number,
+    versionId: number,
 
-    archivoId:
-      number,
+    archivoId: number,
 
-    nombreArchivo:
-      string,
+    nombreArchivo: string,
   ) {
     try {
       this.logger.log(
         `Preparando dataset "${nombreArchivo}" en segundo plano.`,
       );
 
-      let ultimoProgreso =
-        2;
+      let ultimoProgreso = 2;
 
-      const reportarProgreso =
-        async (
-          progreso:
-            number,
-        ) => {
-          const normalizado =
-            Math.max(
-              ultimoProgreso,
-              Math.min(
-                99,
-                Math.round(
-                  progreso,
-                ),
-              ),
-            );
-
-          if (
-            normalizado -
-              ultimoProgreso <
-              2 &&
-            normalizado <
-              98
-          ) {
-            return;
-          }
-
-          ultimoProgreso =
-            normalizado;
-
-          await this.actualizarProgreso(
-            versionId,
-            normalizado,
-          );
-        };
-
-      const texto =
-        await this.archivosService.procesarPdfParaDataset(
-          archivoId,
-          reportarProgreso,
+      const reportarProgreso = async (progreso: number) => {
+        const normalizado = Math.max(
+          ultimoProgreso,
+          Math.min(99, Math.round(progreso)),
         );
 
-      if (
-        !texto?.trim()
-      ) {
-        throw new Error(
-          'No se pudo obtener texto utilizable del PDF.',
-        );
+        if (normalizado - ultimoProgreso < 2 && normalizado < 98) {
+          return;
+        }
+
+        ultimoProgreso = normalizado;
+
+        await this.actualizarProgreso(versionId, normalizado);
+      };
+
+      const texto = await this.archivosService.procesarPdfParaDataset(
+        archivoId,
+        reportarProgreso,
+      );
+
+      if (!texto?.trim()) {
+        throw new Error('No se pudo obtener texto utilizable del PDF.');
       }
 
       await this.prisma.recursoContenidoVersion.update({
         where: {
-          id:
-            versionId,
+          id: versionId,
         },
 
         data: {
-          estadoDataset:
-            EstadoProcesamientoDataset.LISTO,
+          estadoDataset: EstadoProcesamientoDataset.LISTO,
 
-          progresoDataset:
-            100,
+          progresoDataset: 100,
 
-          errorDataset:
-            null,
+          errorDataset: null,
 
-          procesadoDatasetEn:
-            new Date(),
+          procesadoDatasetEn: new Date(),
         },
       });
 
-      this.logger.log(
-        `Dataset listo: "${nombreArchivo}".`,
-      );
-    } catch (
-      error
-    ) {
-      const mensaje =
-        error instanceof Error
-          ? error.message
-          : String(
-              error,
-            );
+      this.logger.log(`Dataset listo: "${nombreArchivo}".`);
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : String(error);
 
       await this.prisma.recursoContenidoVersion.update({
         where: {
-          id:
-            versionId,
+          id: versionId,
         },
 
         data: {
-          estadoDataset:
-            EstadoProcesamientoDataset.ERROR,
+          estadoDataset: EstadoProcesamientoDataset.ERROR,
 
-          progresoDataset:
-            0,
+          progresoDataset: 0,
 
-          errorDataset:
-            mensaje,
+          errorDataset: mensaje,
 
-          procesadoDatasetEn:
-            null,
+          procesadoDatasetEn: null,
         },
       });
 

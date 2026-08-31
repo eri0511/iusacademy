@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   IsNumber,
@@ -11,21 +9,15 @@ import {
 } from 'class-validator';
 
 export class GuardarCriterioRubricaForoDto {
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0)
-  puntajeObtenido!:
-    number;
+  puntajeObtenido!: number;
 
   @IsOptional()
   @IsString()
   @MaxLength(1200)
-  observacion?:
-    string;
+  observacion?: string;
 }

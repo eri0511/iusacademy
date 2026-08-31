@@ -19,18 +19,12 @@ export class CrearEquipoAfinidadTareaDto {
   @ArrayMinSize(1)
   @ArrayMaxSize(100)
   @IsInt({
-    each:
-      true,
+    each: true,
   })
-  @Min(
-    1,
-    {
-      each:
-        true,
-    },
-  )
-  integrantesIds!:
-    number[];
+  @Min(1, {
+    each: true,
+  })
+  integrantesIds!: number[];
 
   /*
    * Se conserva por compatibilidad futura con frontend,
@@ -39,6 +33,5 @@ export class CrearEquipoAfinidadTareaDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  representanteId?:
-    number;
+  representanteId?: number;
 }

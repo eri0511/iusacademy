@@ -1,13 +1,6 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
-import {
-  ArrayMinSize,
-  IsArray,
-  IsInt,
-  Min,
-} from 'class-validator';
+import { ArrayMinSize, IsArray, IsInt, Min } from 'class-validator';
 
 export class ResponderPreguntaQuizDto {
   @Type(() => Number)

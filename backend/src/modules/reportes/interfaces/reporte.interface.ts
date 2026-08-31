@@ -1,6 +1,4 @@
-import {
-  ColumnaReporte,
-} from './columna-reporte.interface';
+import { ColumnaReporte } from './columna-reporte.interface';
 import {
   FilaReporte,
   FiltrosReporte,

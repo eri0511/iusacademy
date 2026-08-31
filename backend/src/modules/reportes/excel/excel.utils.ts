@@ -1,11 +1,6 @@
-import type {
-  Alignment,
-  CellValue,
-} from 'exceljs';
+import type { Alignment, CellValue } from 'exceljs';
 
-import {
-  ColumnaReporte,
-} from '../interfaces/columna-reporte.interface';
+import { ColumnaReporte } from '../interfaces/columna-reporte.interface';
 import {
   AlineacionReporte,
   FilaReporte,
@@ -30,7 +25,9 @@ export function obtenerAlineacionExcel(
   }
 }
 
-export function obtenerFormatoNumeroExcel(tipo?: TipoDatoReporte): string | undefined {
+export function obtenerFormatoNumeroExcel(
+  tipo?: TipoDatoReporte,
+): string | undefined {
   switch (tipo) {
     case TipoDatoReporte.NUMERO:
       return '#,##0';

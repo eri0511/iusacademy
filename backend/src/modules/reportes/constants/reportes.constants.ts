@@ -17,8 +17,7 @@ export const REPORTES_CONFIG = {
 
 export const MIME_REPORTE = {
   PDF: 'application/pdf',
-  EXCEL:
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  EXCEL: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   CSV: 'text/csv; charset=utf-8',
 } as const;
 

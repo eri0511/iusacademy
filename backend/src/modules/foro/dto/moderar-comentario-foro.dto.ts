@@ -1,9 +1,6 @@
-import {
-  IsBoolean,
-} from 'class-validator';
+import { IsBoolean } from 'class-validator';
 
 export class ModerarComentarioForoDto {
   @IsBoolean()
-  ocultar!:
-    boolean;
+  ocultar!: boolean;
 }

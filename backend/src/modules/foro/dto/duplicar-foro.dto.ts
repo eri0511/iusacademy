@@ -1,24 +1,16 @@
-import {
-  IsBoolean,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class DuplicarForoDto {
   @IsOptional()
   @IsString()
   @MaxLength(180)
-  titulo?:
-    string;
+  titulo?: string;
 
   @IsOptional()
   @IsBoolean()
-  conservarFechas?:
-    boolean;
+  conservarFechas?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  conservarGrupo?:
-    boolean;
+  conservarGrupo?: boolean;
 }

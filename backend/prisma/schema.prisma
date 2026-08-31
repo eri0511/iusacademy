@@ -162,6 +162,15 @@ enum ModoEdicionTarea {
 }
 
 /**
+ * Origen de la rúbrica de evaluación. Cuando se importa desde Excel,
+ * el formulario de creación convierte la hoja en criterios y niveles.
+ */
+enum OrigenRubrica {
+  MANUAL
+  EXCEL
+}
+
+/**
  * Los componentes se utilizan únicamente cuando TipoTarea = MIXTA.
  * Permiten combinar varias evidencias dentro de una sola tarea.
  */
@@ -500,6 +509,17 @@ enum AccionHistorialCalificacion {
   CALIFICACION_ANULADA
 }
 
+enum TipoNotificacion {
+  NUEVA_TAREA
+  TAREA_POR_VENCER
+  TAREA_VENCIDA
+  NUEVO_TABLON
+  NOTA_PUBLICADA
+  EXTENSION_PLAZO
+  FORO_POR_VENCER
+  FORO_NUEVO_TEMA
+}
+
 model Usuario {
   id Int @id @default(autoincrement())
 
@@ -547,6 +567,8 @@ model Usuario {
   entregasTareaComoAutor    EntregaTarea[] @relation("EntregasTareaAutor")
   entregasTareaIndividuales EntregaTarea[] @relation("EntregasTareaEstudiante")
 
+  sesionesEdicionTarea SesionEdicionTarea[]
+
   equiposAfinidadTareaComoCreador EquipoAfinidadTarea[]   @relation("EquiposAfinidadTareaCreador")
   integrantesEquiposTarea         IntegranteEquipoTarea[] @relation("IntegrantesEquipoTareaEstudiante")
 
@@ -587,6 +609,12 @@ model Usuario {
   participacionesQuiz ParticipanteQuiz[] @relation("ParticipantesQuizEstudiante")
 
   intentosQuiz IntentoQuiz[] @relation("IntentosQuizEstudiante")
+
+  notificacionesRecibidas Notificacion[] @relation("NotificacionesDestinatario")
+
+  extensionesPlazoAutorizadas ExtensionPlazoTarea[] @relation("ExtensionesPlazoAutorizadas")
+
+  extensionesPlazoBeneficiario ExtensionPlazoBeneficiario[] @relation("ExtensionesPlazoBeneficiario")
 
   @@index([rol])
   @@index([estaActivo])
@@ -1722,7 +1750,7 @@ model TareaCurso {
   exigirArchivo Boolean @default(false)
 
   maximoArchivos         Int @default(3)
-  tamanioMaximoArchivoMb Int @default(10)
+  tamanioMaximoArchivoMb Int @default(30)
 
   extensionesPermitidas String[] @default(["pdf", "doc", "docx", "jpg", "jpeg", "png", "webp"])
 
@@ -1756,6 +1784,10 @@ model TareaCurso {
 
   entregas        EntregaTarea[]
   equiposAfinidad EquipoAfinidadTarea[]
+
+  extensionesPlazo ExtensionPlazoTarea[]
+
+  rubrica RubricaTarea?
 
   @@index([cursoId])
   @@index([autorId])
@@ -1802,6 +1834,133 @@ model ComponenteTarea {
   @@index([tareaId])
   @@index([tipo])
   @@index([obligatorio])
+}
+
+/**
+ * Rúbrica de evaluación vinculada a una tarea. Puede definirse
+ * manualmente o importarse desde un archivo Excel.
+ */
+model RubricaTarea {
+  id      Int @id @default(autoincrement())
+  tareaId Int @unique
+
+  nombre String
+  origen OrigenRubrica @default(MANUAL)
+
+  /**
+   * Suma de los pesos de los criterios. Normalmente 100.
+   */
+  ponderacionMax Decimal @default(100) @db.Decimal(6, 2)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  tarea     TareaCurso        @relation(fields: [tareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  criterios RubricaCriterio[]
+
+  @@index([tareaId])
+}
+
+model RubricaCriterio {
+  id        Int @id @default(autoincrement())
+  rubricaId Int
+
+  orden Int
+
+  nombre      String
+  descripcion String?
+
+  /**
+   * Peso del criterio sobre la escala de 100. La suma de todos
+   * los pesos debe equivaler a RubricaTarea.ponderacionMax.
+   */
+  peso Decimal @default(0) @db.Decimal(6, 2)
+
+  rubrica RubricaTarea @relation(fields: [rubricaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  niveles RubricaNivel[]
+
+  calificaciones CriterioCalificacionEntrega[]
+
+  @@unique([rubricaId, orden])
+  @@index([rubricaId])
+}
+
+model RubricaNivel {
+  id Int @id @default(autoincrement())
+
+  criterioId Int
+
+  orden Int
+
+  etiqueta String
+
+  /**
+   * Puntos de este nivel dentro de su criterio (0..criterio.peso).
+   */
+  puntos Decimal @default(0) @db.Decimal(6, 2)
+
+  descripcion String?
+
+  criterio RubricaCriterio @relation(fields: [criterioId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  calificaciones CriterioCalificacionEntrega[]
+
+  @@unique([criterioId, orden])
+  @@index([criterioId])
+}
+
+/**
+ * Evaluación con rúbrica de una entrega. Una entrega tiene una única
+ * evaluación por rúbrica; en tareas grupales la nota resultante se
+ * propaga a sus integrantes y los ajustes individuales se aplican
+ * después, igual que en la calificación clásica.
+ */
+model CalificacionRubrica {
+  id Int @id @default(autoincrement())
+
+  entregaId Int
+
+  completada Boolean @default(false)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  entrega EntregaTarea @relation(fields: [entregaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  items CriterioCalificacionEntrega[]
+
+  @@unique([entregaId])
+  @@index([entregaId])
+}
+
+model CriterioCalificacionEntrega {
+  id Int @id @default(autoincrement())
+
+  calificacionId Int
+  criterioId     Int
+
+  /**
+   * Nivel seleccionado. Si es null, el criterio aún no se evalúa.
+   */
+  nivelId Int?
+
+  /**
+   * Puntos otorgados; normalmente coincide con nivel.puntos pero
+   * admite ajuste fino cuando el docente así lo decide.
+   */
+  puntosAsignados Decimal @default(0) @db.Decimal(6, 2)
+
+  retroalimentacion String?
+
+  calificacion CalificacionRubrica @relation(fields: [calificacionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  criterio RubricaCriterio @relation(fields: [criterioId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  nivel RubricaNivel? @relation(fields: [nivelId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([calificacionId, criterioId])
+  @@index([criterioId])
 }
 
 model EntregaTarea {
@@ -1855,9 +2014,11 @@ model EntregaTarea {
 
   archivos ArchivoAdjunto[]
 
-  calificaciones  CalificacionEstudiante[]
-  hitoAcademico   HitoAcademico?           @relation(fields: [hitoAcademicoId], references: [id])
-  hitoAcademicoId Int?
+  calificaciones      CalificacionEstudiante[]
+  hitoAcademico       HitoAcademico?           @relation(fields: [hitoAcademicoId], references: [id])
+  hitoAcademicoId     Int?
+  calificacionRubrica CalificacionRubrica?
+  sesionesEdicion     SesionEdicionTarea[]
 
   @@unique([tareaId, estudianteId])
   @@unique([tareaId, grupoCursoId])
@@ -1872,6 +2033,28 @@ model EntregaTarea {
   @@index([estaActiva])
   @@index([enviadaEn])
   @@index([tareaId, estado, estaActiva])
+}
+
+model SesionEdicionTarea {
+  id Int @id @default(autoincrement())
+
+  entregaTareaId Int
+  autorId        Int
+
+  iniciadaEn    DateTime @default(now())
+  ultimoLatidoEn DateTime @default(now())
+  segundosActivos Int @default(0)
+  cantidadPegados Int @default(0)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  entregaTarea EntregaTarea @relation(fields: [entregaTareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  autor        Usuario      @relation(fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([entregaTareaId])
+  @@index([autorId])
+  @@index([iniciadaEn])
 }
 
 model EquipoAfinidadTarea {
@@ -2611,4 +2794,85 @@ model ReporteEmitido {
   @@index([generadoPorId])
   @@index([generadoEn])
   @@index([tipo, formato])
+}
+
+/**
+ * Notificaciones dirigidas a un usuario. Alimenta la campana en la web
+ * y el mecanismo de empuje hacia la futura app móvil.
+ */
+model Notificacion {
+  id Int @id @default(autoincrement())
+
+  destinatarioId Int
+
+  tipo TipoNotificacion
+
+  titulo String
+  cuerpo String?
+
+  /**
+   * Ruta interna del frontend adonde llevar al usuario al tocar la notificación
+   * (ej: `/docente/cursos/12/tareas/34`).
+   */
+  enlace String?
+
+  esLeida Boolean @default(false)
+  leidaEn DateTime?
+
+  creadoEn DateTime @default(now())
+
+  destinatario Usuario @relation("NotificacionesDestinatario", fields: [destinatarioId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([destinatarioId, esLeida, creadoEn])
+  @@index([destinatarioId, tipo])
+  @@index([creadoEn])
+}
+
+/**
+ * Extensión de plazo aplicada a una tarea para un conjunto de estudiantes.
+ * Permite que un docente amplíe individualmente (o por grupo/equipo) las
+ * fechas de una tarea sin alterar los plazos globales de la misma.
+ *
+ * Se modela la extensión como un registro por tarea con una lista de
+ * beneficiarios, de modo que la misma extensión pueda cubrir varios
+ * estudiantes a la vez.
+ */
+model ExtensionPlazoTarea {
+  id Int @id @default(autoincrement())
+
+  tareaId     Int
+  autorizadoPorId Int
+
+  fechaAperturaExtendida      DateTime?
+  fechaLimiteExtendida        DateTime?
+  fechaMaximaRetrasoExtendida DateTime?
+
+  motivo String?
+
+  activo Boolean @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  tarea         TareaCurso             @relation(fields: [tareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  autorizadoPor Usuario                @relation("ExtensionesPlazoAutorizadas", fields: [autorizadoPorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  beneficiarios ExtensionPlazoBeneficiario[]
+
+  @@index([tareaId])
+  @@index([autorizadoPorId])
+  @@index([activo])
+}
+
+model ExtensionPlazoBeneficiario {
+  id Int @id @default(autoincrement())
+
+  extensionId  Int
+  estudianteId Int
+
+  extension  ExtensionPlazoTarea @relation(fields: [extensionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  estudiante Usuario             @relation("ExtensionesPlazoBeneficiario", fields: [estudianteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([extensionId, estudianteId])
+  @@index([estudianteId])
 }

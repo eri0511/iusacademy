@@ -30,10 +30,7 @@ type RequestConUsuario = Request & {
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService:
-      AuthService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -41,9 +38,7 @@ export class AuthController {
     @Body()
     datos: LoginDto,
   ) {
-    return this.authService.login(
-      datos,
-    );
+    return this.authService.login(datos);
   }
 
   @Get('perfil')
@@ -53,8 +48,7 @@ export class AuthController {
     request: RequestConUsuario,
   ) {
     return {
-      usuario:
-        request.user,
+      usuario: request.user,
     };
   }
 }

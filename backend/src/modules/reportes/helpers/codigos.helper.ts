@@ -1,19 +1,15 @@
-import {
-  randomBytes,
-  randomUUID,
-} from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 
-import {
-  formatearFechaArchivo,
-} from './fechas.helper';
+import { formatearFechaArchivo } from './fechas.helper';
 
 export function generarCodigoUnicoReporte(prefijo = 'RPT'): string {
-  const prefijoSeguro = prefijo
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .slice(0, 10)
-    .toUpperCase() || 'RPT';
+  const prefijoSeguro =
+    prefijo
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .slice(0, 10)
+      .toUpperCase() || 'RPT';
   const fecha = formatearFechaArchivo(new Date());
   const aleatorio = randomBytes(4).toString('hex').toUpperCase();
 

@@ -1,20 +1,12 @@
-import {
-  Injectable,
-} from '@nestjs/common';
-import {
-  format,
-} from '@fast-csv/format';
+import { Injectable } from '@nestjs/common';
+import { format } from '@fast-csv/format';
 
 import {
   DELIMITADORES_CSV_PERMITIDOS,
   MIME_REPORTE,
 } from '../constants/reportes.constants';
-import {
-  construirNombreArchivoReporte,
-} from '../helpers/archivos.helper';
-import {
-  generarCodigoUnicoReporte,
-} from '../helpers/codigos.helper';
+import { construirNombreArchivoReporte } from '../helpers/archivos.helper';
+import { generarCodigoUnicoReporte } from '../helpers/codigos.helper';
 import {
   contarRegistrosReporte,
   validarDefinicionReporte,
@@ -23,13 +15,8 @@ import type {
   ArchivoReporteGenerado,
   DefinicionReporte,
 } from '../interfaces/reporte.interface';
-import {
-  FilaReporte,
-  FormatoReporte,
-} from '../tipos/reportes.types';
-import {
-  obtenerFilaCsv,
-} from './csv.utils';
+import { FilaReporte, FormatoReporte } from '../tipos/reportes.types';
+import { obtenerFilaCsv } from './csv.utils';
 
 @Injectable()
 export class CsvService {
@@ -40,10 +27,17 @@ export class CsvService {
     validarDefinicionReporte(definicion);
 
     const generadoEn = definicion.metadatos.fechaGeneracion ?? new Date();
-    const codigoUnico = definicion.metadatos.codigoUnico ?? generarCodigoUnicoReporte();
-    const delimitador = this.validarDelimitador(definicion.opciones?.delimitadorCsv);
+    const codigoUnico =
+      definicion.metadatos.codigoUnico ?? generarCodigoUnicoReporte();
+    const delimitador = this.validarDelimitador(
+      definicion.opciones?.delimitadorCsv,
+    );
     const incluirBom = definicion.opciones?.incluirBomCsv !== false;
-    const contenido = await this.construirCsv(definicion, delimitador, incluirBom);
+    const contenido = await this.construirCsv(
+      definicion,
+      delimitador,
+      incluirBom,
+    );
 
     return {
       contenido,
@@ -75,7 +69,9 @@ export class CsvService {
       });
 
       flujo.on('data', (fragmento: Buffer | string) => {
-        fragmentos.push(Buffer.isBuffer(fragmento) ? fragmento : Buffer.from(fragmento));
+        fragmentos.push(
+          Buffer.isBuffer(fragmento) ? fragmento : Buffer.from(fragmento),
+        );
       });
       flujo.on('error', reject);
       flujo.on('end', () => {
@@ -84,7 +80,9 @@ export class CsvService {
       });
 
       definicion.secciones.forEach((seccion, indiceSeccion) => {
-        const columnas = seccion.columnas.filter((columna) => columna.visible !== false);
+        const columnas = seccion.columnas.filter(
+          (columna) => columna.visible !== false,
+        );
         const incluirNumero = seccion.mostrarNumeroFila === true;
 
         if (definicion.secciones.length > 1) {
@@ -94,9 +92,11 @@ export class CsvService {
           flujo.write([seccion.titulo ?? `Sección ${indiceSeccion + 1}`]);
         }
 
-        flujo.write(incluirNumero
-          ? ['N.º', ...columnas.map((columna) => columna.etiqueta)]
-          : columnas.map((columna) => columna.etiqueta));
+        flujo.write(
+          incluirNumero
+            ? ['N.º', ...columnas.map((columna) => columna.etiqueta)]
+            : columnas.map((columna) => columna.etiqueta),
+        );
 
         seccion.filas.forEach((fila, indice) => {
           flujo.write(obtenerFilaCsv(fila, columnas, indice, incluirNumero));

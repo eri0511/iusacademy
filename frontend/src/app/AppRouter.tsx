@@ -52,9 +52,10 @@ import TareasCurso from '../pages/docente/curso/TareasCurso';
 import DocenteInicio from '../pages/docente/Inicio';
 import MisCursos from '../pages/docente/MisCursos';
 
+import NotificacionesPage from '../pages/notificaciones/NotificacionesPage';
+
 import EstudianteInicio from '../pages/estudiante/Inicio';
 
-import AulaCursoEstudiante from '../pages/estudiante/cursos/AulaCursoEstudiante';
 import CalificacionesCursoEstudiante from '../pages/estudiante/cursos/CalificacionesCursoEstudiante';
 import DetalleForoEstudiante from '../pages/estudiante/cursos/DetalleForoEstudiante';
 import DetalleQuizEstudiante from '../pages/estudiante/cursos/DetalleQuizEstudiante';
@@ -74,11 +75,8 @@ import Servicios from '../pages/public/Servicios';
 import VerificarReporte from '../pages/public/VerificarReporte';
 
 type PaginaProximamenteProps = {
-  titulo:
-    string;
-
-  descripcion:
-    string;
+  titulo: string;
+  descripcion: string;
 };
 
 function PaginaProximamente({
@@ -88,32 +86,21 @@ function PaginaProximamente({
   return (
     <section
       style={{
-        padding:
-          '24px',
-
+        padding: '24px',
         border:
           '1px solid var(--app-border)',
-
-        borderRadius:
-          '20px',
-
-        color:
-          'var(--app-text)',
-
+        borderRadius: '20px',
+        color: 'var(--app-text)',
         background:
           'var(--app-surface)',
-
         boxShadow:
           'var(--app-shadow-sm)',
       }}
     >
       <h2
         style={{
-          margin:
-            0,
-
-          fontSize:
-            '20px',
+          margin: 0,
+          fontSize: '20px',
         }}
       >
         {titulo}
@@ -121,9 +108,7 @@ function PaginaProximamente({
 
       <p
         style={{
-          marginBottom:
-            0,
-
+          marginBottom: 0,
           color:
             'var(--app-text-soft)',
         }}
@@ -140,6 +125,9 @@ function AppRouter() {
       <AuthProvider>
         <ConfiguracionProvider>
           <Routes>
+            {/* =====================================================
+                RUTAS PÚBLICAS
+            ====================================================== */}
 
             <Route
               element={
@@ -188,6 +176,10 @@ function AppRouter() {
                 <VerificarReporte />
               }
             />
+
+            {/* =====================================================
+                ADMINISTRADOR
+            ====================================================== */}
 
             <Route
               element={
@@ -262,6 +254,10 @@ function AppRouter() {
               </Route>
             </Route>
 
+            {/* =====================================================
+                DOCENTE
+            ====================================================== */}
+
             <Route
               element={
                 <ProtectedRoute
@@ -307,7 +303,6 @@ function AppRouter() {
                     }
                   />
 
-
                   <Route
                     path="tablon"
                     element={
@@ -335,7 +330,6 @@ function AppRouter() {
                       <CalificarForo />
                     }
                   />
-
 
                   <Route
                     path="estudiantes"
@@ -365,7 +359,6 @@ function AppRouter() {
                     }
                   />
 
-
                   <Route
                     path="quizzes"
                     element={
@@ -387,7 +380,6 @@ function AppRouter() {
                     }
                   />
 
-
                   <Route
                     path="grupos"
                     element={
@@ -402,7 +394,6 @@ function AppRouter() {
                     }
                   />
 
-
                   <Route
                     path="recursos"
                     element={
@@ -410,6 +401,15 @@ function AppRouter() {
                     }
                   />
 
+                  <Route
+                    path="estadisticas"
+                    element={
+                      <PaginaProximamente
+                        titulo="Estadísticas"
+                        descripcion="Aquí se mostrarán indicadores generales del curso."
+                      />
+                    }
+                  />
                 </Route>
 
                 <Route
@@ -428,6 +428,15 @@ function AppRouter() {
                     <PaginaProximamente
                       titulo="Calendario docente"
                       descripcion="Aquí se mostrarán actividades y fechas importantes."
+                    />
+                  }
+                />
+
+                <Route
+                  path="notificaciones"
+                  element={
+                    <NotificacionesPage
+                      rolSeccion="DOCENTE"
                     />
                   }
                 />
@@ -493,7 +502,10 @@ function AppRouter() {
                   <Route
                     index
                     element={
-                      <AulaCursoEstudiante />
+                      <PaginaProximamente
+                        titulo="Inicio del aula"
+                        descripcion="Aquí se mostrará el resumen del hito seleccionado y las actividades del estudiante."
+                      />
                     }
                   />
 
@@ -517,7 +529,6 @@ function AppRouter() {
                       <DetalleForoEstudiante />
                     }
                   />
-
 
                   <Route
                     path="tareas"
@@ -554,7 +565,6 @@ function AppRouter() {
                     }
                   />
 
-
                   <Route
                     path="recursos"
                     element={
@@ -579,6 +589,15 @@ function AppRouter() {
                     <PaginaProximamente
                       titulo="Calendario"
                       descripcion="Aquí se mostrarán actividades, evaluaciones y fechas límite."
+                    />
+                  }
+                />
+
+                <Route
+                  path="notificaciones"
+                  element={
+                    <NotificacionesPage
+                      rolSeccion="ESTUDIANTE"
                     />
                   }
                 />

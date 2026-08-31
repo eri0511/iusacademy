@@ -1,18 +1,11 @@
-import {
-  IsBoolean,
-  IsInt,
-  IsOptional,
-  Min,
-} from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
 
 export class AgregarIntegranteEquipoDto {
   @IsInt()
   @Min(1)
-  estudianteId!:
-    number;
+  estudianteId!: number;
 
   @IsOptional()
   @IsBoolean()
-  esRepresentante?:
-    boolean;
+  esRepresentante?: boolean;
 }

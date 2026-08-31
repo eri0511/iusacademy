@@ -1,6 +1,4 @@
-import {
-  Type,
-} from 'class-transformer';
+import { Type } from 'class-transformer';
 
 import {
   IsBoolean,
@@ -13,53 +11,33 @@ import {
   ValidateIf,
 } from 'class-validator';
 
-import {
-  TipoDescuentoRetraso,
-} from '../../../generated/prisma/client';
+import { TipoDescuentoRetraso } from '../../../generated/prisma/client';
 
 export class ExtenderPlazoForoDto {
   @IsDateString()
-  fechaLimite!:
-    string;
+  fechaLimite!: string;
 
   @IsDateString()
-  fechaCierre!:
-    string;
+  fechaCierre!: string;
 
   @IsOptional()
   @IsBoolean()
-  permitirRetrasos?:
-    boolean;
+  permitirRetrasos?: boolean;
 
-  @ValidateIf(
-    (
-      objeto,
-    ) =>
-      objeto.permitirRetrasos ===
-      true,
-  )
+  @ValidateIf((objeto) => objeto.permitirRetrasos === true)
   @IsDateString()
-  fechaMaximaRetraso?:
-    string;
+  fechaMaximaRetraso?: string;
 
   @IsOptional()
-  @IsEnum(
-    TipoDescuentoRetraso,
-  )
-  tipoDescuentoRetraso?:
-    TipoDescuentoRetraso;
+  @IsEnum(TipoDescuentoRetraso)
+  tipoDescuentoRetraso?: TipoDescuentoRetraso;
 
   @IsOptional()
-  @Type(
-    () =>
-      Number,
-  )
+  @Type(() => Number)
   @IsNumber({
-    maxDecimalPlaces:
-      2,
+    maxDecimalPlaces: 2,
   })
   @Min(0)
   @Max(100)
-  valorDescuentoRetraso?:
-    number;
+  valorDescuentoRetraso?: number;
 }

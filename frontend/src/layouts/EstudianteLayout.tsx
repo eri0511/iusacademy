@@ -10,6 +10,7 @@ import {
 } from 'react';
 
 import {
+  Bell,
   BookOpen,
   CalendarDays,
   ChevronLeft,
@@ -161,6 +162,16 @@ const menuPrincipal: MenuItem[] = [
 
     disabled:
       true,
+  },
+  {
+    to:
+      '/estudiante/notificaciones',
+
+    label:
+      'Notificaciones',
+
+    icon:
+      Bell,
   },
 ];
 

@@ -68,11 +68,7 @@ export class RecursosController {
     @Param('cursoId', ParseIntPipe) cursoId: number,
     @Param('versionId', ParseIntPipe) versionId: number,
   ) {
-    return this.recursosService.reintentarDataset(
-      req.user,
-      cursoId,
-      versionId,
-    );
+    return this.recursosService.reintentarDataset(req.user, cursoId, versionId);
   }
 
   @Get('cursos/:cursoId/:recursoId')
@@ -140,7 +136,12 @@ export class RecursosController {
     @Param('recursoId', ParseIntPipe) recursoId: number,
     @Body() datos: CrearContenidoEnlaceDto,
   ) {
-    return this.recursosService.agregarEnlace(req.user, cursoId, recursoId, datos);
+    return this.recursosService.agregarEnlace(
+      req.user,
+      cursoId,
+      recursoId,
+      datos,
+    );
   }
 
   @Post('cursos/:cursoId/:recursoId/contenidos/archivo')

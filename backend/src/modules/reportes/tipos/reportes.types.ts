@@ -27,12 +27,7 @@ export enum TipoDatoReporte {
 }
 
 export type ValorCeldaReporte =
-  | string
-  | number
-  | boolean
-  | Date
-  | null
-  | undefined;
+  string | number | boolean | Date | null | undefined;
 
 export type FilaReporte = Record<string, ValorCeldaReporte>;
 

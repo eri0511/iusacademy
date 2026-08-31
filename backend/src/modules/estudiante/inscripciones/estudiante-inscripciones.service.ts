@@ -11,74 +11,54 @@ import {
   Rol,
 } from '../../../generated/prisma/client';
 
-import {
-  PrismaService,
-} from '../../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
-import {
-  InscribirseCursoDto,
-} from './dto/inscribirse-curso.dto';
+import { InscribirseCursoDto } from './dto/inscribirse-curso.dto';
 
 @Injectable()
 export class EstudianteInscripcionesService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Comprueba que el usuario autenticado exista,
    * esté activo, tenga su cuenta activada
    * y posea el rol de estudiante.
    */
-  private async obtenerEstudiante(
-    estudianteId: number,
-  ) {
-    const estudiante =
-      await this.prisma.usuario.findUnique({
-        where: {
-          id:
-            estudianteId,
-        },
+  private async obtenerEstudiante(estudianteId: number) {
+    const estudiante = await this.prisma.usuario.findUnique({
+      where: {
+        id: estudianteId,
+      },
 
-        select: {
-          id: true,
-          nombres: true,
-          apellidoPaterno: true,
-          apellidoMaterno: true,
-          correo: true,
-          rol: true,
-          estaActivo: true,
-          cuentaActivada: true,
-        },
-      });
+      select: {
+        id: true,
+        nombres: true,
+        apellidoPaterno: true,
+        apellidoMaterno: true,
+        correo: true,
+        rol: true,
+        estaActivo: true,
+        cuentaActivada: true,
+      },
+    });
 
     if (!estudiante) {
-      throw new NotFoundException(
-        'El estudiante autenticado no existe',
-      );
+      throw new NotFoundException('El estudiante autenticado no existe');
     }
 
-    if (
-      estudiante.rol !==
-      Rol.ESTUDIANTE
-    ) {
+    if (estudiante.rol !== Rol.ESTUDIANTE) {
       throw new BadRequestException(
         'El usuario autenticado no tiene el rol de estudiante',
       );
     }
 
-    if (
-      !estudiante.estaActivo
-    ) {
+    if (!estudiante.estaActivo) {
       throw new BadRequestException(
         'La cuenta del estudiante se encuentra desactivada',
       );
     }
 
-    if (
-      !estudiante.cuentaActivada
-    ) {
+    if (!estudiante.cuentaActivada) {
       throw new BadRequestException(
         'Debes activar tu cuenta antes de inscribirte a un curso',
       );
@@ -105,79 +85,65 @@ export class EstudianteInscripcionesService {
    * Si el estudiante estuvo retirado anteriormente
    * del mismo curso, la inscripción se reactiva.
    */
-  async inscribirseCurso(
-    estudianteId: number,
-    datos:
-      InscribirseCursoDto,
-  ) {
-    await this.obtenerEstudiante(
-      estudianteId,
-    );
+  async inscribirseCurso(estudianteId: number, datos: InscribirseCursoDto) {
+    await this.obtenerEstudiante(estudianteId);
 
-    const fechaActual =
-      new Date();
+    const fechaActual = new Date();
 
-    const curso =
-      await this.prisma.curso.findUnique({
-        where: {
-          codigoInscripcion:
-            datos.codigo,
+    const curso = await this.prisma.curso.findUnique({
+      where: {
+        codigoInscripcion: datos.codigo,
+      },
+
+      select: {
+        id: true,
+        materiaId: true,
+        docenteId: true,
+        gestion: true,
+        paralelo: true,
+        semestre: true,
+        cupoMaximo: true,
+        estado: true,
+
+        codigoInscripcion: true,
+
+        codigoInscripcionActivo: true,
+
+        codigoGeneradoEn: true,
+
+        codigoExpiraEn: true,
+
+        materia: {
+          select: {
+            id: true,
+            nombre: true,
+            codigo: true,
+            semestre: true,
+            descripcion: true,
+          },
         },
 
-        select: {
-          id: true,
-          materiaId: true,
-          docenteId: true,
-          gestion: true,
-          paralelo: true,
-          semestre: true,
-          cupoMaximo: true,
-          estado: true,
-
-          codigoInscripcion:
-            true,
-
-          codigoInscripcionActivo:
-            true,
-
-          codigoGeneradoEn:
-            true,
-
-          codigoExpiraEn:
-            true,
-
-          materia: {
-            select: {
-              id: true,
-              nombre: true,
-              codigo: true,
-              semestre: true,
-              descripcion: true,
-            },
+        docente: {
+          select: {
+            id: true,
+            nombres: true,
+            apellidoPaterno: true,
+            apellidoMaterno: true,
+            fotoPerfilUrl: true,
           },
+        },
 
-          docente: {
-            select: {
-              id: true,
-              nombres: true,
-              apellidoPaterno: true,
-              apellidoMaterno: true,
-              fotoPerfilUrl: true,
-            },
-          },
-
-          _count: {
-            select: {
-              inscripciones: {
-                where: {
-                  estado:
-                    EstadoInscripcion.ACTIVA,
-                },
+        _count: {
+          select: {
+            inscripciones: {
+              where: {
+                estado: EstadoInscripcion.ACTIVA,
               },
             },
           },
         },
-      });
+      },
+    });
 
     if (!curso) {
       throw new NotFoundException(
@@ -185,21 +151,15 @@ export class EstudianteInscripcionesService {
       );
     }
 
-    if (
-      curso.estado !==
-      EstadoCurso.ACTIVO
-    ) {
+    if (curso.estado !== EstadoCurso.ACTIVO) {
       throw new BadRequestException(
-        curso.estado ===
-        EstadoCurso.FINALIZADO
+        curso.estado === EstadoCurso.FINALIZADO
           ? 'El curso ya fue finalizado'
           : 'El curso no se encuentra activo',
       );
     }
 
-    if (
-      !curso.codigoInscripcionActivo
-    ) {
+    if (!curso.codigoInscripcionActivo) {
       throw new BadRequestException(
         'El código de inscripción se encuentra desactivado',
       );
@@ -207,44 +167,34 @@ export class EstudianteInscripcionesService {
 
     if (
       curso.codigoExpiraEn &&
-      curso.codigoExpiraEn.getTime() <=
-        fechaActual.getTime()
+      curso.codigoExpiraEn.getTime() <= fechaActual.getTime()
     ) {
-      throw new BadRequestException(
-        'El código de inscripción ha expirado',
-      );
+      throw new BadRequestException('El código de inscripción ha expirado');
     }
 
     /**
      * Verifica si el estudiante ya tiene
      * una inscripción en este mismo curso.
      */
-    const inscripcionExistente =
-      await this.prisma.inscripcionCurso.findUnique({
-        where: {
-          cursoId_estudianteId: {
-            cursoId:
-              curso.id,
+    const inscripcionExistente = await this.prisma.inscripcionCurso.findUnique({
+      where: {
+        cursoId_estudianteId: {
+          cursoId: curso.id,
 
-            estudianteId,
-          },
+          estudianteId,
         },
+      },
 
-        select: {
-          id: true,
-          estado: true,
-          inscritoEn: true,
-          retiradoEn: true,
-        },
-      });
+      select: {
+        id: true,
+        estado: true,
+        inscritoEn: true,
+        retiradoEn: true,
+      },
+    });
 
-    if (
-      inscripcionExistente?.estado ===
-      EstadoInscripcion.ACTIVA
-    ) {
-      throw new ConflictException(
-        'Ya estás inscrito en este curso',
-      );
+    if (inscripcionExistente?.estado === EstadoInscripcion.ACTIVA) {
+      throw new ConflictException('Ya estás inscrito en este curso');
     }
 
     /**
@@ -259,23 +209,18 @@ export class EstudianteInscripcionesService {
         where: {
           estudianteId,
 
-          estado:
-            EstadoInscripcion.ACTIVA,
+          estado: EstadoInscripcion.ACTIVA,
 
           curso: {
             id: {
-              not:
-                curso.id,
+              not: curso.id,
             },
 
-            materiaId:
-              curso.materia.id,
+            materiaId: curso.materia.id,
 
-            gestion:
-              curso.gestion,
+            gestion: curso.gestion,
 
-            estado:
-              EstadoCurso.ACTIVO,
+            estado: EstadoCurso.ACTIVO,
           },
         },
 
@@ -298,9 +243,7 @@ export class EstudianteInscripcionesService {
         },
       });
 
-    if (
-      inscripcionMismaMateria
-    ) {
+    if (inscripcionMismaMateria) {
       throw new ConflictException(
         `Ya estás inscrito en ${inscripcionMismaMateria.curso.materia.nombre} ` +
           `en el paralelo ${inscripcionMismaMateria.curso.paralelo}, ` +
@@ -312,317 +255,178 @@ export class EstudianteInscripcionesService {
      * Primera validación del cupo.
      */
     if (
-      curso.cupoMaximo !==
-        null &&
-      curso._count.inscripciones >=
-        curso.cupoMaximo
+      curso.cupoMaximo !== null &&
+      curso._count.inscripciones >= curso.cupoMaximo
     ) {
       throw new BadRequestException(
         'El curso ya alcanzó el cupo máximo de estudiantes',
       );
     }
 
-    const inscripcion =
-      await this.prisma.$transaction(
-        async (
-          transaccion,
-        ) => {
-          /**
-           * Repite la validación de misma materia
-           * dentro de la transacción.
-           */
-          const mismaMateriaActual =
-            await transaccion.inscripcionCurso.findFirst({
-              where: {
-                estudianteId,
-
-                estado:
-                  EstadoInscripcion.ACTIVA,
-
-                curso: {
-                  id: {
-                    not:
-                      curso.id,
-                  },
-
-                  materiaId:
-                    curso.materia.id,
-
-                  gestion:
-                    curso.gestion,
-
-                  estado:
-                    EstadoCurso.ACTIVO,
-                },
-              },
-
-              select: {
-                curso: {
-                  select: {
-                    gestion: true,
-                    paralelo: true,
-
-                    materia: {
-                      select: {
-                        nombre: true,
-                      },
-                    },
-                  },
-                },
-              },
-            });
-
-          if (
-            mismaMateriaActual
-          ) {
-            throw new ConflictException(
-              `Ya estás inscrito en ${mismaMateriaActual.curso.materia.nombre} ` +
-                `en el paralelo ${mismaMateriaActual.curso.paralelo}, ` +
-                `gestión ${mismaMateriaActual.curso.gestion}`,
-            );
-          }
-
-          /**
-           * Repite la validación del curso,
-           * código y vigencia dentro de la transacción.
-           *
-           * Esto evita que el código sea desactivado
-           * o renovado durante el proceso de inscripción.
-           */
-          const cursoActual =
-            await transaccion.curso.findUnique({
-              where: {
-                id:
-                  curso.id,
-              },
-
-              select: {
-                id: true,
-                estado: true,
-                cupoMaximo: true,
-
-                codigoInscripcion:
-                  true,
-
-                codigoInscripcionActivo:
-                  true,
-
-                codigoExpiraEn:
-                  true,
-              },
-            });
-
-          if (!cursoActual) {
-            throw new NotFoundException(
-              'El curso ya no se encuentra disponible',
-            );
-          }
-
-          if (
-            cursoActual.estado !==
-            EstadoCurso.ACTIVO
-          ) {
-            throw new BadRequestException(
-              'El curso dejó de estar activo',
-            );
-          }
-
-          if (
-            cursoActual.codigoInscripcion !==
-            datos.codigo
-          ) {
-            throw new BadRequestException(
-              'El código de inscripción fue renovado. Solicita el nuevo código al docente',
-            );
-          }
-
-          if (
-            !cursoActual.codigoInscripcionActivo
-          ) {
-            throw new BadRequestException(
-              'El código de inscripción fue desactivado',
-            );
-          }
-
-          if (
-            cursoActual.codigoExpiraEn &&
-            cursoActual.codigoExpiraEn.getTime() <=
-              Date.now()
-          ) {
-            throw new BadRequestException(
-              'El código de inscripción ha expirado',
-            );
-          }
-
-          /**
-           * Repite el conteo para reducir
-           * el riesgo de superar el cupo.
-           */
-          if (
-            cursoActual.cupoMaximo !==
-            null
-          ) {
-            const cantidadActual =
-              await transaccion.inscripcionCurso.count({
-                where: {
-                  cursoId:
-                    curso.id,
-
-                  estado:
-                    EstadoInscripcion.ACTIVA,
-                },
-              });
-
-            if (
-              cantidadActual >=
-              cursoActual.cupoMaximo
-            ) {
-              throw new BadRequestException(
-                'El curso ya alcanzó el cupo máximo de estudiantes',
-              );
-            }
-          }
-
-          /**
-           * Si anteriormente se retiró
-           * del mismo curso, reactiva
-           * la inscripción existente.
-           */
-          if (
-            inscripcionExistente
-          ) {
-            return transaccion.inscripcionCurso.update({
-              where: {
-                id:
-                  inscripcionExistente.id,
-              },
-
-              data: {
-                estado:
-                  EstadoInscripcion.ACTIVA,
-
-                inscritoEn:
-                  fechaActual,
-
-                retiradoEn:
-                  null,
-              },
-
-              select: {
-                id: true,
-                estado: true,
-                inscritoEn: true,
-                retiradoEn: true,
-                creadoEn: true,
-                actualizadoEn: true,
-              },
-            });
-          }
-
-          /**
-           * Crea una inscripción nueva.
-           */
-          return transaccion.inscripcionCurso.create({
-            data: {
-              cursoId:
-                curso.id,
-
-              estudianteId,
-
-              estado:
-                EstadoInscripcion.ACTIVA,
-
-              inscritoEn:
-                fechaActual,
-
-              retiradoEn:
-                null,
-            },
-
-            select: {
-              id: true,
-              estado: true,
-              inscritoEn: true,
-              retiradoEn: true,
-              creadoEn: true,
-              actualizadoEn: true,
-            },
-          });
-        },
-      );
-
-    return {
-      mensaje:
-        inscripcionExistente
-          ? 'Te reinscribiste al curso correctamente'
-          : 'Te inscribiste al curso correctamente',
-
-      inscripcion: {
-        id:
-          inscripcion.id,
-
-        estado:
-          inscripcion.estado,
-
-        inscritoEn:
-          inscripcion.inscritoEn,
-
-        retiradoEn:
-          inscripcion.retiradoEn,
-
-        creadoEn:
-          inscripcion.creadoEn,
-
-        actualizadoEn:
-          inscripcion.actualizadoEn,
-      },
-
-      curso: {
-        id:
-          curso.id,
-
-        gestion:
-          curso.gestion,
-
-        paralelo:
-          curso.paralelo,
-
-        semestre:
-          curso.semestre,
-
-        cupoMaximo:
-          curso.cupoMaximo,
-
-        estado:
-          curso.estado,
-
-        materia:
-          curso.materia,
-
-        docente:
-          curso.docente,
-      },
-    };
-  }
-
-  /**
-   * Devuelve los cursos en los que el estudiante
-   * tiene una inscripción activa.
-   */
-  async obtenerMisCursos(
-    estudianteId: number,
-  ) {
-    await this.obtenerEstudiante(
-      estudianteId,
-    );
-
-    const inscripciones =
-      await this.prisma.inscripcionCurso.findMany({
+    const inscripcion = await this.prisma.$transaction(async (transaccion) => {
+      /**
+       * Repite la validación de misma materia
+       * dentro de la transacción.
+       */
+      const mismaMateriaActual = await transaccion.inscripcionCurso.findFirst({
         where: {
           estudianteId,
 
-          estado:
-            EstadoInscripcion.ACTIVA,
+          estado: EstadoInscripcion.ACTIVA,
+
+          curso: {
+            id: {
+              not: curso.id,
+            },
+
+            materiaId: curso.materia.id,
+
+            gestion: curso.gestion,
+
+            estado: EstadoCurso.ACTIVO,
+          },
+        },
+
+        select: {
+          curso: {
+            select: {
+              gestion: true,
+              paralelo: true,
+
+              materia: {
+                select: {
+                  nombre: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (mismaMateriaActual) {
+        throw new ConflictException(
+          `Ya estás inscrito en ${mismaMateriaActual.curso.materia.nombre} ` +
+            `en el paralelo ${mismaMateriaActual.curso.paralelo}, ` +
+            `gestión ${mismaMateriaActual.curso.gestion}`,
+        );
+      }
+
+      /**
+       * Repite la validación del curso,
+       * código y vigencia dentro de la transacción.
+       *
+       * Esto evita que el código sea desactivado
+       * o renovado durante el proceso de inscripción.
+       */
+      const cursoActual = await transaccion.curso.findUnique({
+        where: {
+          id: curso.id,
+        },
+
+        select: {
+          id: true,
+          estado: true,
+          cupoMaximo: true,
+
+          codigoInscripcion: true,
+
+          codigoInscripcionActivo: true,
+
+          codigoExpiraEn: true,
+        },
+      });
+
+      if (!cursoActual) {
+        throw new NotFoundException('El curso ya no se encuentra disponible');
+      }
+
+      if (cursoActual.estado !== EstadoCurso.ACTIVO) {
+        throw new BadRequestException('El curso dejó de estar activo');
+      }
+
+      if (cursoActual.codigoInscripcion !== datos.codigo) {
+        throw new BadRequestException(
+          'El código de inscripción fue renovado. Solicita el nuevo código al docente',
+        );
+      }
+
+      if (!cursoActual.codigoInscripcionActivo) {
+        throw new BadRequestException(
+          'El código de inscripción fue desactivado',
+        );
+      }
+
+      if (
+        cursoActual.codigoExpiraEn &&
+        cursoActual.codigoExpiraEn.getTime() <= Date.now()
+      ) {
+        throw new BadRequestException('El código de inscripción ha expirado');
+      }
+
+      /**
+       * Repite el conteo para reducir
+       * el riesgo de superar el cupo.
+       */
+      if (cursoActual.cupoMaximo !== null) {
+        const cantidadActual = await transaccion.inscripcionCurso.count({
+          where: {
+            cursoId: curso.id,
+
+            estado: EstadoInscripcion.ACTIVA,
+          },
+        });
+
+        if (cantidadActual >= cursoActual.cupoMaximo) {
+          throw new BadRequestException(
+            'El curso ya alcanzó el cupo máximo de estudiantes',
+          );
+        }
+      }
+
+      /**
+       * Si anteriormente se retiró
+       * del mismo curso, reactiva
+       * la inscripción existente.
+       */
+      if (inscripcionExistente) {
+        return transaccion.inscripcionCurso.update({
+          where: {
+            id: inscripcionExistente.id,
+          },
+
+          data: {
+            estado: EstadoInscripcion.ACTIVA,
+
+            inscritoEn: fechaActual,
+
+            retiradoEn: null,
+          },
+
+          select: {
+            id: true,
+            estado: true,
+            inscritoEn: true,
+            retiradoEn: true,
+            creadoEn: true,
+            actualizadoEn: true,
+          },
+        });
+      }
+
+      /**
+       * Crea una inscripción nueva.
+       */
+      return transaccion.inscripcionCurso.create({
+        data: {
+          cursoId: curso.id,
+
+          estudianteId,
+
+          estado: EstadoInscripcion.ACTIVA,
+
+          inscritoEn: fechaActual,
+
+          retiradoEn: null,
         },
 
         select: {
@@ -632,142 +436,177 @@ export class EstudianteInscripcionesService {
           retiradoEn: true,
           creadoEn: true,
           actualizadoEn: true,
+        },
+      });
+    });
 
-          curso: {
-            select: {
-              id: true,
-              gestion: true,
-              paralelo: true,
-              semestre: true,
-              cupoMaximo: true,
-              estado: true,
-              finalizadoEn: true,
-              creadoEn: true,
-              actualizadoEn: true,
+    return {
+      mensaje: inscripcionExistente
+        ? 'Te reinscribiste al curso correctamente'
+        : 'Te inscribiste al curso correctamente',
 
-              materia: {
-                select: {
-                  id: true,
-                  nombre: true,
-                  codigo: true,
-                  semestre: true,
-                  descripcion: true,
-                },
+      inscripcion: {
+        id: inscripcion.id,
+
+        estado: inscripcion.estado,
+
+        inscritoEn: inscripcion.inscritoEn,
+
+        retiradoEn: inscripcion.retiradoEn,
+
+        creadoEn: inscripcion.creadoEn,
+
+        actualizadoEn: inscripcion.actualizadoEn,
+      },
+
+      curso: {
+        id: curso.id,
+
+        gestion: curso.gestion,
+
+        paralelo: curso.paralelo,
+
+        semestre: curso.semestre,
+
+        cupoMaximo: curso.cupoMaximo,
+
+        estado: curso.estado,
+
+        materia: curso.materia,
+
+        docente: curso.docente,
+      },
+    };
+  }
+
+  /**
+   * Devuelve los cursos en los que el estudiante
+   * tiene una inscripción activa.
+   */
+  async obtenerMisCursos(estudianteId: number) {
+    await this.obtenerEstudiante(estudianteId);
+
+    const inscripciones = await this.prisma.inscripcionCurso.findMany({
+      where: {
+        estudianteId,
+
+        estado: EstadoInscripcion.ACTIVA,
+      },
+
+      select: {
+        id: true,
+        estado: true,
+        inscritoEn: true,
+        retiradoEn: true,
+        creadoEn: true,
+        actualizadoEn: true,
+
+        curso: {
+          select: {
+            id: true,
+            gestion: true,
+            paralelo: true,
+            semestre: true,
+            cupoMaximo: true,
+            estado: true,
+            finalizadoEn: true,
+            creadoEn: true,
+            actualizadoEn: true,
+
+            materia: {
+              select: {
+                id: true,
+                nombre: true,
+                codigo: true,
+                semestre: true,
+                descripcion: true,
               },
+            },
 
-              docente: {
-                select: {
-                  id: true,
-                  nombres: true,
-                  apellidoPaterno: true,
-                  apellidoMaterno: true,
-                  fotoPerfilUrl: true,
-                },
+            docente: {
+              select: {
+                id: true,
+                nombres: true,
+                apellidoPaterno: true,
+                apellidoMaterno: true,
+                fotoPerfilUrl: true,
               },
+            },
 
-              _count: {
-                select: {
-                  inscripciones: {
-                    where: {
-                      estado:
-                        EstadoInscripcion.ACTIVA,
-                    },
+            _count: {
+              select: {
+                inscripciones: {
+                  where: {
+                    estado: EstadoInscripcion.ACTIVA,
                   },
                 },
               },
             },
           },
         },
+      },
 
-        orderBy: [
-          {
-            curso: {
-              estado:
-                'asc',
-            },
+      orderBy: [
+        {
+          curso: {
+            estado: 'asc',
           },
+        },
 
-          {
-            inscritoEn:
-              'desc',
-          },
-        ],
-      });
+        {
+          inscritoEn: 'desc',
+        },
+      ],
+    });
 
     return {
-      total:
-        inscripciones.length,
+      total: inscripciones.length,
 
-      cursos:
-        inscripciones.map(
-          (
-            inscripcion,
-          ) => {
-            const estudiantesInscritos =
-              inscripcion.curso
-                ._count
-                .inscripciones;
+      cursos: inscripciones.map((inscripcion) => {
+        const estudiantesInscritos = inscripcion.curso._count.inscripciones;
 
-            return {
-              inscripcionId:
-                inscripcion.id,
+        return {
+          inscripcionId: inscripcion.id,
 
-              estadoInscripcion:
-                inscripcion.estado,
+          estadoInscripcion: inscripcion.estado,
 
-              inscritoEn:
-                inscripcion.inscritoEn,
+          inscritoEn: inscripcion.inscritoEn,
 
-              retiradoEn:
-                inscripcion.retiradoEn,
+          retiradoEn: inscripcion.retiradoEn,
 
-              id:
-                inscripcion.curso.id,
+          id: inscripcion.curso.id,
 
-              gestion:
-                inscripcion.curso.gestion,
+          gestion: inscripcion.curso.gestion,
 
-              paralelo:
-                inscripcion.curso.paralelo,
+          paralelo: inscripcion.curso.paralelo,
 
-              semestre:
-                inscripcion.curso.semestre,
+          semestre: inscripcion.curso.semestre,
 
-              cupoMaximo:
-                inscripcion.curso.cupoMaximo,
+          cupoMaximo: inscripcion.curso.cupoMaximo,
 
-              estado:
-                inscripcion.curso.estado,
+          estado: inscripcion.curso.estado,
 
-              finalizadoEn:
-                inscripcion.curso.finalizadoEn,
+          finalizadoEn: inscripcion.curso.finalizadoEn,
 
-              creadoEn:
-                inscripcion.curso.creadoEn,
+          creadoEn: inscripcion.curso.creadoEn,
 
-              actualizadoEn:
-                inscripcion.curso.actualizadoEn,
+          actualizadoEn: inscripcion.curso.actualizadoEn,
 
-              materia:
-                inscripcion.curso.materia,
+          materia: inscripcion.curso.materia,
 
-              docente:
-                inscripcion.curso.docente,
+          docente: inscripcion.curso.docente,
 
-              estudiantesInscritos,
+          estudiantesInscritos,
 
-              cuposDisponibles:
-                inscripcion.curso.cupoMaximo ===
-                null
-                  ? null
-                  : Math.max(
-                      inscripcion.curso.cupoMaximo -
-                        estudiantesInscritos,
-                      0,
-                    ),
-            };
-          },
-        ),
+          cuposDisponibles:
+            inscripcion.curso.cupoMaximo === null
+              ? null
+              : Math.max(
+                  inscripcion.curso.cupoMaximo - estudiantesInscritos,
+                  0,
+                ),
+        };
+      }),
     };
   }
 
@@ -778,79 +617,71 @@ export class EstudianteInscripcionesService {
    * Esto evita que un estudiante cambie el ID
    * de la URL para ingresar a un curso ajeno.
    */
-  async obtenerMiCursoPorId(
-    estudianteId: number,
-    cursoId: number,
-  ) {
-    await this.obtenerEstudiante(
-      estudianteId,
-    );
+  async obtenerMiCursoPorId(estudianteId: number, cursoId: number) {
+    await this.obtenerEstudiante(estudianteId);
 
-    const inscripcion =
-      await this.prisma.inscripcionCurso.findFirst({
-        where: {
-          estudianteId,
+    const inscripcion = await this.prisma.inscripcionCurso.findFirst({
+      where: {
+        estudianteId,
 
-          cursoId,
+        cursoId,
 
-          estado:
-            EstadoInscripcion.ACTIVA,
-        },
+        estado: EstadoInscripcion.ACTIVA,
+      },
 
-        select: {
-          id: true,
-          estado: true,
-          inscritoEn: true,
-          retiradoEn: true,
-          creadoEn: true,
-          actualizadoEn: true,
+      select: {
+        id: true,
+        estado: true,
+        inscritoEn: true,
+        retiradoEn: true,
+        creadoEn: true,
+        actualizadoEn: true,
 
-          curso: {
-            select: {
-              id: true,
-              gestion: true,
-              paralelo: true,
-              semestre: true,
-              cupoMaximo: true,
-              estado: true,
-              finalizadoEn: true,
-              creadoEn: true,
-              actualizadoEn: true,
+        curso: {
+          select: {
+            id: true,
+            gestion: true,
+            paralelo: true,
+            semestre: true,
+            cupoMaximo: true,
+            estado: true,
+            finalizadoEn: true,
+            creadoEn: true,
+            actualizadoEn: true,
 
-              materia: {
-                select: {
-                  id: true,
-                  nombre: true,
-                  codigo: true,
-                  semestre: true,
-                  descripcion: true,
-                },
+            materia: {
+              select: {
+                id: true,
+                nombre: true,
+                codigo: true,
+                semestre: true,
+                descripcion: true,
               },
+            },
 
-              docente: {
-                select: {
-                  id: true,
-                  nombres: true,
-                  apellidoPaterno: true,
-                  apellidoMaterno: true,
-                  fotoPerfilUrl: true,
-                },
+            docente: {
+              select: {
+                id: true,
+                nombres: true,
+                apellidoPaterno: true,
+                apellidoMaterno: true,
+                fotoPerfilUrl: true,
               },
+            },
 
-              _count: {
-                select: {
-                  inscripciones: {
-                    where: {
-                      estado:
-                        EstadoInscripcion.ACTIVA,
-                    },
+            _count: {
+              select: {
+                inscripciones: {
+                  where: {
+                    estado: EstadoInscripcion.ACTIVA,
                   },
                 },
               },
             },
           },
         },
-      });
+      },
+    });
 
     if (!inscripcion) {
       throw new NotFoundException(
@@ -858,78 +689,54 @@ export class EstudianteInscripcionesService {
       );
     }
 
-    const curso =
-      inscripcion.curso;
+    const curso = inscripcion.curso;
 
-    const estudiantesInscritos =
-      curso._count.inscripciones;
+    const estudiantesInscritos = curso._count.inscripciones;
 
     return {
       inscripcion: {
-        id:
-          inscripcion.id,
+        id: inscripcion.id,
 
-        estado:
-          inscripcion.estado,
+        estado: inscripcion.estado,
 
-        inscritoEn:
-          inscripcion.inscritoEn,
+        inscritoEn: inscripcion.inscritoEn,
 
-        retiradoEn:
-          inscripcion.retiradoEn,
+        retiradoEn: inscripcion.retiradoEn,
 
-        creadoEn:
-          inscripcion.creadoEn,
+        creadoEn: inscripcion.creadoEn,
 
-        actualizadoEn:
-          inscripcion.actualizadoEn,
+        actualizadoEn: inscripcion.actualizadoEn,
       },
 
       curso: {
-        id:
-          curso.id,
+        id: curso.id,
 
-        gestion:
-          curso.gestion,
+        gestion: curso.gestion,
 
-        paralelo:
-          curso.paralelo,
+        paralelo: curso.paralelo,
 
-        semestre:
-          curso.semestre,
+        semestre: curso.semestre,
 
-        cupoMaximo:
-          curso.cupoMaximo,
+        cupoMaximo: curso.cupoMaximo,
 
-        estado:
-          curso.estado,
+        estado: curso.estado,
 
-        finalizadoEn:
-          curso.finalizadoEn,
+        finalizadoEn: curso.finalizadoEn,
 
-        creadoEn:
-          curso.creadoEn,
+        creadoEn: curso.creadoEn,
 
-        actualizadoEn:
-          curso.actualizadoEn,
+        actualizadoEn: curso.actualizadoEn,
 
-        materia:
-          curso.materia,
+        materia: curso.materia,
 
-        docente:
-          curso.docente,
+        docente: curso.docente,
 
         estudiantesInscritos,
 
         cuposDisponibles:
-          curso.cupoMaximo ===
-          null
+          curso.cupoMaximo === null
             ? null
-            : Math.max(
-                curso.cupoMaximo -
-                  estudiantesInscritos,
-                0,
-              ),
+            : Math.max(curso.cupoMaximo - estudiantesInscritos, 0),
       },
     };
   }

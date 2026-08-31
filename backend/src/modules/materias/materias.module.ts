@@ -1,34 +1,18 @@
-import {
-  Module,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import {
-  AuthModule,
-} from '../auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
-import {
-  MateriasController,
-} from './materias.controller';
+import { MateriasController } from './materias.controller';
 
-import {
-  MateriasService,
-} from './materias.service';
+import { MateriasService } from './materias.service';
 
 @Module({
-  imports: [
-    AuthModule,
-  ],
+  imports: [AuthModule],
 
-  controllers: [
-    MateriasController,
-  ],
+  controllers: [MateriasController],
 
-  providers: [
-    MateriasService,
-  ],
+  providers: [MateriasService],
 
-  exports: [
-    MateriasService,
-  ],
+  exports: [MateriasService],
 })
 export class MateriasModule {}

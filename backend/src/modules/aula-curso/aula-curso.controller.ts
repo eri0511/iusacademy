@@ -7,29 +7,17 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import type {
-  Request,
-} from 'express';
+import type { Request } from 'express';
 
-import {
-  Rol,
-} from '../../generated/prisma/client';
+import { Rol } from '../../generated/prisma/client';
 
-import {
-  JwtAuthGuard,
-} from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-import {
-  AulaInicioDocenteService,
-} from './aula-inicio-docente.service';
+import { AulaInicioDocenteService } from './aula-inicio-docente.service';
 
-import {
-  AulaInicioEstudianteService,
-} from './aula-inicio-estudiante.service';
+import { AulaInicioEstudianteService } from './aula-inicio-estudiante.service';
 
-import {
-  AulaCursoService,
-} from './aula-curso.service';
+import { AulaCursoService } from './aula-curso.service';
 
 type UsuarioAutenticado = {
   id: number;
@@ -40,160 +28,91 @@ type UsuarioAutenticado = {
   rol: Rol;
 };
 
-type RequestConUsuario =
-  Request & {
-    user:
-      UsuarioAutenticado;
-  };
+type RequestConUsuario = Request & {
+  user: UsuarioAutenticado;
+};
 
-@Controller(
-  'aula/cursos',
-)
-@UseGuards(
-  JwtAuthGuard,
-)
+@Controller('aula/cursos')
+@UseGuards(JwtAuthGuard)
 export class AulaCursoController {
   constructor(
-    private readonly aulaCursoService:
-      AulaCursoService,
-    private readonly aulaInicioDocenteService:
-      AulaInicioDocenteService,
-    private readonly aulaInicioEstudianteService:
-      AulaInicioEstudianteService,
+    private readonly aulaCursoService: AulaCursoService,
+    private readonly aulaInicioDocenteService: AulaInicioDocenteService,
+    private readonly aulaInicioEstudianteService: AulaInicioEstudianteService,
   ) {}
 
-  @Get(
-    ':cursoId',
-  )
+  @Get(':cursoId')
   obtenerAulaCurso(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
   ) {
-    return this.aulaCursoService
-      .obtenerAulaCurso(
-        request.user,
-        cursoId,
-      );
+    return this.aulaCursoService.obtenerAulaCurso(request.user, cursoId);
   }
 
-  @Get(
-    ':cursoId/hitos',
-  )
+  @Get(':cursoId/hitos')
   obtenerHitosCurso(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
   ) {
-    return this.aulaCursoService
-      .obtenerHitosCurso(
-        request.user,
-        cursoId,
-      );
+    return this.aulaCursoService.obtenerHitosCurso(request.user, cursoId);
   }
 
-  @Get(
-    ':cursoId/hitos/:hitoId',
-  )
+  @Get(':cursoId/hitos/:hitoId')
   obtenerHitoCurso(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Param('hitoId', ParseIntPipe)
+    hitoId: number,
   ) {
-    return this.aulaCursoService
-      .obtenerHitoCurso(
-        request.user,
-        cursoId,
-        hitoId,
-      );
+    return this.aulaCursoService.obtenerHitoCurso(
+      request.user,
+      cursoId,
+      hitoId,
+    );
   }
-  @Get(
-    ':cursoId/hitos/:hitoId/inicio-docente',
-  )
+  @Get(':cursoId/hitos/:hitoId/inicio-docente')
   obtenerInicioDocente(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Param('hitoId', ParseIntPipe)
+    hitoId: number,
   ) {
-    return this.aulaInicioDocenteService
-      .obtenerInicioDocente(
-        request.user,
-        cursoId,
-        hitoId,
-      );
+    return this.aulaInicioDocenteService.obtenerInicioDocente(
+      request.user,
+      cursoId,
+      hitoId,
+    );
   }
 
-
-  @Get(
-    ':cursoId/hitos/:hitoId/inicio-estudiante',
-  )
+  @Get(':cursoId/hitos/:hitoId/inicio-estudiante')
   obtenerInicioEstudiante(
     @Req()
-    request:
-      RequestConUsuario,
+    request: RequestConUsuario,
 
-    @Param(
-      'cursoId',
-      ParseIntPipe,
-    )
-    cursoId:
-      number,
+    @Param('cursoId', ParseIntPipe)
+    cursoId: number,
 
-    @Param(
-      'hitoId',
-      ParseIntPipe,
-    )
-    hitoId:
-      number,
+    @Param('hitoId', ParseIntPipe)
+    hitoId: number,
   ) {
-    return this.aulaInicioEstudianteService
-      .obtenerInicioEstudiante(
-        request.user,
-        cursoId,
-        hitoId,
-      );
+    return this.aulaInicioEstudianteService.obtenerInicioEstudiante(
+      request.user,
+      cursoId,
+      hitoId,
+    );
   }
-
 }

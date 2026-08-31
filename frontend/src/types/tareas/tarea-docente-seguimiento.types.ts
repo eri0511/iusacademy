@@ -313,6 +313,15 @@ export type PanelEvaluacionTarea = {
 
     publicadas:
       number;
+
+    puntuales:
+      number;
+
+    fueraDePlazo:
+      number;
+
+    promedioNota:
+      number | null;
   };
 
   evaluables:

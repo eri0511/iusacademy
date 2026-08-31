@@ -1,9 +1,6 @@
-import {
-  IsBoolean,
-} from 'class-validator';
+import { IsBoolean } from 'class-validator';
 
 export class BloquearRespuestaForoDto {
   @IsBoolean()
-  bloquear!:
-    boolean;
+  bloquear!: boolean;
 }

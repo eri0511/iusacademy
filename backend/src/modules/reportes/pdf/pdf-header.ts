@@ -1,17 +1,9 @@
 import type PDFKit from 'pdfkit';
 
-import {
-  MetadatosReporte,
-} from '../interfaces/reporte.interface';
-import {
-  formatearFechaHoraReporte,
-} from '../helpers/fechas.helper';
-import {
-  PDF_ESTILOS,
-} from './pdf.styles';
-import {
-  rutaImagenValida,
-} from './pdf.utils';
+import { MetadatosReporte } from '../interfaces/reporte.interface';
+import { formatearFechaHoraReporte } from '../helpers/fechas.helper';
+import { PDF_ESTILOS } from './pdf.styles';
+import { rutaImagenValida } from './pdf.utils';
 
 export function dibujarEncabezadoPdf(
   documento: PDFKit.PDFDocument,
@@ -45,21 +37,31 @@ export function dibujarEncabezadoPdf(
   }
 
   if (rutaImagenValida(metadatos.logoAplicacionRuta)) {
-    documento.image(metadatos.logoAplicacionRuta, left + ancho - 92, inicioY + 12, {
-      fit: [72, 30],
-      align: 'right',
-      valign: 'center',
-    });
+    documento.image(
+      metadatos.logoAplicacionRuta,
+      left + ancho - 92,
+      inicioY + 12,
+      {
+        fit: [72, 30],
+        align: 'right',
+        valign: 'center',
+      },
+    );
   } else {
     documento
       .font(PDF_ESTILOS.fuente.negrita)
       .fontSize(10)
       .fontSize(13)
       .fillColor(PDF_ESTILOS.color.primario)
-      .text(metadatos.aplicacion ?? 'IusAcademy', left + ancho - 120, inicioY + 18, {
-        width: 100,
-        align: 'right',
-      });
+      .text(
+        metadatos.aplicacion ?? 'IusAcademy',
+        left + ancho - 120,
+        inicioY + 18,
+        {
+          width: 100,
+          align: 'right',
+        },
+      );
   }
 
   documento

@@ -3,6 +3,10 @@ import {
 } from 'react';
 
 import {
+  createPortal,
+} from 'react-dom';
+
+import {
   AlertTriangle,
   CheckCircle2,
   CircleX,
@@ -107,7 +111,7 @@ export default function Toast({
             />
           );
 
-  return (
+  return createPortal(
     <div
       className={`toast-compartido toast-${tipo}`}
       role={
@@ -163,7 +167,8 @@ export default function Toast({
       <style>
         {styles}
       </style>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
