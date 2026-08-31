@@ -8,7 +8,10 @@ export function limpiarNombreArchivo(nombre: string): string {
   const limpio = nombre
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-')
+    .replace(/[<>:"/\\|?*]/g, '-')
+    .split('')
+    .map((caracter) => (caracter.charCodeAt(0) <= 31 ? '-' : caracter))
+    .join('')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^[.\s-]+|[.\s-]+$/g, '')

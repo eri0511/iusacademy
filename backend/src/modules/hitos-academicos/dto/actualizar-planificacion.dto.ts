@@ -1,4 +1,4 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform, Type, type TransformFnParams } from 'class-transformer';
 
 import {
   ArrayMaxSize,
@@ -14,7 +14,10 @@ import { FechaHitoDto } from './crear-planificacion.dto';
 
 export class ActualizarPlanificacionDto {
   @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: TransformFnParams) => {
+    const valor: unknown = value;
+    return typeof valor === 'string' ? valor.trim() : valor;
+  })
   @IsString({
     message: 'La descripción debe ser un texto',
   })

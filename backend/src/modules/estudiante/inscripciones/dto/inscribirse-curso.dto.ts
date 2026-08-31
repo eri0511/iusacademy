@@ -1,11 +1,12 @@
-import { Transform } from 'class-transformer';
+import { Transform, type TransformFnParams } from 'class-transformer';
 
 import { IsNotEmpty, IsString, Length, Matches } from 'class-validator';
 
 export class InscribirseCursoDto {
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toUpperCase() : value,
-  )
+  @Transform(({ value }: TransformFnParams) => {
+    const valor: unknown = value;
+    return typeof valor === 'string' ? valor.trim().toUpperCase() : valor;
+  })
   @IsString({
     message: 'El código de inscripción debe ser un texto',
   })

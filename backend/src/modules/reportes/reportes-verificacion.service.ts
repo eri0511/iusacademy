@@ -6,7 +6,7 @@ import {
 
 import { createHash } from 'node:crypto';
 
-import { EstadoReporteEmitido } from '../../generated/prisma/client';
+import { EstadoReporteEmitido, Prisma } from '../../generated/prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -52,7 +52,7 @@ export class ReportesVerificacionService {
         generadoPorId: datos.generadoPorId,
 
         filtros: datos.filtros
-          ? JSON.parse(JSON.stringify(datos.filtros))
+          ? (JSON.parse(JSON.stringify(datos.filtros)) as Prisma.InputJsonValue)
           : undefined,
 
         expiraEn: datos.expiraEn,

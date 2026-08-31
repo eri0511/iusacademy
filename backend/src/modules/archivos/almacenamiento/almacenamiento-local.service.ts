@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 
-import { dirname, join, normalize, relative, sep } from 'node:path';
+import { join, normalize, relative, sep } from 'node:path';
 
 import { randomUUID } from 'node:crypto';
 

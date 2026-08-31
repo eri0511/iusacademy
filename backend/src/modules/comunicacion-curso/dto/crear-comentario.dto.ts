@@ -1,9 +1,12 @@
-import { Transform } from 'class-transformer';
+import { Transform, type TransformFnParams } from 'class-transformer';
 
 import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CrearComentarioDto {
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: TransformFnParams) => {
+    const valor: unknown = value;
+    return typeof valor === 'string' ? valor.trim() : valor;
+  })
   @IsString({
     message: 'El comentario debe ser un texto',
   })

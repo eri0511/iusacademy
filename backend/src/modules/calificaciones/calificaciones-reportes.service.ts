@@ -300,13 +300,9 @@ export class CalificacionesReportesService {
   }
 
   private normalizarFormato(formatoSolicitado: string): FormatoReporte {
-    const formato = formatoSolicitado.trim().toUpperCase();
+    const formato = formatoSolicitado.trim().toUpperCase() as FormatoReporte;
 
-    if (
-      formato === FormatoReporte.PDF ||
-      formato === FormatoReporte.EXCEL ||
-      formato === FormatoReporte.CSV
-    ) {
+    if (Object.values(FormatoReporte).includes(formato)) {
       return formato;
     }
 
@@ -324,6 +320,15 @@ export class CalificacionesReportesService {
     if (valor === 'FORO') return 'Foro';
     if (valor === 'TAREA') return 'Tarea';
     if (valor === 'QUIZ') return 'Quiz';
-    return String(valor ?? 'Actividad');
+    if (valor === null || valor === undefined) return 'Actividad';
+    if (typeof valor === 'string') return valor;
+    if (
+      typeof valor === 'number' ||
+      typeof valor === 'boolean' ||
+      typeof valor === 'bigint'
+    ) {
+      return String(valor);
+    }
+    return 'Actividad';
   }
 }

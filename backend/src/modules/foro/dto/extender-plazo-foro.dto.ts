@@ -24,7 +24,9 @@ export class ExtenderPlazoForoDto {
   @IsBoolean()
   permitirRetrasos?: boolean;
 
-  @ValidateIf((objeto) => objeto.permitirRetrasos === true)
+  @ValidateIf(
+    (objeto: ExtenderPlazoForoDto) => objeto.permitirRetrasos === true,
+  )
   @IsDateString()
   fechaMaximaRetraso?: string;
 

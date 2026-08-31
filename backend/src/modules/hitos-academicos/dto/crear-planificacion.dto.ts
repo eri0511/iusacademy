@@ -1,4 +1,4 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform, Type, type TransformFnParams } from 'class-transformer';
 
 import {
   ArrayMaxSize,
@@ -47,9 +47,10 @@ export class FechaHitoDto {
 }
 
 export class CrearPlanificacionDto {
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toUpperCase() : value,
-  )
+  @Transform(({ value }: TransformFnParams) => {
+    const valor: unknown = value;
+    return typeof valor === 'string' ? valor.trim().toUpperCase() : valor;
+  })
   @IsString({
     message: 'La gestión debe ser un texto',
   })
@@ -62,7 +63,10 @@ export class CrearPlanificacionDto {
   gestion!: string;
 
   @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: TransformFnParams) => {
+    const valor: unknown = value;
+    return typeof valor === 'string' ? valor.trim() : valor;
+  })
   @IsString({
     message: 'La descripción debe ser un texto',
   })

@@ -14,9 +14,40 @@ export function normalizarTextoReporte(valor: unknown): string {
     return '';
   }
 
-  return String(valor)
+  let texto: string;
+
+  if (typeof valor === 'string') {
+    texto = valor;
+  } else if (
+    typeof valor === 'number' ||
+    typeof valor === 'boolean' ||
+    typeof valor === 'bigint'
+  ) {
+    texto = String(valor);
+  } else if (valor instanceof Date) {
+    texto = valor.toISOString();
+  } else {
+    try {
+      texto = JSON.stringify(valor) ?? '';
+    } catch {
+      texto = '';
+    }
+  }
+
+  return texto
     .normalize('NFC')
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .split('')
+    .filter((caracter) => {
+      const codigo = caracter.charCodeAt(0);
+      return !(
+        codigo <= 8 ||
+        codigo === 11 ||
+        codigo === 12 ||
+        (codigo >= 14 && codigo <= 31) ||
+        codigo === 127
+      );
+    })
+    .join('')
     .replace(/\r\n?/g, '\n')
     .trim();
 }

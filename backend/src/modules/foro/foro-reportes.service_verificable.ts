@@ -373,20 +373,26 @@ export class ForoReportesService {
   }
 
   private etiqueta(valor: unknown): string {
-    return String(valor ?? '—')
+    const texto =
+      valor === null || valor === undefined
+        ? '—'
+        : typeof valor === 'string' ||
+            typeof valor === 'number' ||
+            typeof valor === 'boolean' ||
+            typeof valor === 'bigint'
+          ? String(valor)
+          : '—';
+
+    return texto
       .replaceAll('_', ' ')
       .toLowerCase()
       .replace(/^./, (caracter) => caracter.toUpperCase());
   }
 
   private normalizarFormato(formato: string): FormatoReporte {
-    const valor = formato.trim().toUpperCase();
+    const valor = formato.trim().toUpperCase() as FormatoReporte;
 
-    if (
-      valor === FormatoReporte.PDF ||
-      valor === FormatoReporte.EXCEL ||
-      valor === FormatoReporte.CSV
-    ) {
+    if (Object.values(FormatoReporte).includes(valor)) {
       return valor;
     }
 

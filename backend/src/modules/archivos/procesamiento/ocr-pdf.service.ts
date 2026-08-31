@@ -28,7 +28,8 @@ export class OcrPdfService {
 
   private limpiarTexto(texto: string): string {
     return texto
-      .replace(/\u0000/g, '')
+      .split(String.fromCharCode(0))
+      .join('')
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n')
       .replace(/[ \t]+/g, ' ')

@@ -1199,7 +1199,7 @@ export class TareasEntregasService {
    * ============================================================
    */
 
-  private async validarRespuestaJuridica(
+  private validarRespuestaJuridica(
     tarea: {
       tipo: string;
       configuracionTipo: unknown;
@@ -1341,7 +1341,7 @@ export class TareasEntregasService {
     }
   }
 
-  private async validarCasoPractico(
+  private validarCasoPractico(
     tarea: {
       tipo: string;
       configuracionTipo: unknown;
@@ -1493,7 +1493,7 @@ export class TareasEntregasService {
     }
   }
 
-  private async validarRedaccionJuridica(
+  private validarRedaccionJuridica(
     tarea: {
       tipo: string;
       configuracionTipo: unknown;
@@ -1634,7 +1634,7 @@ export class TareasEntregasService {
     }
   }
 
-  private async validarExposicion(
+  private validarExposicion(
     tarea: {
       tipo: string;
       configuracionTipo: unknown;
@@ -1809,7 +1809,7 @@ export class TareasEntregasService {
     }
   }
 
-  private async validarMIXTA(
+  private validarMIXTA(
     tarea: {
       tipo: string;
       componentes: Array<{
@@ -1879,7 +1879,7 @@ export class TareasEntregasService {
     }
   }
 
-  private async validarDocumentoColaborativo(
+  private validarDocumentoColaborativo(
     tarea: {
       tipo: string;
       configuracionTipo: unknown;
@@ -2345,17 +2345,17 @@ export class TareasEntregasService {
         } else if (tarea.exigirContenidoEditor && !contenido.trim()) {
           cumple = false;
         } else {
-          await this.validarRespuestaJuridica(tarea, contenido);
+          this.validarRespuestaJuridica(tarea, contenido);
 
-          await this.validarCasoPractico(tarea, contenido);
+          this.validarCasoPractico(tarea, contenido);
 
-          await this.validarRedaccionJuridica(tarea, contenido);
+          this.validarRedaccionJuridica(tarea, contenido);
 
-          await this.validarExposicion(tarea, contenido);
+          this.validarExposicion(tarea, contenido);
 
-          await this.validarMIXTA(tarea, contenido);
+          this.validarMIXTA(tarea, contenido);
 
-          await this.validarDocumentoColaborativo(tarea, contenido);
+          this.validarDocumentoColaborativo(tarea, contenido);
 
           if (tarea.exigirArchivo && borrador.archivos.length === 0) {
             cumple = false;

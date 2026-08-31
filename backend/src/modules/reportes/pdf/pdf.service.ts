@@ -71,10 +71,7 @@ export class PdfService implements GeneradorReporte {
       },
     });
     const promesaBuffer = bufferDesdeDocumentoPdf(documento);
-    let numeroPagina = 0;
-
     const agregarPagina = (): void => {
-      numeroPagina += 1;
       documento.addPage({
         size: 'A4',
         layout:

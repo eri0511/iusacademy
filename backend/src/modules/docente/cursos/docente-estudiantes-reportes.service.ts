@@ -49,13 +49,9 @@ export class DocenteEstudiantesReportesService {
   ) {}
 
   private normalizarFormato(formatoSolicitado: string): FormatoReporte {
-    const formato = formatoSolicitado.trim().toUpperCase();
+    const formato = formatoSolicitado.trim().toUpperCase() as FormatoReporte;
 
-    if (
-      formato === FormatoReporte.PDF ||
-      formato === FormatoReporte.EXCEL ||
-      formato === FormatoReporte.CSV
-    ) {
+    if (Object.values(FormatoReporte).includes(formato)) {
       return formato;
     }
 

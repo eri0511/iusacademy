@@ -17,6 +17,7 @@ import {
   Prisma,
   Rol,
   TipoEvaluacionForo,
+  type CalificacionEstudiante,
 } from '../../generated/prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -28,6 +29,21 @@ import { ForoReglasService } from './foro-reglas.service';
 import { GuardarCriterioRubricaForoDto } from './dto/guardar-criterio-rubrica-foro.dto';
 
 import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
+
+type ForoContextoGrupo = {
+  id: number;
+  modalidadParticipacion: ModalidadParticipacionForo;
+  origenGrupo: OrigenGrupoForo;
+  conjuntoGrupoId: number | null;
+};
+
+type ForoEstadoCalificacion = {
+  id: number;
+  estado: EstadoForo;
+  actividadCalificable: {
+    id: number;
+  } | null;
+};
 
 @Injectable()
 export class ForoCalificacionService {
@@ -283,7 +299,7 @@ export class ForoCalificacionService {
   }
 
   private async obtenerContextoGrupo(
-    foro: any,
+    foro: ForoContextoGrupo,
     origen: string,
     grupoId: number,
   ) {
@@ -425,9 +441,15 @@ export class ForoCalificacionService {
 
   private async actualizarEstadoCalificacion(
     tx: Prisma.TransactionClient,
-    foro: any,
+    foro: ForoEstadoCalificacion,
   ) {
     if (foro.estado === EstadoForo.CERRADO) {
+      if (!foro.actividadCalificable) {
+        throw new BadRequestException(
+          'El foro no tiene una actividad calificable asociada',
+        );
+      }
+
       await tx.temaForoCurso.update({
         where: {
           id: foro.id,
@@ -439,7 +461,7 @@ export class ForoCalificacionService {
 
       await tx.actividadCalificable.update({
         where: {
-          id: foro.actividadCalificable!.id,
+          id: foro.actividadCalificable.id,
         },
         data: {
           estado: EstadoActividadCalificable.CALIFICANDO,
@@ -1096,7 +1118,7 @@ export class ForoCalificacionService {
     const resultado = await this.prisma.$transaction(async (tx) => {
       const ahora = new Date();
 
-      const actualizadas: Prisma.CalificacionEstudianteGetPayload<{}>[] = [];
+      const actualizadas: CalificacionEstudiante[] = [];
 
       for (const integrante of contexto.integrantes) {
         const estudianteId = integrante.estudianteId;
@@ -1260,7 +1282,7 @@ export class ForoCalificacionService {
             cantidadIntegrantes: contexto.integrantes.length,
             reemplazaNotaGrupalAnterior: true,
             integrantes: contexto.integrantes.map(
-              (integrante) => integrante.estudianteId,
+              (integrante: { estudianteId: number }) => integrante.estudianteId,
             ),
           },
         },
@@ -1310,7 +1332,7 @@ export class ForoCalificacionService {
 
     if (datos.puntajeObtenido > Number(criterio.puntajeMaximo)) {
       throw new BadRequestException(
-        `El puntaje no puede superar ${criterio.puntajeMaximo}`,
+        `El puntaje no puede superar ${Number(criterio.puntajeMaximo)}`,
       );
     }
 

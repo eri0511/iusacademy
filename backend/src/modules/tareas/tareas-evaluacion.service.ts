@@ -25,6 +25,30 @@ import { RegistrarPresencialTareaDto } from './dto/registrar-presencial-tarea.dt
 
 import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
+type EstudianteEquipoEvaluacion = {
+  id: number;
+  nombres: string;
+  apellidoPaterno: string;
+  apellidoMaterno: string | null;
+  correo: string;
+  fotoPerfilUrl: string | null;
+};
+
+type IntegranteEquipoEvaluacion = {
+  estudiante: EstudianteEquipoEvaluacion;
+  esRepresentante: boolean;
+};
+
+type EquipoEvaluacion = {
+  id: number;
+  tipo: 'PLATAFORMA' | 'AFINIDAD';
+  nombre: string;
+  estado: string;
+  entregaId: number | null;
+  estadoEntrega: string;
+  integrantes: IntegranteEquipoEvaluacion[];
+};
+
 @Injectable()
 export class TareasEvaluacionService {
   constructor(private readonly prisma: PrismaService) {}
@@ -590,7 +614,7 @@ export class TareasEvaluacionService {
   private construirEquipos(
     tarea: Awaited<ReturnType<TareasEvaluacionService['obtenerTareaDocente']>>,
     entregas: Awaited<ReturnType<TareasEvaluacionService['obtenerEntregas']>>,
-  ) {
+  ): EquipoEvaluacion[] {
     if (tarea.modalidad !== ModalidadTarea.GRUPAL) {
       return [];
     }
@@ -1877,7 +1901,7 @@ export class TareasEvaluacionService {
         ? {
             id: tarea.actividadCalificable.id,
             estado: tarea.actividadCalificable.estado,
-            puntaje: tarea.actividadCalificable.puntaje,
+            puntaje: tarea.actividadCalificable.puntajeMaximo,
           }
         : null,
       grupos: listaGrupos,

@@ -37,7 +37,7 @@ export class CrearForoDto {
   @Min(1)
   hitoId!: number;
 
-  @ValidateIf((objeto) => objeto.esCalificable === true)
+  @ValidateIf((objeto: CrearForoDto) => objeto.esCalificable === true)
   @IsEnum(ComponenteEvaluacion)
   componente?: ComponenteEvaluacion;
 
@@ -75,7 +75,7 @@ export class CrearForoDto {
   dinamicaGrupal!: DinamicaGrupalForo;
 
   @ValidateIf(
-    (objeto) =>
+    (objeto: CrearForoDto) =>
       objeto.modalidadParticipacion === ModalidadParticipacionForo.GRUPAL &&
       objeto.origenGrupo === OrigenGrupoForo.PLATAFORMA,
   )
@@ -167,12 +167,15 @@ export class CrearForoDto {
   @IsBoolean()
   penalizarIncumplimientoComentarios?: boolean;
 
-  @ValidateIf((objeto) => objeto.penalizarIncumplimientoComentarios === true)
+  @ValidateIf(
+    (objeto: CrearForoDto) =>
+      objeto.penalizarIncumplimientoComentarios === true,
+  )
   @IsEnum(TipoPenalizacionComentarios)
   tipoPenalizacionComentarios?: TipoPenalizacionComentarios;
 
   @ValidateIf(
-    (objeto) =>
+    (objeto: CrearForoDto) =>
       objeto.penalizarIncumplimientoComentarios === true &&
       objeto.tipoPenalizacionComentarios !==
         TipoPenalizacionComentarios.NINGUNA,
@@ -213,14 +216,14 @@ export class CrearForoDto {
   @Max(10000)
   palabrasMaximasComentario?: number;
 
-  @ValidateIf((objeto) => objeto.esCalificable === true)
+  @ValidateIf((objeto: CrearForoDto) => objeto.esCalificable === true)
   @IsIn([TipoEvaluacionForo.MANUAL, TipoEvaluacionForo.AUTOMATICA], {
     message:
       'La evaluación por rúbrica estará disponible en una próxima versión. Selecciona MANUAL o AUTOMATICA.',
   })
   tipoEvaluacion?: TipoEvaluacionForo;
 
-  @ValidateIf((objeto) => objeto.esCalificable === true)
+  @ValidateIf((objeto: CrearForoDto) => objeto.esCalificable === true)
   @IsEnum(ModalidadNotaForo)
   modalidadNota?: ModalidadNotaForo;
 
@@ -271,7 +274,7 @@ export class CrearForoDto {
   @IsBoolean()
   permitirRetrasos?: boolean;
 
-  @ValidateIf((objeto) => objeto.permitirRetrasos === true)
+  @ValidateIf((objeto: CrearForoDto) => objeto.permitirRetrasos === true)
   @IsDateString()
   fechaMaximaRetraso?: string;
 
@@ -280,7 +283,7 @@ export class CrearForoDto {
   tipoDescuentoRetraso?: TipoDescuentoRetraso;
 
   @ValidateIf(
-    (objeto) =>
+    (objeto: CrearForoDto) =>
       objeto.permitirRetrasos === true &&
       objeto.tipoDescuentoRetraso !== TipoDescuentoRetraso.NINGUNO,
   )

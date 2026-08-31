@@ -340,7 +340,14 @@ export class GruposService {
               numero: true,
             },
           })
-        : Promise.resolve([]),
+        : Promise.resolve<
+            Array<{
+              id: number;
+              codigo: string;
+              nombre: string;
+              numero: number;
+            }>
+          >([]),
     ]);
 
     const procesual =

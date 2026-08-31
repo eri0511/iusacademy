@@ -1,4 +1,4 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform, Type, type TransformFnParams } from 'class-transformer';
 
 import {
   IsEnum,
@@ -37,7 +37,10 @@ export type OrdenListadoForo = (typeof ORDENES_LISTADO_FORO)[number];
 
 export class ListarForosQueryDto {
   @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: TransformFnParams) => {
+    const valor: unknown = value;
+    return typeof valor === 'string' ? valor.trim() : valor;
+  })
   @IsString()
   @MaxLength(150)
   busqueda?: string;

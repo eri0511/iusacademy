@@ -4,8 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import PDFDocument = require('pdfkit');
-import ExcelJS = require('exceljs');
+import PDFDocument from 'pdfkit';
+import ExcelJS from 'exceljs';
 
 import { EstadoCurso } from '../../../generated/prisma/client';
 

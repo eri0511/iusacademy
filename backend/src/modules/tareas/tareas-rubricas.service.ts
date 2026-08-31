@@ -465,7 +465,7 @@ export class TareasRubricasService {
 
       if (puntos > Number(criterio.peso) + 0.01) {
         throw new BadRequestException(
-          `Los puntos del criterio "${criterio.nombre}" no pueden superar su peso (${criterio.peso})`,
+          `Los puntos del criterio "${criterio.nombre}" no pueden superar su peso (${Number(criterio.peso)})`,
         );
       }
 

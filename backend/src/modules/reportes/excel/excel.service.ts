@@ -19,10 +19,9 @@ import type {
   SeccionReporte,
 } from '../interfaces/reporte.interface';
 import {
-  AlineacionReporte,
   FilaReporte,
   FormatoReporte,
-  TipoDatoReporte,
+  OrientacionReporte,
 } from '../tipos/reportes.types';
 import {
   EXCEL_ALINEACION_CELDA,
@@ -70,7 +69,7 @@ export class ExcelService {
         properties: { defaultRowHeight: 20 },
         pageSetup: {
           orientation:
-            definicion.opciones?.orientacion === 'HORIZONTAL'
+            definicion.opciones?.orientacion === OrientacionReporte.HORIZONTAL
               ? 'landscape'
               : 'portrait',
           fitToPage: true,
