@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   useEffect,
   useRef,
   useState,
@@ -6,6 +7,7 @@ import {
 
 import {
   ClipboardList,
+  Edit3,
   FileSpreadsheet,
   Plus,
   Save,
@@ -26,7 +28,7 @@ import {
 import {
   crearRubricaTarea,
   eliminarRubricaTarea,
-  importarRubricaExcel,
+  importarRubricaArchivo,
   obtenerRubricaTarea,
 } from '../../../services/tareas/tareas-rubricas.service';
 
@@ -41,6 +43,8 @@ import type {
 type Props = {
   cursoId: number;
   tareaId: number;
+  colorTipo?: string;
+  fondoTipo?: string;
   abierto: boolean;
   onCerrar: () => void;
   onCambio?: () => void;
@@ -124,7 +128,7 @@ const aBorrador =
       origen:
         rubrica.origen,
       ponderacionMax:
-        rubrica.ponderacionMax,
+        Number(rubrica.ponderacionMax),
       criterios:
         rubrica.criterios.map(
           (
@@ -138,7 +142,7 @@ const aBorrador =
               descripcion:
                 criterio.descripcion,
               peso:
-                criterio.peso,
+                Number(criterio.peso),
               niveles:
                 criterio.niveles.map(
                   (
@@ -150,7 +154,7 @@ const aBorrador =
                       etiqueta:
                         nivel.etiqueta,
                       puntos:
-                        nivel.puntos,
+                        Number(nivel.puntos),
                       descripcion:
                         nivel.descripcion,
                     }),
@@ -197,6 +201,8 @@ export default function ConfiguracionRubricaTarea(
   {
     cursoId,
     tareaId,
+    colorTipo = 'var(--app-accent)',
+    fondoTipo = 'var(--app-accent-softer)',
     abierto,
     onCerrar,
     onCambio,
@@ -207,6 +213,14 @@ export default function ConfiguracionRubricaTarea(
     accessToken,
   } =
     useAuth();
+
+  const estiloTipo = {
+    '--cr-type-color':
+      colorTipo,
+    '--cr-type-bg':
+      fondoTipo,
+  } as CSSProperties;
+
 
   const [
     rubricaExistente,
@@ -360,15 +374,20 @@ export default function ConfiguracionRubricaTarea(
           criterio,
         ) =>
           suma +
-          criterio.peso,
+          Number(
+            criterio.peso ??
+              0,
+          ),
         0,
       ),
     );
 
   const ponderacion =
     redondear(
-      borrador.ponderacionMax ??
-        100,
+      Number(
+        borrador.ponderacionMax ??
+          100,
+      ),
     );
 
   const pesosCoinciden =
@@ -476,9 +495,11 @@ export default function ConfiguracionRubricaTarea(
             ...criterio,
             peso:
               redondear(
-                criterio.peso *
+                Number(
+                  criterio.peso,
+                ) *
                   (pesoSugerido /
-                    sumaPesos),
+                    (sumaPesos || 100)),
               ),
           }),
         );
@@ -694,7 +715,7 @@ export default function ConfiguracionRubricaTarea(
       );
     };
 
-  const alElegirExcel =
+  const alElegirArchivo =
     async (
       archivo:
         File | undefined,
@@ -711,7 +732,7 @@ export default function ConfiguracionRubricaTarea(
 
       try {
         const importado =
-          await importarRubricaExcel(
+          await importarRubricaArchivo(
             cursoId,
             tareaId,
             archivo,
@@ -744,12 +765,12 @@ export default function ConfiguracionRubricaTarea(
           tipo:
             'error',
           titulo:
-            'No se pudo importar el Excel',
+            'No se pudo importar la rúbrica',
           mensaje:
             error instanceof
               Error
               ? error.message
-              : 'Verifica el formato del archivo',
+              : 'Verifica que el archivo sea .xlsx o .pdf y tenga una estructura válida',
         });
       } finally {
         setGuardando(
@@ -901,7 +922,7 @@ export default function ConfiguracionRubricaTarea(
         }
         titulo="Rúbrica de evaluación"
         etiqueta="Tareas"
-        descripcion="Define los criterios que el docente usará para calificar esta tarea, o impórtalos desde un archivo Excel."
+        descripcion="Define los criterios que el docente usará para calificar esta tarea, o impórtalos desde un archivo Excel o PDF."
         icono={
           ClipboardList
         }
@@ -988,7 +1009,18 @@ export default function ConfiguracionRubricaTarea(
           </div>
         }
       >
-        <div className="cr-cuerpo">
+        <div
+          className={`cr-cuerpo ${
+            modo === 'ver'
+              ? 'cr-cuerpo--ver'
+              : modo === 'editar'
+                ? 'cr-cuerpo--editar'
+                : ''
+          }`}
+          style={
+            estiloTipo
+          }
+        >
           {modo ===
             'cargando' && (
             <p className="cr-aviso">
@@ -1019,6 +1051,16 @@ export default function ConfiguracionRubricaTarea(
                       }
                       %
                     </p>
+
+                    <div className="cr-escala-info">
+                      <span>
+                        Evaluación sobre 100
+                      </span>
+
+                      <small>
+                        La conversión al aporte continuo o procesual se realiza en Calificaciones.
+                      </small>
+                    </div>
                   </div>
 
                   <div className="cr-acciones">
@@ -1034,7 +1076,7 @@ export default function ConfiguracionRubricaTarea(
                         )
                       }
                     >
-                      <Save
+                      <Edit3
                         size={
                           16
                         }
@@ -1059,7 +1101,7 @@ export default function ConfiguracionRubricaTarea(
                         }
                       />
 
-                      Importar Excel
+                      Importar archivo
                     </button>
 
                     <button
@@ -1106,12 +1148,6 @@ export default function ConfiguracionRubricaTarea(
                               {
                                 nivel.etiqueta
                               }
-
-                              <small>
-                                {nivel.puntos}
-                                {' '}
-                                pts
-                              </small>
                             </th>
                           ),
                         )}
@@ -1157,9 +1193,21 @@ export default function ConfiguracionRubricaTarea(
                                     nivel.id
                                   }
                                 >
-                                  {
-                                    nivel.descripcion
-                                  }
+                                  <div className="cr-nivel-vista">
+                                    <span className="cr-nivel-vista__puntos">
+                                      {Number(
+                                        nivel.puntos,
+                                      )}{' '}
+                                      pts
+                                    </span>
+
+                                    <p>
+                                      {
+                                        nivel.descripcion ||
+                                        'Sin descripción'
+                                      }
+                                    </p>
+                                  </div>
                                 </td>
                               ),
                             )}
@@ -1182,12 +1230,12 @@ export default function ConfiguracionRubricaTarea(
                     archivoRef
                   }
                   type="file"
-                  accept=".xlsx,.xls"
+                  accept=".xlsx,.pdf"
                   hidden
                   onChange={(
                     evento,
                   ) =>
-                    alElegirExcel(
+                    alElegirArchivo(
                       evento.target
                         .files?.[0],
                     )
@@ -1267,7 +1315,7 @@ export default function ConfiguracionRubricaTarea(
 
                   <div className="cr-importar">
                     <span>
-                      ¿Tienes una rúbrica en Excel?
+                      ¿Tienes una rúbrica en Excel o PDF?
                     </span>
 
                     <button
@@ -1287,8 +1335,8 @@ export default function ConfiguracionRubricaTarea(
                       />
 
                       {rubricaExistente
-                        ? 'Reemplazar desde Excel'
-                        : 'Importar desde Excel'}
+                        ? 'Reemplazar archivo'
+                        : 'Importar archivo'}
                     </button>
 
                     <input
@@ -1296,18 +1344,34 @@ export default function ConfiguracionRubricaTarea(
                         archivoRef
                       }
                       type="file"
-                      accept=".xlsx,.xls"
+                      accept=".xlsx,.pdf"
                       hidden
                       onChange={(
                         evento,
                       ) =>
-                        alElegirExcel(
+                        alElegirArchivo(
                           evento.target
                             .files?.[0],
                         )
                       }
                     />
                   </div>
+                </div>
+
+                <div className="cr-escala-editor">
+                  <div>
+                    <strong>
+                      Escala de evaluación
+                    </strong>
+
+                    <span>
+                      100 puntos
+                    </span>
+                  </div>
+
+                  <p>
+                    La rúbrica se diseña y califica sobre 100. El aporte al hito se transforma después según el componente académico.
+                  </p>
                 </div>
 
                 {!pesosCoinciden && (
@@ -1645,9 +1709,34 @@ export default function ConfiguracionRubricaTarea(
 
 const estilos = `
 .cr-cuerpo {
+  --cr-type-color: var(--app-accent);
+  --cr-type-bg: var(--app-accent-softer);
   display: flex;
   flex-direction: column;
   gap: 18px;
+  min-width: 0;
+  max-height: min(72vh, 760px);
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-accent-soft) transparent;
+}
+
+.cr-cuerpo::-webkit-scrollbar,
+.cr-tabla-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.cr-cuerpo::-webkit-scrollbar-thumb,
+.cr-tabla-scroll::-webkit-scrollbar-thumb {
+  background: var(--app-accent-soft);
+  border-radius: 999px;
+}
+
+.cr-cuerpo::-webkit-scrollbar-track,
+.cr-tabla-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .cr-aviso {
@@ -1657,41 +1746,218 @@ const estilos = `
 }
 
 .cr-aviso--alerta {
-  padding: 10px 14px;
+  padding: 12px 14px;
   border: 1px solid var(--app-warning-border);
+  border-left: 4px solid var(--app-warning);
   border-radius: var(--app-radius-sm);
   background: var(--app-warning-bg);
   color: var(--app-warning-strong);
+  line-height: 1.5;
 }
 
 .cr-cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 8;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 18px;
   flex-wrap: wrap;
+  padding: 2px 2px 14px;
+  border-bottom: 1px solid var(--app-border-soft);
+  background: var(--app-surface);
+}
+
+.cr-cabecera > div:first-child {
+  min-width: 280px;
+  flex: 1;
 }
 
 .cr-cabecera h3 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.06rem;
+  line-height: 1.35;
   color: var(--app-text);
+  letter-spacing: -0.01em;
 }
 
 .cr-cabecera p {
-  margin: 4px 0 0;
+  margin: 5px 0 0;
   font-size: 0.8125rem;
   color: var(--app-text-soft);
+}
+
+.cr-escala-info {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.cr-escala-info span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 10px;
+  border: 1px solid var(--app-accent-soft);
+  border-radius: 999px;
+  background: var(--app-accent-softer);
+  color: var(--app-accent-dark);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.cr-escala-info small {
+  color: var(--app-text-muted);
+  font-size: 0.75rem;
 }
 
 .cr-acciones {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.cr-acciones button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  background: var(--app-surface-alt);
+  color: var(--app-text-secondary);
+  font: inherit;
+  font-size: var(--app-font-sm);
+  font-weight: 800;
+  cursor: pointer;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.cr-acciones button svg {
+  flex: 0 0 auto;
+}
+
+.cr-acciones button:hover:not(:disabled) {
+  border-color: var(--cr-type-color);
+  color: var(--cr-type-color);
+  background: var(--app-surface);
+  transform: translateY(-1px);
+}
+
+.cr-acciones button:focus {
+  outline: none;
+}
+
+.cr-acciones button:focus-visible {
+  border-color: var(--cr-type-color);
+  box-shadow:
+    0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--cr-type-color) 16%,
+      transparent
+    );
+}
+
+.cr-acciones .secundario:first-child {
+  border-color: var(--cr-type-color);
+  background: var(--cr-type-color);
+  color: #fff;
+  box-shadow:
+    0 10px 22px
+    color-mix(
+      in srgb,
+      var(--cr-type-color) 22%,
+      transparent
+    );
+}
+
+.cr-acciones .secundario:first-child:hover:not(:disabled) {
+  border-color: var(--cr-type-color);
+  background: var(--cr-type-color);
+  color: #fff;
+  box-shadow:
+    0 12px 26px
+    color-mix(
+      in srgb,
+      var(--cr-type-color) 26%,
+      transparent
+    );
+}
+
+.cr-acciones .secundario:first-child:focus-visible {
+  color: #fff;
+  box-shadow:
+    0 0 0 3px
+      color-mix(
+        in srgb,
+        var(--cr-type-color) 18%,
+        transparent
+      ),
+    0 10px 22px
+      color-mix(
+        in srgb,
+        var(--cr-type-color) 22%,
+        transparent
+      );
+}
+
+.cr-acciones .danger {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--app-danger) 28%,
+      var(--app-border)
+    );
+  background: var(--app-surface);
+  color: var(--app-danger);
+}
+
+.cr-acciones .danger:hover:not(:disabled) {
+  border-color: var(--app-danger);
+  background:
+    color-mix(
+      in srgb,
+      var(--app-danger) 6%,
+      var(--app-surface)
+    );
+  color: var(--app-danger);
+}
+
+.cr-acciones .danger:focus-visible {
+  border-color: var(--app-danger);
+  box-shadow:
+    0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--app-danger) 14%,
+      transparent
+    );
+}
+
+.cr-acciones button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .cr-tabla-scroll {
-  overflow-x: auto;
+  position: relative;
+  overflow: auto;
+  max-height: min(58vh, 620px);
   border: 1px solid var(--app-border-soft);
   border-radius: var(--app-radius-md);
   background: var(--app-surface-raised);
@@ -1699,81 +1965,163 @@ const estilos = `
 
 .cr-tabla {
   width: 100%;
-  border-collapse: collapse;
+  min-width: 1120px;
+  border-collapse: separate;
+  border-spacing: 0;
   text-align: left;
+  table-layout: fixed;
 }
 
 .cr-tabla th,
 .cr-tabla td {
-  padding: 10px 14px;
+  padding: 13px 14px;
+  border-right: 1px solid var(--app-border-soft);
   border-bottom: 1px solid var(--app-border-soft);
   font-size: 0.8125rem;
+  line-height: 1.5;
   color: var(--app-text-secondary);
   vertical-align: top;
-  min-width: 140px;
+  background: var(--app-surface-raised);
 }
 
-.cr-tabla tbody tr:last-child th,
+.cr-tabla th:last-child,
+.cr-tabla td:last-child {
+  border-right: 0;
+}
+
 .cr-tabla tbody tr:last-child td {
   border-bottom: 0;
 }
 
-.cr-tabla th {
+.cr-tabla thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   background: var(--app-surface-alt);
   color: var(--app-text);
-  font-weight: 600;
+  font-weight: 800;
+  box-shadow: inset 0 -1px 0 var(--app-border);
 }
 
-.cr-tabla td {
+.cr-tabla th:first-child,
+.cr-tabla td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  width: 210px;
+  min-width: 210px;
   background: var(--app-surface-raised);
 }
 
-.cr-nivel-th small {
-  display: block;
-  font-weight: 500;
-  color: var(--app-text-muted);
+.cr-tabla thead th:first-child {
+  z-index: 7;
+  background: var(--app-surface-alt);
+}
+
+.cr-tabla th:not(:first-child):not(:last-child),
+.cr-tabla td:not(:first-child):not(:last-child) {
+  width: 205px;
+  min-width: 205px;
+}
+
+.cr-tabla th:last-child,
+.cr-tabla td:last-child {
+  width: 76px;
+  min-width: 76px;
+  text-align: center;
+}
+
+.cr-tabla tbody tr:hover td {
+  background: var(--app-surface-alt);
+}
+
+.cr-tabla tbody tr:hover td:first-child {
+  background: var(--app-surface-alt);
 }
 
 .cr-tabla td strong {
   display: block;
+  margin-bottom: 5px;
   color: var(--app-text);
+  font-size: 0.83rem;
+  line-height: 1.35;
 }
 
-.cr-tabla td small {
+.cr-tabla td > small {
+  display: block;
   color: var(--app-text-muted);
+  line-height: 1.5;
+}
+
+.cr-nivel-th {
+  color: var(--app-accent-dark) !important;
+}
+
+.cr-nivel-vista {
+  display: grid;
+  gap: 7px;
+}
+
+.cr-nivel-vista__puntos {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--app-accent-softer);
+  color: var(--app-accent-dark);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.cr-nivel-vista p {
+  margin: 0;
+  color: var(--app-text-secondary);
+  line-height: 1.55;
 }
 
 .cr-editor-encabezado {
+  position: sticky;
+  top: 0;
+  z-index: 7;
   display: grid;
-  grid-template-columns: 1fr 180px;
+  grid-template-columns: minmax(0, 1fr) 180px;
   gap: 14px;
+  padding: 2px 2px 14px;
+  border-bottom: 1px solid var(--app-border-soft);
+  background: var(--app-surface);
 }
 
 .cr-editor-encabezado label,
 .cr-criterio label {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  gap: 6px;
+  font-size: 0.73rem;
+  font-weight: 700;
   color: var(--app-text-soft);
 }
 
 .cr-editor-encabezado input,
 .cr-criterio input {
   width: 100%;
+  min-height: 39px;
   padding: 9px 11px;
   border: 1px solid var(--app-input-border);
   border-radius: var(--app-radius-sm);
   background: var(--app-input-bg);
   color: var(--app-text);
-  font-size: 0.875rem;
+  font-size: 0.84rem;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background 150ms ease;
 }
 
 .cr-editor-encabezado input:focus,
 .cr-criterio input:focus {
-  outline: 2px solid var(--app-input-focus);
-  outline-offset: 0;
+  outline: none;
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 3px var(--app-accent-softer);
+  background: var(--app-surface-raised);
 }
 
 .cr-importar {
@@ -1781,9 +2129,9 @@ const estilos = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 12px 14px;
-  border: 1px dashed var(--app-border-strong);
+  gap: 12px;
+  padding: 11px 13px;
+  border: 1px dashed var(--app-accent-soft);
   border-radius: var(--app-radius-sm);
   background: var(--app-accent-softer);
   flex-wrap: wrap;
@@ -1794,45 +2142,132 @@ const estilos = `
   color: var(--app-text-secondary);
 }
 
-.cr-criterios {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.cr-importar button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 13px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-alt);
+  color: var(--app-text-secondary);
+  font: inherit;
+  font-size: var(--app-font-sm);
+  font-weight: 800;
+  cursor: pointer;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
 }
 
-.cr-criterio {
-  padding: 14px;
-  border: 1px solid var(--app-border);
-  border-radius: var(--app-radius-md);
-  background: var(--app-surface-raised);
+.cr-importar button:hover:not(:disabled) {
+  border-color: var(--cr-type-color);
+  color: var(--cr-type-color);
+  background: var(--app-surface);
+}
+
+.cr-importar button:focus {
+  outline: none;
+}
+
+.cr-importar button:focus-visible {
+  border-color: var(--cr-type-color);
+  color: var(--cr-type-color);
+  box-shadow:
+    0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--cr-type-color) 16%,
+      transparent
+    );
+}
+
+.cr-escala-editor {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--app-border-soft);
+  border-left: 4px solid var(--app-accent);
+  border-radius: var(--app-radius-sm);
+  background: var(--app-surface-alt);
+}
+
+.cr-escala-editor > div {
+  display: grid;
+  gap: 3px;
+  min-width: 145px;
+}
+
+.cr-escala-editor strong {
+  color: var(--app-text);
+  font-size: 0.76rem;
+}
+
+.cr-escala-editor span {
+  color: var(--app-accent-dark);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.cr-escala-editor p {
+  margin: 0;
+  color: var(--app-text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.cr-criterios {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.cr-criterio-cabecera {
+.cr-criterio {
+  padding: 14px;
+  border: 1px solid var(--app-border);
+  border-left: 4px solid var(--app-accent);
+  border-radius: var(--app-radius-md);
+  background: var(--app-surface-raised);
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.cr-criterio-cabecera {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 14px;
-  flex-wrap: wrap;
 }
 
 .cr-criterio-titulo {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.75fr) minmax(260px, 1.25fr);
   gap: 8px;
+  align-items: end;
 }
 
-.cr-criterio-titulo strong {
-  font-size: 0.8125rem;
+.cr-criterio-titulo > strong {
+  grid-column: 1 / -1;
+  font-size: 0.76rem;
   color: var(--app-accent-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .cr-peso-editor {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  padding-top: 23px;
 }
 
 .cr-peso-editor label {
@@ -1850,80 +2285,238 @@ const estilos = `
   content: '%';
   font-size: 0.8125rem;
   color: var(--app-text-soft);
+  margin-left: -4px;
 }
 
 .cr-niveles {
   display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(240px, 1fr)
-  );
-  gap: 10px;
+  grid-template-columns: repeat(4, minmax(190px, 1fr));
+  gap: 9px;
+  overflow-x: auto;
+  padding-bottom: 2px;
 }
 
 .cr-nivel {
-  display: flex;
-  flex-direction: column;
+  min-width: 190px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 86px auto;
   gap: 8px;
-  padding: 12px;
+  align-items: end;
+  padding: 11px;
   border: 1px solid var(--app-border-soft);
   border-radius: var(--app-radius-sm);
   background: var(--app-surface-alt);
 }
 
+.cr-nivel label:nth-of-type(3) {
+  grid-column: 1 / -1;
+}
+
+.cr-nivel button.icono {
+  align-self: end;
+  margin-bottom: 4px;
+}
+
 .cr-nivel button.icono,
 .cr-peso-editor button.icono {
-  align-self: flex-end;
+  width: 32px;
+  height: 32px;
   border: 0;
+  border-radius: var(--app-radius-sm);
   background: transparent;
   color: var(--app-text-muted);
   cursor: pointer;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
 }
 
-.cr-nivel button.icono:hover,
-.cr-peso-editor button.icono:hover {
+.cr-nivel button.icono:hover:not(:disabled),
+.cr-peso-editor button.icono:hover:not(:disabled) {
+  background: var(--app-danger-soft);
   color: var(--app-danger);
+}
+
+.cr-nivel button.icono:disabled,
+.cr-peso-editor button.icono:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .cr-agregar-nivel,
 .cr-agregar-criterio {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   align-self: flex-start;
-  border: 1px dashed var(--app-border-strong);
+  min-height: 35px;
+  border: 1px dashed var(--cr-type-color);
   border-radius: var(--app-radius-sm);
-  padding: 8px 12px;
-  background: transparent;
-  color: var(--app-accent-dark);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  padding: 7px 12px;
+  background: var(--cr-type-bg);
+  color: var(--cr-type-color);
+  font-size: 0.77rem;
+  font-weight: 800;
   cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
 }
 
 .cr-agregar-criterio {
   align-self: center;
+  min-width: 180px;
 }
 
 .cr-agregar-nivel:hover,
 .cr-agregar-criterio:hover {
-  background: var(--app-accent-softer);
+  border-color: var(--app-accent);
+  background: var(--app-accent-softest, var(--app-accent-softer));
+  transform: translateY(-1px);
 }
 
 .cr-footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 10px;
 }
 
-@media (max-width: 720px) {
+.cr-footer button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 15px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-alt);
+  color: var(--app-text-secondary);
+  font: inherit;
+  font-size: var(--app-font-sm);
+  font-weight: 800;
+  cursor: pointer;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.cr-footer .primario {
+  border-color: var(--cr-type-color);
+  background: var(--cr-type-color);
+  color: #fff;
+  box-shadow:
+    0 8px 18px
+    color-mix(
+      in srgb,
+      var(--cr-type-color) 20%,
+      transparent
+    );
+}
+
+.cr-footer .primario:hover:not(:disabled) {
+  color: #fff;
+  box-shadow:
+    0 10px 22px
+    color-mix(
+      in srgb,
+      var(--cr-type-color) 24%,
+      transparent
+    );
+}
+
+.cr-footer .secundario:hover:not(:disabled) {
+  border-color: var(--cr-type-color);
+  color: var(--cr-type-color);
+  background: var(--app-surface);
+}
+
+.cr-footer button:focus {
+  outline: none;
+}
+
+.cr-footer button:focus-visible {
+  border-color: var(--cr-type-color);
+  box-shadow:
+    0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--cr-type-color) 16%,
+      transparent
+    );
+}
+
+.cr-footer button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@media (max-width: 1150px) {
+  .cr-niveles {
+    grid-template-columns: repeat(2, minmax(230px, 1fr));
+  }
+
+  .cr-criterio-titulo {
+    grid-template-columns: 1fr;
+  }
+
+  .cr-criterio-titulo > strong {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .cr-cuerpo {
+    max-height: 70vh;
+  }
+
   .cr-editor-encabezado {
     grid-template-columns: 1fr;
   }
 
+  .cr-cabecera {
+    position: static;
+  }
+
+  .cr-acciones {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .cr-acciones button {
+    flex: 1;
+  }
+
+  .cr-escala-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .cr-criterio-cabecera {
+    grid-template-columns: 1fr;
+  }
+
+  .cr-peso-editor {
+    padding-top: 0;
+    justify-content: flex-end;
+  }
+
   .cr-niveles {
     grid-template-columns: 1fr;
+  }
+
+  .cr-nivel {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) 84px auto;
   }
 }
 `;

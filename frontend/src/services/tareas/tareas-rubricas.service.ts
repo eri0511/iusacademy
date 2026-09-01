@@ -9,47 +9,18 @@ const API_URL =
   import.meta.env.VITE_API_URL ??
   'http://localhost:3000';
 
-export function rubricaPredeterminada(): CrearRubricaDatos {
-  return {
-    nombre: 'Rúbrica predeterminada IusAcademy',
-    origen: 'MANUAL',
-    ponderacionMax: 100,
-    criterios: [
-      {
-        orden: 0,
-        nombre: 'Dominio y comprensión',
-        descripcion: 'Comprende y desarrolla correctamente la actividad.',
-        peso: 40,
-        niveles: [
-          { orden: 0, etiqueta: 'Inicial', puntos: 50, descripcion: 'Presenta dificultades importantes.' },
-          { orden: 1, etiqueta: 'Logrado', puntos: 75, descripcion: 'Cumple adecuadamente.' },
-          { orden: 2, etiqueta: 'Excelente', puntos: 100, descripcion: 'Demuestra dominio completo.' },
-        ],
-      },
-      {
-        orden: 1,
-        nombre: 'Calidad y fundamentación',
-        descripcion: 'La respuesta está fundamentada y responde a la consigna.',
-        peso: 35,
-        niveles: [
-          { orden: 0, etiqueta: 'Inicial', puntos: 50, descripcion: 'Fundamentación insuficiente.' },
-          { orden: 1, etiqueta: 'Logrado', puntos: 75, descripcion: 'Fundamentación adecuada.' },
-          { orden: 2, etiqueta: 'Excelente', puntos: 100, descripcion: 'Fundamentación sólida y pertinente.' },
-        ],
-      },
-      {
-        orden: 2,
-        nombre: 'Presentación y cumplimiento',
-        descripcion: 'Cumple el formato, requisitos y presenta el trabajo con claridad.',
-        peso: 25,
-        niveles: [
-          { orden: 0, etiqueta: 'Inicial', puntos: 50, descripcion: 'Cumple parcialmente.' },
-          { orden: 1, etiqueta: 'Logrado', puntos: 75, descripcion: 'Cumple lo solicitado.' },
-          { orden: 2, etiqueta: 'Excelente', puntos: 100, descripcion: 'Presentación clara y completa.' },
-        ],
-      },
-    ],
-  };
+import {
+  rubricaIusAcademyPorTipo,
+} from '../../utils/tareas/rubricasIusAcademy';
+
+import type {
+  TipoTarea,
+} from '../../types/tareas/tareas.types';
+
+export function rubricaPredeterminada(
+  tipo: TipoTarea = 'RESPUESTA_ESCRITA',
+): CrearRubricaDatos {
+  return rubricaIusAcademyPorTipo(tipo);
 }
 
 type ErrorApi = {
@@ -215,7 +186,7 @@ export async function eliminarRubricaTarea(
   );
 }
 
-export async function importarRubricaExcel(
+export async function importarRubricaArchivo(
   cursoId:
     number,
   tareaId:
@@ -235,7 +206,7 @@ export async function importarRubricaExcel(
 
   const respuesta =
     await enviar(
-      `${API_URL}/tareas/rubricas/docente/cursos/${cursoId}/${tareaId}/importar-excel`,
+      `${API_URL}/tareas/rubricas/docente/cursos/${cursoId}/${tareaId}/importar-archivo`,
       {
         method:
           'POST',

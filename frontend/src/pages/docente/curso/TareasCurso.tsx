@@ -50,7 +50,7 @@ import useTareasCurso from '../../../hooks/tareas/useTareasCurso';
 
 import {
   crearRubricaTarea,
-  importarRubricaExcel,
+  importarRubricaArchivo,
   rubricaPredeterminada,
 } from '../../../services/tareas/tareas-rubricas.service';
 import { subirArchivoConsigna } from '../../../services/tareas/tareas-archivos.service';
@@ -762,10 +762,15 @@ export default function TareasCurso() {
       try {
         const {
           archivosConsigna = [],
+          archivosConsignaEliminar: _archivosConsignaEliminar = [],
           archivoRubrica,
+          usarRubrica = false,
           modoRubrica = 'PREDETERMINADA',
+          rubricaDatos,
           ...datosTarea
         } = datos;
+
+        void _archivosConsignaEliminar;
 
         let tareaId: number;
 
@@ -835,8 +840,12 @@ export default function TareasCurso() {
             ),
           );
 
-          if (archivoRubrica) {
-            const datosRubrica = await importarRubricaExcel(
+          if (
+            usarRubrica &&
+            modoRubrica === 'PERSONALIZADA' &&
+            archivoRubrica
+          ) {
+            const datosRubrica = await importarRubricaArchivo(
               curso.id,
               tareaId,
               archivoRubrica,
@@ -851,13 +860,14 @@ export default function TareasCurso() {
             );
           } else if (
             !tareaEditar &&
+            usarRubrica &&
             datosTarea.esCalificable &&
             modoRubrica === 'PREDETERMINADA'
           ) {
             await crearRubricaTarea(
               curso.id,
               tareaId,
-              rubricaPredeterminada(),
+              rubricaDatos ?? rubricaPredeterminada(datosTarea.tipo),
               accessToken,
             );
           }

@@ -105,10 +105,9 @@ export default function EditorExposicion(
     );
 
   const dentroDeRango =
-    total >=
-      config.minPalabras &&
-    total <=
-      config.maxPalabras;
+    !config.estructuraGuiada ||
+    (total >= config.minPalabras &&
+      total <= config.maxPalabras);
 
   const enlaceValido =
     esEnlacePresentacionValido(
@@ -125,6 +124,7 @@ export default function EditorExposicion(
     );
 
   const citasCumplidas =
+    !config.estructuraGuiada ||
     !config.exigirCitas ||
     citasCompletas.length >=
       config.minCitas;

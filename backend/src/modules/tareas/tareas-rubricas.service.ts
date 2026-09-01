@@ -5,7 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import ExcelJS from 'exceljs';
+import * as XLSX from 'xlsx';
+import pdfParse from 'pdf-parse';
 
 import { Prisma, Rol } from '../../generated/prisma/client';
 
@@ -32,7 +33,7 @@ export class TareasRubricasService {
   ) {
     if (usuario.rol !== Rol.DOCENTE) {
       throw new ForbiddenException(
-        'Solo el docente puede administrar rǭbricas',
+        'Solo el docente puede administrar rúbricas',
       );
     }
 
@@ -61,7 +62,13 @@ export class TareasRubricasService {
     return tarea;
   }
 
-  obtenerRubrica(tareaId: number) {
+  async obtenerRubrica(
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    tareaId: number,
+  ) {
+    await this.obtenerTareaAutorizada(usuario, cursoId, tareaId);
+
     return this.prisma.rubricaTarea.findUnique({
       where: {
         tareaId,
@@ -106,7 +113,7 @@ export class TareasRubricasService {
 
     if (Math.abs(sumaPesos - ponderacionMax) > 0.5) {
       throw new BadRequestException(
-        `La suma de los pesos (${sumaPesos}) debe coincidir con la ponderaci��n m��xima (${ponderacionMax})`,
+        `La suma de los pesos (${sumaPesos}) debe coincidir con la ponderación máxima (${ponderacionMax})`,
       );
     }
 
@@ -163,7 +170,7 @@ export class TareasRubricasService {
     });
 
     if (resultado.count === 0) {
-      throw new NotFoundException('La tarea no tiene rǭbrica');
+      throw new NotFoundException('La tarea no tiene rúbrica');
     }
 
     return {
@@ -171,81 +178,176 @@ export class TareasRubricasService {
     };
   }
 
-  /**
-   * Formato esperado de la hoja de Excel (primera hoja):
-   *
-   *   A          | B        | C            | D       | E
-   *   Criterio   | Peso     | Insuficiente | Logrado | Excelente
-   *   Redacci��n | 40       | Incongruente | Adecuada | Impecable
-   *   ...
-   *
-   * La columna A debe encabezar "criterio"/"aspecto"/"indicador";
-   * la columna de peso es opcional (encabeza "peso"/"%"). El resto de
-   * columnas con encabezado son niveles. Si no hay columna de peso,
-   * cada criterio se reparte por igual.
-   */
-  async importarRubricaDesdeExcel(
+  async importarRubricaDesdeArchivo(
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    tareaId: number,
     archivo: Express.Multer.File,
   ): Promise<CrearRubricaDto> {
+    await this.obtenerTareaAutorizada(usuario, cursoId, tareaId);
+
     if (!archivo) {
-      throw new BadRequestException('Sube el archivo Excel de la rǭbrica');
+      throw new BadRequestException(
+        'Selecciona un archivo de rúbrica en formato .xlsx o .pdf',
+      );
     }
 
-    const workbook = new ExcelJS.Workbook();
+    if (!archivo.buffer || archivo.buffer.length === 0) {
+      throw new BadRequestException('El archivo de rúbrica está vacío');
+    }
+
+    const nombreArchivo = archivo.originalname?.toLowerCase() ?? '';
+
+    if (nombreArchivo.endsWith('.xlsx')) {
+      return this.procesarRubricaExcel(archivo);
+    }
+
+    if (nombreArchivo.endsWith('.pdf')) {
+      return this.procesarRubricaPdf(archivo);
+    }
+
+    throw new BadRequestException(
+      'Formato no admitido. Solo se permiten archivos .xlsx y .pdf',
+    );
+  }
+
+  async importarRubricaDesdeExcel(
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    tareaId: number,
+    archivo: Express.Multer.File,
+  ): Promise<CrearRubricaDto> {
+    return this.importarRubricaDesdeArchivo(
+      usuario,
+      cursoId,
+      tareaId,
+      archivo,
+    );
+  }
+
+  private async procesarRubricaExcel(
+    archivo: Express.Multer.File,
+  ): Promise<CrearRubricaDto> {
+    let workbook: XLSX.WorkBook;
 
     try {
-      await workbook.xlsx.load(archivo.buffer);
-    } catch {
-      throw new BadRequestException('El archivo no es un Excel v��lido');
+      workbook = XLSX.read(archivo.buffer, {
+        type: 'buffer',
+        cellDates: false,
+        cellNF: true,
+        cellText: true,
+      });
+    } catch (error) {
+      console.error('Error real al leer el Excel:', error);
+
+      console.error('Información del archivo:', {
+        nombre: archivo.originalname,
+        mimetype: archivo.mimetype,
+        tamanio: archivo.size,
+        bufferLength: archivo.buffer?.length,
+        primerosBytes: archivo.buffer
+          ?.subarray(0, 8)
+          .toString('hex'),
+      });
+
+      throw new BadRequestException(
+        'No se pudo leer el archivo Excel. Verifica que sea un archivo .xlsx válido y que no esté dañado',
+      );
     }
 
-    const hoja = workbook.worksheets[0];
+    const nombreHoja = workbook.SheetNames[0];
+
+    if (!nombreHoja) {
+      throw new BadRequestException(
+        'El archivo Excel no contiene hojas',
+      );
+    }
+
+    const hoja = workbook.Sheets[nombreHoja];
 
     if (!hoja) {
-      throw new BadRequestException('El archivo Excel est�� vac��o');
+      throw new BadRequestException(
+        'No se pudo leer la primera hoja del archivo Excel',
+      );
     }
 
-    let filaEncabezado = 1;
+    const filas = XLSX.utils.sheet_to_json<unknown[]>(hoja, {
+      header: 1,
+      defval: '',
+      raw: false,
+      blankrows: false,
+    });
 
-    while (filaEncabezado <= hoja.actualRowCount) {
-      const fila = hoja.getRow(filaEncabezado);
+    if (filas.length === 0) {
+      throw new BadRequestException(
+        'El archivo Excel no contiene datos',
+      );
+    }
 
-      const tieneDatos = fila.actualCellCount > 0 && fila.cellCount > 0;
+    let filaEncabezado = -1;
 
-      if (tieneDatos) {
+    for (
+      let indiceFila = 0;
+      indiceFila < filas.length;
+      indiceFila += 1
+    ) {
+      const fila = Array.isArray(filas[indiceFila])
+        ? filas[indiceFila]
+        : [];
+
+      const etiquetasFila = fila.map((valor) =>
+        this.textoCeldaExcel(valor),
+      );
+
+      const tieneColumnaCriterio = etiquetasFila.some((etiqueta) =>
+        /^(criterio|aspecto|indicador)$/i.test(etiqueta),
+      );
+
+      if (tieneColumnaCriterio) {
+        filaEncabezado = indiceFila;
         break;
       }
-
-      filaEncabezado += 1;
     }
 
-    const encabezado = hoja.getRow(filaEncabezado);
-
-    const celdas = encabezado.cellCount;
-
-    if (celdas === 0) {
-      throw new BadRequestException('La hoja no tiene encabezados');
+    if (filaEncabezado === -1) {
+      throw new BadRequestException(
+        'No se encontró la fila de encabezados. El Excel debe contener una columna llamada "Criterio"',
+      );
     }
 
-    const etiquetas: string[] = [];
+    const encabezado = Array.isArray(filas[filaEncabezado])
+      ? filas[filaEncabezado]
+      : [];
 
-    for (let col = 1; col <= celdas; col += 1) {
-      etiquetas.push(encabezado.getCell(col).text?.trim() ?? '');
-    }
-
-    const indiceCriterio = etiquetas.findIndex((etiqueta) =>
-      /criterio|aspecto|indicador|rubrica/i.test(etiqueta),
+    const etiquetas = encabezado.map((valor) =>
+      this.textoCeldaExcel(valor),
     );
 
-    const indicePeso = etiquetas.findIndex(
-      (etiqueta) =>
-        /peso|porcentaje|%/i.test(etiqueta) &&
-        indiceCriterio !== etiquetas.indexOf(etiqueta),
+    const indiceCriterio = etiquetas.findIndex((etiqueta) =>
+      /^(criterio|aspecto|indicador)$/i.test(etiqueta),
+    );
+
+    const indicePeso = etiquetas.findIndex((etiqueta) =>
+      /^(peso|peso\s*\(%\)|ponderaci[oó]n|ponderaci[oó]n\s*\(%\)|porcentaje|%)$/i.test(
+        etiqueta,
+      ),
     );
 
     const indiceDescripcion = etiquetas.findIndex((etiqueta) =>
-      /descripcion|detalle/i.test(etiqueta),
+      /^(descripci[oó]n|detalle)$/i.test(etiqueta),
     );
+
+    const columnasIgnoradas = etiquetas
+      .map((etiqueta, indice) => ({
+        etiqueta,
+        indice,
+      }))
+      .filter(({ etiqueta }) =>
+        /^(puntaje(\s+obtenido)?|nota|resultado|calificaci[oó]n|observaciones?|comentarios?)$/i.test(
+          etiqueta,
+        ),
+      )
+      .map(({ indice }) => indice);
 
     const indiceNiveles: number[] = [];
 
@@ -254,7 +356,8 @@ export class TareasRubricasService {
         indice === indiceCriterio ||
         indice === indicePeso ||
         indice === indiceDescripcion ||
-        !etiqueta
+        columnasIgnoradas.includes(indice) ||
+        !etiqueta.trim()
       ) {
         return;
       }
@@ -262,46 +365,75 @@ export class TareasRubricasService {
       indiceNiveles.push(indice);
     });
 
-    if (indiceCriterio === -1 || indiceNiveles.length === 0) {
+    if (indiceCriterio === -1) {
       throw new BadRequestException(
-        'Formato no reconocido. Asegǭrate de que la primera fila tenga una columna "Criterio" y al menos una columna de niveles',
+        'El Excel debe incluir una columna llamada "Criterio"',
+      );
+    }
+
+    if (indiceNiveles.length === 0) {
+      throw new BadRequestException(
+        'La rúbrica debe incluir al menos una columna de nivel de desempeño',
       );
     }
 
     const criterios: RubricaCriterioDto[] = [];
 
-    const filaInicio = filaEncabezado + 1;
+    for (
+      let indiceFila = filaEncabezado + 1;
+      indiceFila < filas.length;
+      indiceFila += 1
+    ) {
+      const fila = Array.isArray(filas[indiceFila])
+        ? filas[indiceFila]
+        : [];
 
-    for (let fila = filaInicio; fila <= hoja.actualRowCount; fila += 1) {
-      const filaExcel = hoja.getRow(fila);
-
-      const nombre = filaExcel.getCell(indiceCriterio + 1).text?.trim() ?? '';
+      const nombre = this.textoCeldaExcel(
+        fila[indiceCriterio],
+      );
 
       if (!nombre) {
+        continue;
+      }
+
+      if (
+        /^(resumen|ponderaci[oó]n total|observaciones?|retroalimentaci[oó]n)$/i.test(
+          nombre,
+        )
+      ) {
         continue;
       }
 
       const peso =
         indicePeso === -1
           ? 0
-          : (this.extraerNumero(filaExcel.getCell(indicePeso + 1)) ?? 0);
+          : (this.extraerNumeroExcel(fila[indicePeso]) ?? 0);
 
       const descripcion =
         indiceDescripcion === -1
           ? undefined
-          : (filaExcel.getCell(indiceDescripcion + 1).text?.trim() ??
-            undefined);
+          : this.textoCeldaExcel(
+              fila[indiceDescripcion],
+            ) || undefined;
 
       const niveles: RubricaNivelDto[] = indiceNiveles.map(
-        (indiceNivel, posicion) => ({
-          orden: posicion,
-          etiqueta: etiquetas[indiceNivel],
-          descripcion: filaExcel.getCell(indiceNivel + 1).text?.trim() ?? null,
-        }),
+        (indiceNivel, posicion) => {
+          const descripcionNivel =
+            this.textoCeldaExcel(
+              fila[indiceNivel],
+            ) || undefined;
+
+          return {
+            orden: posicion + 1,
+            etiqueta: etiquetas[indiceNivel],
+            descripcion: descripcionNivel,
+            puntos: 0,
+          };
+        },
       );
 
       criterios.push({
-        orden: criterios.length,
+        orden: criterios.length + 1,
         nombre,
         descripcion,
         peso,
@@ -311,63 +443,541 @@ export class TareasRubricasService {
 
     if (criterios.length === 0) {
       throw new BadRequestException(
-        'No se encontraron criterios en el archivo',
+        'No se encontraron criterios válidos en el archivo Excel',
       );
     }
 
-    const nCriterios = criterios.length;
+    this.normalizarPesosSinDefinir(
+      criterios,
+      indicePeso === -1,
+    );
 
-    criterios.forEach((criterio) => {
-      if (!criterio.peso) {
-        criterio.peso = Math.round((100 / nCriterios) * 100) / 100;
-      }
-
-      const nNiveles = criterio.niveles.length;
-
-      criterio.niveles.forEach((nivel, posicion) => {
-        nivel.puntos =
-          Math.round(
-            ((Number(criterio.peso) * (posicion + 1)) / nNiveles) * 100,
-          ) / 100;
-      });
-    });
+    this.calcularPuntosNiveles(criterios);
 
     const ponderacionMax =
-      Math.round(
-        criterios.reduce(
-          (total, criterio) => total + Number(criterio.peso),
-          0,
-        ) * 100,
-      ) / 100;
+      this.calcularPonderacion(criterios);
+
+    this.validarPonderacion(ponderacionMax);
 
     return {
-      nombre: hoja.name || 'Rǭbrica importada',
+      nombre: this.obtenerNombreRubricaDesdeExcel(
+        filas,
+        nombreHoja,
+      ),
       origen: 'EXCEL',
       ponderacionMax,
       criterios,
     };
   }
 
-  private extraerNumero(celda: ExcelJS.Cell): number | undefined {
-    if (typeof celda.value === 'number') {
-      return celda.value;
+  private async procesarRubricaPdf(
+    archivo: Express.Multer.File,
+  ): Promise<CrearRubricaDto> {
+    let texto = '';
+
+    try {
+      const resultado = await pdfParse(archivo.buffer);
+      texto = resultado.text ?? '';
+    } catch (error) {
+      console.error('Error real al leer el PDF de rúbrica:', error);
+
+      throw new BadRequestException(
+        'No se pudo leer el PDF. Verifica que sea un archivo PDF válido y que no esté dañado',
+      );
     }
 
-    const texto = celda.text?.trim() ?? '';
+    const textoNormalizado = texto
+      .replace(/\r/g, '\n')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
 
-    const coincidencia = texto.match(/(\d+(?:[.,]\d+)?)/);
+    if (!textoNormalizado) {
+      throw new BadRequestException(
+        'El PDF no contiene texto seleccionable. Si es un PDF escaneado, primero debe aplicarse OCR',
+      );
+    }
+
+    const lineas = textoNormalizado
+      .split('\n')
+      .map((linea) => linea.trim())
+      .filter(Boolean);
+
+    const nombre = this.obtenerNombreRubricaDesdePdf(lineas, archivo.originalname);
+    const nivelesDetectados = this.detectarNivelesPdf(lineas);
+    const criterios = this.extraerCriteriosPdf(lineas, nivelesDetectados);
+
+    if (criterios.length === 0) {
+      throw new BadRequestException(
+        'No se pudieron identificar criterios y ponderaciones en el PDF. El PDF debe contener texto seleccionable y cada criterio debe incluir su peso o porcentaje',
+      );
+    }
+
+    this.calcularPuntosNiveles(criterios);
+
+    const ponderacionMax = this.calcularPonderacion(criterios);
+
+    this.validarPonderacion(ponderacionMax);
+
+    return {
+      nombre,
+      origen: 'MANUAL',
+      ponderacionMax,
+      criterios,
+    };
+  }
+
+  private extraerCriteriosPdf(
+    lineas: string[],
+    nivelesDetectados: string[],
+  ): RubricaCriterioDto[] {
+    const candidatos: Array<{
+      indice: number;
+      nombre: string;
+      peso: number;
+      resto: string;
+    }> = [];
+
+    const expresiones = [
+      /^(.+?)\s+(\d{1,3}(?:[.,]\d+)?)\s*%\s*(.*)$/i,
+      /^(.+?)\s+\((\d{1,3}(?:[.,]\d+)?)\s*%\)\s*(.*)$/i,
+      /^(.+?)\s*[-–—:]\s*(\d{1,3}(?:[.,]\d+)?)\s*%\s*(.*)$/i,
+    ];
+
+    lineas.forEach((linea, indice) => {
+      if (
+        /^(criterio|aspecto|indicador|peso|ponderaci[oó]n|porcentaje|nivel|desempeño)$/i.test(
+          linea,
+        )
+      ) {
+        return;
+      }
+
+      for (const expresion of expresiones) {
+        const coincidencia = linea.match(expresion);
+
+        if (!coincidencia) {
+          continue;
+        }
+
+        const nombre = coincidencia[1].trim();
+        const peso = Number(coincidencia[2].replace(',', '.'));
+        const resto = coincidencia[3]?.trim() ?? '';
+
+        if (
+          nombre.length >= 2 &&
+          Number.isFinite(peso) &&
+          peso > 0 &&
+          peso <= 100
+        ) {
+          candidatos.push({
+            indice,
+            nombre,
+            peso,
+            resto,
+          });
+        }
+
+        break;
+      }
+    });
+
+    return candidatos.map((candidato, posicion) => {
+      const siguienteIndice =
+        candidatos[posicion + 1]?.indice ?? lineas.length;
+
+      const bloque = [
+        candidato.resto,
+        ...lineas.slice(candidato.indice + 1, siguienteIndice),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+
+      const niveles = nivelesDetectados.map((etiqueta, indiceNivel) => ({
+        orden: indiceNivel + 1,
+        etiqueta,
+        descripcion: this.extraerDescripcionNivelPdf(
+          bloque,
+          etiqueta,
+          nivelesDetectados,
+        ),
+        puntos: 0,
+      }));
+
+      const descripcion =
+        this.extraerDescripcionCriterioPdf(
+          bloque,
+          nivelesDetectados,
+        );
+
+      return {
+        orden: posicion + 1,
+        nombre: candidato.nombre,
+        descripcion,
+        peso: candidato.peso,
+        niveles,
+      };
+    });
+  }
+
+  private detectarNivelesPdf(lineas: string[]): string[] {
+    const texto = lineas.join(' | ');
+    const catalogo = [
+      'Insuficiente',
+      'Inicial',
+      'Básico',
+      'Basico',
+      'En proceso',
+      'Regular',
+      'Satisfactorio',
+      'Logrado',
+      'Bueno',
+      'Muy bueno',
+      'Excelente',
+      'Sobresaliente',
+    ];
+
+    const encontrados: string[] = [];
+
+    catalogo.forEach((nivel) => {
+      const expresion = new RegExp(
+        `\\b${this.escaparRegex(nivel)}\\b`,
+        'i',
+      );
+
+      if (expresion.test(texto)) {
+        const etiqueta =
+          nivel === 'Basico'
+            ? 'Básico'
+            : nivel;
+
+        if (!encontrados.includes(etiqueta)) {
+          encontrados.push(etiqueta);
+        }
+      }
+    });
+
+    if (encontrados.length >= 2) {
+      return encontrados.slice(0, 6);
+    }
+
+    return [
+      'Insuficiente',
+      'Básico',
+      'Bueno',
+      'Excelente',
+    ];
+  }
+
+  private extraerDescripcionNivelPdf(
+    bloque: string,
+    etiqueta: string,
+    niveles: string[],
+  ): string | undefined {
+    if (!bloque) {
+      return undefined;
+    }
+
+    const indiceActual = niveles.findIndex(
+      (nivel) => nivel === etiqueta,
+    );
+
+    const siguiente =
+      indiceActual >= 0
+        ? niveles[indiceActual + 1]
+        : undefined;
+
+    const patronSiguiente = siguiente
+      ? `(?=${this.escaparRegex(siguiente)}\\b|$)`
+      : '$';
+
+    const expresion = new RegExp(
+      `${this.escaparRegex(etiqueta)}\\s*[:\\-–—]?\\s*(.+?)${patronSiguiente}`,
+      'i',
+    );
+
+    const coincidencia = bloque.match(expresion);
+
+    const descripcion = coincidencia?.[1]
+      ?.replace(/\s+/g, ' ')
+      .trim();
+
+    return descripcion || undefined;
+  }
+
+  private extraerDescripcionCriterioPdf(
+    bloque: string,
+    niveles: string[],
+  ): string | undefined {
+    if (!bloque) {
+      return undefined;
+    }
+
+    let descripcion = bloque;
+
+    niveles.forEach((nivel) => {
+      const expresion = new RegExp(
+        `${this.escaparRegex(nivel)}\\s*[:\\-–—]?\\s*.*?(?=${niveles
+          .filter((otro) => otro !== nivel)
+          .map((otro) => `${this.escaparRegex(otro)}\\b`)
+          .join('|')}|$)`,
+        'gi',
+      );
+
+      descripcion = descripcion.replace(expresion, ' ');
+    });
+
+    descripcion = descripcion
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return descripcion || undefined;
+  }
+
+  private obtenerNombreRubricaDesdePdf(
+    lineas: string[],
+    nombreArchivo: string,
+  ): string {
+    const primeraLineaUtil = lineas.find(
+      (linea) =>
+        linea.length >= 4 &&
+        !/^(criterio|aspecto|indicador|peso|ponderaci[oó]n|porcentaje)$/i.test(
+          linea,
+        ),
+    );
+
+    if (primeraLineaUtil) {
+      return primeraLineaUtil.slice(0, 150);
+    }
+
+    return nombreArchivo
+      .replace(/\.pdf$/i, '')
+      .replace(/[_-]+/g, ' ')
+      .trim()
+      .slice(0, 150) || 'Rúbrica importada desde PDF';
+  }
+
+  private normalizarPesosSinDefinir(
+    criterios: RubricaCriterioDto[],
+    repartir: boolean,
+  ): void {
+    if (!repartir) {
+      return;
+    }
+
+    const pesoBase = Math.round((100 / criterios.length) * 100) / 100;
+
+    criterios.forEach((criterio) => {
+      criterio.peso = pesoBase;
+    });
+
+    const diferencia =
+      Math.round(
+        (100 -
+          criterios.reduce(
+            (total, criterio) => total + Number(criterio.peso),
+            0,
+          )) *
+          100,
+      ) / 100;
+
+    if (criterios.length > 0 && Math.abs(diferencia) > 0) {
+      const ultimo = criterios[criterios.length - 1];
+
+      ultimo.peso =
+        Math.round((Number(ultimo.peso) + diferencia) * 100) / 100;
+    }
+  }
+
+  private calcularPuntosNiveles(
+    criterios: RubricaCriterioDto[],
+  ): void {
+    criterios.forEach((criterio) => {
+      const cantidadNiveles = criterio.niveles.length;
+
+      criterio.niveles.forEach((nivel, posicion) => {
+        const porcentajeNivel = this.extraerPorcentajeNivel(
+          nivel.etiqueta,
+          nivel.descripcion,
+          posicion,
+          cantidadNiveles,
+        );
+
+        nivel.puntos =
+          Math.round(
+            Number(criterio.peso) *
+              (porcentajeNivel / 100) *
+              100,
+          ) / 100;
+      });
+    });
+  }
+
+  private calcularPonderacion(
+    criterios: RubricaCriterioDto[],
+  ): number {
+    return (
+      Math.round(
+        criterios.reduce(
+          (total, criterio) => total + Number(criterio.peso),
+          0,
+        ) * 100,
+      ) / 100
+    );
+  }
+
+  private validarPonderacion(
+    ponderacionMax: number,
+  ): void {
+    if (Math.abs(ponderacionMax - 100) > 0.5) {
+      throw new BadRequestException(
+        `La ponderación total de la rúbrica debe sumar 100%. Actualmente suma ${ponderacionMax}%`,
+      );
+    }
+  }
+
+  private textoCeldaExcel(valor: unknown): string {
+    if (valor === null || valor === undefined) {
+      return '';
+    }
+
+    if (typeof valor === 'string') {
+      return valor.trim();
+    }
+
+    if (typeof valor === 'number' || typeof valor === 'boolean') {
+      return String(valor).trim();
+    }
+
+    if (valor instanceof Date) {
+      return valor.toISOString();
+    }
+
+    return String(valor).trim();
+  }
+
+  private extraerNumeroExcel(valor: unknown): number | undefined {
+    if (typeof valor === 'number') {
+      return Number.isFinite(valor)
+        ? valor
+        : undefined;
+    }
+
+    const texto = this.textoCeldaExcel(valor);
+
+    if (!texto) {
+      return undefined;
+    }
+
+    const coincidencia = texto.match(
+      /(\d+(?:[.,]\d+)?)/,
+    );
 
     if (!coincidencia) {
       return undefined;
     }
 
-    return Number(coincidencia[1].replace(',', '.'));
+    const numero = Number(
+      coincidencia[1].replace(',', '.'),
+    );
+
+    return Number.isFinite(numero)
+      ? numero
+      : undefined;
   }
 
-  obtenerEvaluacionEntrega(entregaId: number) {
-    return this.prisma.calificacionRubrica.findUnique({
+  private obtenerNombreRubricaDesdeExcel(
+    filas: unknown[][],
+    nombreHoja: string,
+  ): string {
+    for (
+      let indiceFila = 0;
+      indiceFila < Math.min(filas.length, 8);
+      indiceFila += 1
+    ) {
+      const fila = Array.isArray(filas[indiceFila])
+        ? filas[indiceFila]
+        : [];
+
+      const texto = this.textoCeldaExcel(
+        fila[0],
+      );
+
+      if (texto) {
+        return texto.slice(0, 150);
+      }
+    }
+
+    return nombreHoja || 'Rúbrica importada';
+  }
+
+  private extraerPorcentajeNivel(
+    etiqueta: string,
+    descripcion: string | null | undefined,
+    posicion: number,
+    cantidadNiveles: number,
+  ): number {
+    const prefijoDescripcion =
+      (descripcion ?? '').split(':')[0];
+
+    const texto =
+      `${etiqueta} ${prefijoDescripcion}`;
+
+    const valores = [
+      ...texto.matchAll(
+        /\d+(?:[.,]\d+)?/g,
+      ),
+    ]
+      .map((coincidencia) =>
+        Number(
+          coincidencia[0].replace(
+            ',',
+            '.',
+          ),
+        ),
+      )
+      .filter(
+        (valor) =>
+          Number.isFinite(valor) &&
+          valor >= 0 &&
+          valor <= 100,
+      );
+
+    if (valores.length > 0) {
+      return Math.max(
+        ...valores,
+      );
+    }
+
+    return (
+      Math.round(
+        ((posicion + 1) /
+          cantidadNiveles) *
+          100 *
+          100,
+      ) / 100
+    );
+  }
+
+  private escaparRegex(valor: string): string {
+    return valor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  async obtenerEvaluacionEntrega(
+    usuario: UsuarioAutenticado,
+    cursoId: number,
+    tareaId: number,
+    entregaId: number,
+  ) {
+    await this.obtenerTareaAutorizada(usuario, cursoId, tareaId);
+
+    return this.prisma.calificacionRubrica.findFirst({
       where: {
         entregaId,
+        entrega: {
+          tareaId,
+        },
       },
       include: {
         items: {
@@ -381,9 +991,9 @@ export class TareasRubricasService {
   }
 
   /**
-   * Persiste la evaluaci��n por r��brica y devuelve la nota base sobre
+   * Persiste la evaluación por rúbrica y devuelve la nota base sobre
    * escala de 100. La nota resultante (total / ponderacionMax * 100) se
-   * propaga luego por la l��gica de calificaci��n existente.
+   * propaga luego por la lógica de calificación existente.
    */
   async calificarEntregaConRubrica(
     usuario: UsuarioAutenticado,
@@ -408,7 +1018,7 @@ export class TareasRubricasService {
     });
 
     if (!rubrica) {
-      throw new NotFoundException('La tarea no tiene rǭbrica');
+      throw new NotFoundException('La tarea no tiene rúbrica');
     }
 
     const entrega = await this.prisma.entregaTarea.findFirst({
@@ -437,7 +1047,7 @@ export class TareasRubricasService {
 
       if (!criterio) {
         throw new BadRequestException(
-          `El criterio ${item.criterioId} no pertenece a esta rǭbrica`,
+          `El criterio ${item.criterioId} no pertenece a esta rúbrica`,
         );
       }
 

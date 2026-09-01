@@ -66,6 +66,18 @@ import EquiposTareaDocente from '../../../components/tareas/docente/EquiposTarea
 import HistorialTareaDocente from '../../../components/tareas/docente/HistorialTareaDocente';
 import ExtensionPlazoTareaDocente from '../../../components/tareas/docente/ExtensionPlazoTareaDocente';
 
+import { useAuth } from '../../../auth/AuthContext';
+
+import {
+  crearRubricaTarea,
+  importarRubricaArchivo,
+} from '../../../services/tareas/tareas-rubricas.service';
+
+import {
+  eliminarArchivoConsigna,
+  subirArchivoConsigna,
+} from '../../../services/tareas/tareas-archivos.service';
+
 
 import type {
   CrearTareaDatos,
@@ -793,6 +805,8 @@ export default function DetalleTarea() {
   const navigate =
     useNavigate();
 
+  const { accessToken } = useAuth();
+
   const {
     cursoId,
     tareaId,
@@ -1053,6 +1067,10 @@ export default function DetalleTarea() {
       const {
         hitoId: _,
         publicar: __,
+        archivosConsigna = [],
+        archivosConsignaEliminar = [],
+        archivoRubrica,
+        usarRubrica = false,
         ...actualizacion
       } =
         datos;
@@ -1063,6 +1081,44 @@ export default function DetalleTarea() {
       await detalle.actualizar(
         actualizacion,
       );
+
+      if (accessToken) {
+        await Promise.all(
+          archivosConsigna.map((archivo) =>
+            subirArchivoConsigna(
+              idCurso,
+              idTarea,
+              archivo,
+              accessToken,
+            ),
+          ),
+        );
+
+        await Promise.all(
+          archivosConsignaEliminar.map((archivoId) =>
+            eliminarArchivoConsigna(
+              archivoId,
+              accessToken,
+            ),
+          ),
+        );
+
+        if (usarRubrica && archivoRubrica) {
+          const datosRubrica = await importarRubricaArchivo(
+            idCurso,
+            idTarea,
+            archivoRubrica,
+            accessToken,
+          );
+
+          await crearRubricaTarea(
+            idCurso,
+            idTarea,
+            datosRubrica,
+            accessToken,
+          );
+        }
+      }
 
       if (
         publicarAhora &&
@@ -2213,6 +2269,12 @@ export default function DetalleTarea() {
         }
         tareaId={
           idTarea
+        }
+        colorTipo={
+          tipo.color
+        }
+        fondoTipo={
+          tipo.fondo
         }
         abierto={
           rubricaAbierta

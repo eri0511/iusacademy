@@ -58,6 +58,11 @@ import {
   tieneConfiguracionComponente,
 } from '../../utils/tareas/mixta';
 
+import {
+  rubricaIusAcademyPorTipo,
+  totalPonderacionRubrica,
+} from '../../utils/tareas/rubricasIusAcademy';
+
 import type {
   ConfiguracionRespuestaEscrita,
 } from '../../utils/tareas/respuestaEscrita';
@@ -77,6 +82,10 @@ import type {
 import type {
   ConfiguracionDocumentoColaborativo,
 } from '../../utils/tareas/documentoColaborativo';
+
+import type {
+  CrearRubricaDatos,
+} from '../../types/tareas/rubricas.types';
 
 import {
   useAulaContext,
@@ -119,11 +128,27 @@ type Paso =
   | 1
   | 2
   | 3
-  | 4;
+  | 4
+  | 5;
 
 type ModoRubrica =
   | 'PREDETERMINADA'
   | 'PERSONALIZADA';
+
+const etiquetaTipo = (tipo: TipoTarea) => {
+  const etiquetas: Record<TipoTarea, string> = {
+    ENTREGA_ARCHIVOS: 'Entrega de archivos',
+    RESPUESTA_ESCRITA: 'Respuesta escrita',
+    DOCUMENTO_COLABORATIVO: 'Documento colaborativo',
+    REDACCION_JURIDICA: 'Redacción jurídica',
+    EXPOSICION: 'Exposición',
+    CASO_PRACTICO: 'Caso práctico',
+    MIXTA: 'Actividad mixta',
+    PRESENCIAL: 'Actividad presencial',
+  };
+
+  return etiquetas[tipo];
+};
 
 const ahoraLocal = () => {
   const fecha =
@@ -196,8 +221,16 @@ const maxFechaInput = (
     )
     .sort()
     .at(
-      -1,
-    ) ?? '';
+    -1,
+  ) ?? '';
+
+function tamanioArchivo(bytes: number): string {
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(0)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 const aInputFecha = (
   valor?:
@@ -282,6 +315,10 @@ type EstadoFormulario = {
   archivosConsigna: File[];
   archivoRubrica: File | null;
   modoRubrica: ModoRubrica;
+  usarRubrica: boolean;
+  rubricaIusAcademy: CrearRubricaDatos;
+  archivosExistentes: TareaCurso['archivos'];
+  archivosEliminados: number[];
 };
 
 function leerNumeroEditable(
@@ -390,6 +427,10 @@ function inicial(): EstadoFormulario {
     archivosConsigna: [],
     archivoRubrica: null,
     modoRubrica: 'PREDETERMINADA',
+    usarRubrica: false,
+    rubricaIusAcademy: rubricaIusAcademyPorTipo('ENTREGA_ARCHIVOS'),
+    archivosExistentes: [],
+    archivosEliminados: [],
   };
 }
 
@@ -547,6 +588,10 @@ function desdeTarea(
     archivosConsigna: [],
     archivoRubrica: null,
     modoRubrica: 'PREDETERMINADA',
+    usarRubrica: false,
+    rubricaIusAcademy: rubricaIusAcademyPorTipo(tarea.tipo),
+    archivosExistentes: tarea.archivos,
+    archivosEliminados: [],
   };
 }
 
@@ -1024,6 +1069,104 @@ export default function FormularioTareaInteligente({
       form.tipo,
     );
 
+  const totalRubricaIusAcademy =
+    useMemo(
+      () =>
+        totalPonderacionRubrica(
+          form.rubricaIusAcademy,
+        ),
+      [form.rubricaIusAcademy],
+    );
+
+  const actualizarCriterioRubrica = (
+    indice: number,
+    cambios: Partial<CrearRubricaDatos['criterios'][number]>,
+  ) => {
+    setForm((actual) => ({
+      ...actual,
+      rubricaIusAcademy: {
+        ...actual.rubricaIusAcademy,
+        criterios: actual.rubricaIusAcademy.criterios.map((criterio, posicion) =>
+          posicion === indice
+            ? { ...criterio, ...cambios }
+            : criterio,
+        ),
+      },
+    }));
+  };
+
+  const actualizarNivelRubrica = (
+    indiceCriterio: number,
+    indiceNivel: number,
+    cambios: Partial<CrearRubricaDatos['criterios'][number]['niveles'][number]>,
+  ) => {
+    setForm((actual) => ({
+      ...actual,
+      rubricaIusAcademy: {
+        ...actual.rubricaIusAcademy,
+        criterios: actual.rubricaIusAcademy.criterios.map((criterio, posicion) =>
+          posicion === indiceCriterio
+            ? {
+                ...criterio,
+                niveles: criterio.niveles.map((nivel, posicionNivel) =>
+                  posicionNivel === indiceNivel
+                    ? { ...nivel, ...cambios }
+                    : nivel,
+                ),
+              }
+            : criterio,
+        ),
+      },
+    }));
+  };
+
+  const agregarCriterioRubrica = () => {
+    setForm((actual) => {
+      const orden = actual.rubricaIusAcademy.criterios.length;
+
+      return {
+        ...actual,
+        rubricaIusAcademy: {
+          ...actual.rubricaIusAcademy,
+          criterios: [
+            ...actual.rubricaIusAcademy.criterios,
+            {
+              orden,
+              nombre: 'Nuevo criterio',
+              descripcion: 'Describe qué aspecto se evaluará en este criterio.',
+              peso: 0,
+              niveles: [
+                { orden: 0, etiqueta: 'Insuficiente', puntos: 49, descripcion: 'El desempeño no alcanza lo esperado.' },
+                { orden: 1, etiqueta: 'Básico', puntos: 69, descripcion: 'El desempeño alcanza parcialmente lo esperado.' },
+                { orden: 2, etiqueta: 'Bueno', puntos: 89, descripcion: 'El desempeño cumple adecuadamente lo esperado.' },
+                { orden: 3, etiqueta: 'Excelente', puntos: 100, descripcion: 'El desempeño supera de forma sólida lo esperado.' },
+              ],
+            },
+          ],
+        },
+      };
+    });
+  };
+
+  const eliminarCriterioRubrica = (indice: number) => {
+    setForm((actual) => ({
+      ...actual,
+      rubricaIusAcademy: {
+        ...actual.rubricaIusAcademy,
+        criterios: actual.rubricaIusAcademy.criterios
+          .filter((_, posicion) => posicion !== indice)
+          .map((criterio, orden) => ({ ...criterio, orden })),
+      },
+    }));
+  };
+
+  const restablecerRubricaIusAcademy = () => {
+    setForm((actual) => ({
+      ...actual,
+      rubricaIusAcademy: rubricaIusAcademyPorTipo(actual.tipo),
+    }));
+  };
+
   const validarPaso = (
     pasoValidar:
       Paso,
@@ -1342,6 +1485,80 @@ export default function FormularioTareaInteligente({
       }
     }
 
+    if (
+      pasoValidar === 4 &&
+      form.tipo === 'EXPOSICION' &&
+      form.configExposicion?.estructuraGuiada &&
+      form.configExposicion.minPalabras > form.configExposicion.maxPalabras
+    ) {
+      return 'Las palabras mínimas no pueden superar las palabras máximas.';
+    }
+
+
+    if (
+      pasoValidar === 5 &&
+      form.esCalificable &&
+      form.usarRubrica
+    ) {
+      if (
+        form.modoRubrica === 'PERSONALIZADA' &&
+        !form.archivoRubrica
+      ) {
+        return 'Selecciona un archivo .xlsx o .pdf para la rúbrica personalizada.';
+      }
+
+      if (form.modoRubrica === 'PREDETERMINADA') {
+        if (form.rubricaIusAcademy.criterios.length === 0) {
+          return 'La rúbrica IusAcademy debe tener al menos un criterio.';
+        }
+
+        if (totalRubricaIusAcademy !== 100) {
+          return 'La ponderación total de la rúbrica IusAcademy debe sumar 100%.';
+        }
+
+        for (const criterio of form.rubricaIusAcademy.criterios) {
+          if (!criterio.nombre.trim()) {
+            return 'Todos los criterios de la rúbrica deben tener un nombre.';
+          }
+
+          if (criterio.peso < 0 || criterio.peso > 100) {
+            return `Revisa la ponderación del criterio ${criterio.nombre}.`;
+          }
+
+          if (criterio.niveles.length < 2) {
+            return `El criterio ${criterio.nombre} debe tener al menos dos niveles de desempeño.`;
+          }
+
+          for (const nivel of criterio.niveles) {
+            if (!nivel.etiqueta.trim()) {
+              return `Todos los niveles de ${criterio.nombre} deben tener una etiqueta.`;
+            }
+
+            if (nivel.puntos < 0 || nivel.puntos > 100) {
+              return `Los puntajes de los niveles de ${criterio.nombre} deben estar entre 0 y 100.`;
+            }
+          }
+        }
+      }
+    }
+
+    if (pasoValidar === 1) {
+      const maximoBytes = form.tamanioMaximoArchivoMb * 1024 * 1024;
+      const duplicados = new Set<string>();
+
+      for (const archivo of form.archivosConsigna) {
+        if (archivo.size > maximoBytes) {
+          return `El archivo ${archivo.name} supera el límite configurado de ${form.tamanioMaximoArchivoMb} MB.`;
+        }
+
+        const clave = `${archivo.name.toLowerCase()}-${archivo.size}`;
+        if (duplicados.has(clave)) {
+          return `El archivo ${archivo.name} está repetido.`;
+        }
+        duplicados.add(clave);
+      }
+    }
+
     return null;
   };
 
@@ -1364,7 +1581,7 @@ export default function FormularioTareaInteligente({
 
     if (
       paso <
-      4
+      5
     ) {
       setPaso(
         (
@@ -1645,6 +1862,20 @@ export default function FormularioTareaInteligente({
         ? form.permitirEditarEntrega
         : false,
     publicar,
+    usarRubrica: form.usarRubrica,
+    archivosConsigna: form.archivosConsigna,
+    archivosConsignaEliminar: form.archivosEliminados,
+    archivoRubrica: form.usarRubrica
+      ? form.archivoRubrica
+      : null,
+    modoRubrica: form.usarRubrica
+      ? form.modoRubrica
+      : undefined,
+    rubricaDatos:
+      form.usarRubrica &&
+      form.modoRubrica === 'PREDETERMINADA'
+        ? form.rubricaIusAcademy
+        : undefined,
   });
 
   const guardar =
@@ -1809,6 +2040,9 @@ export default function FormularioTareaInteligente({
               ? actual.configExposicion ??
                 configExposicionInicial()
               : actual.configExposicion,
+
+          rubricaIusAcademy:
+            rubricaIusAcademyPorTipo(tipo),
         }),
       );
 
@@ -1840,7 +2074,7 @@ export default function FormularioTareaInteligente({
       </div>
     ) : (
       <div className="tarea-pasos">
-        {[1, 2, 3, 4].map(
+        {[1, 2, 3, 4, 5].map(
           (
             numero,
           ) => (
@@ -1883,6 +2117,7 @@ export default function FormularioTareaInteligente({
                 'Participación',
                 'Fechas',
                 'Evaluación',
+                'Rúbrica',
               ][numero - 1]}
             </button>
           ),
@@ -2005,7 +2240,7 @@ export default function FormularioTareaInteligente({
 
                 <div className="tarea-footer__derecha">
                   {paso <
-                  4 ? (
+                  5 ? (
                     <button
                       type="button"
                       className="primario"
@@ -2180,24 +2415,86 @@ export default function FormularioTareaInteligente({
 
               <label className="tarea-adjunto-config__selector">
                 <FileUp size={16} />
-                <span>Seleccionar archivos</span>
+                <span>Agregar otro archivo</span>
                 <input
                   type="file"
                   multiple
                   accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.webp"
                   onChange={(evento) =>
-                    setForm((actual) => ({
-                      ...actual,
-                      archivosConsigna: Array.from(evento.target.files ?? []),
-                    }))
+                    setForm((actual) => {
+                      const archivos = Array.from(evento.target.files ?? []);
+                      const existentes = new Set(
+                        actual.archivosConsigna.map(
+                          (archivo) => `${archivo.name.toLowerCase()}-${archivo.size}`,
+                        ),
+                      );
+
+                      return {
+                        ...actual,
+                        archivosConsigna: [
+                          ...actual.archivosConsigna,
+                          ...archivos.filter(
+                            (archivo) =>
+                              !existentes.has(`${archivo.name.toLowerCase()}-${archivo.size}`),
+                          ),
+                        ],
+                      };
+                    })
                   }
                 />
               </label>
 
               {form.archivosConsigna.length > 0 && (
-                <small className="tarea-adjunto-config__lista">
-                  {form.archivosConsigna.map((archivo) => archivo.name).join(' · ')}
-                </small>
+                <div className="tarea-adjunto-config__archivos">
+                  {form.archivosConsigna.map((archivo, indice) => (
+                    <div className="tarea-adjunto-config__archivo" key={`${archivo.name}-${archivo.size}-${indice}`}>
+                      <FileUp size={16} />
+                      <span>
+                        <strong>{archivo.name}</strong>
+                        <small>{archivo.name.split('.').pop()?.toUpperCase()} · {tamanioArchivo(archivo.size)}</small>
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`Eliminar ${archivo.name}`}
+                        onClick={() =>
+                          setForm((actual) => ({
+                            ...actual,
+                            archivosConsigna: actual.archivosConsigna.filter((_, i) => i !== indice),
+                          }))
+                        }
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {form.archivosExistentes.length > 0 && (
+                <div className="tarea-adjunto-config__archivos">
+                  {form.archivosExistentes.map((archivo) => (
+                    <div className="tarea-adjunto-config__archivo tarea-adjunto-config__archivo--existente" key={archivo.id}>
+                      <FileUp size={16} />
+                      <span>
+                        <strong>{archivo.nombreOriginal}</strong>
+                        <small>{archivo.extension.toUpperCase()} · {tamanioArchivo(archivo.tamanioBytes)} · Guardado</small>
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`Eliminar ${archivo.nombreOriginal}`}
+                        onClick={() =>
+                          setForm((actual) => ({
+                            ...actual,
+                            archivosExistentes: actual.archivosExistentes.filter((item) => item.id !== archivo.id),
+                            archivosEliminados: [...actual.archivosEliminados, archivo.id],
+                          }))
+                        }
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
@@ -4067,13 +4364,11 @@ export default function FormularioTareaInteligente({
                             min={0}
                             max={100}
                             value={
-                                mostrarNumeroEditable(
-                                  form.porcentajeNotaGrupal,
-                                )
-                              }
-                            onChange={(
-                              evento,
-                            ) => {
+                              mostrarNumeroEditable(
+                                form.porcentajeNotaGrupal,
+                              )
+                            }
+                            onChange={(evento) => {
                               const valor =
                                 leerNumeroEditable(
                                   evento.target.value,
@@ -4091,29 +4386,27 @@ export default function FormularioTareaInteligente({
                                       valor,
                                     )
                                       ? actual.porcentajeNotaIndividual
-                                      : 100 -
-                                        valor,
+                                      : 100 - valor,
                                 }),
                               );
                             }}
-                          onBlur={() =>
-                                setForm(
-                                  (
-                                    actual,
-                                  ) => ({
-                                    ...actual,
-
-                                    porcentajeNotaGrupal:
-                                      normalizarNumeroEditable(
-                                        actual.porcentajeNotaGrupal,
-                                        0,
-                                        100,
-                                        50,
-                                      ),
-                                  }),
-                                )
-                              }
-                            />
+                            onBlur={() =>
+                              setForm(
+                                (
+                                  actual,
+                                ) => ({
+                                  ...actual,
+                                  porcentajeNotaGrupal:
+                                    normalizarNumeroEditable(
+                                      actual.porcentajeNotaGrupal,
+                                      0,
+                                      100,
+                                      50,
+                                    ),
+                                }),
+                              )
+                            }
+                          />
 
                           <span>
                             %
@@ -4132,13 +4425,11 @@ export default function FormularioTareaInteligente({
                             min={0}
                             max={100}
                             value={
-                                mostrarNumeroEditable(
-                                  form.porcentajeNotaIndividual,
-                                )
-                              }
-                            onChange={(
-                              evento,
-                            ) => {
+                              mostrarNumeroEditable(
+                                form.porcentajeNotaIndividual,
+                              )
+                            }
+                            onChange={(evento) => {
                               const valor =
                                 leerNumeroEditable(
                                   evento.target.value,
@@ -4156,108 +4447,59 @@ export default function FormularioTareaInteligente({
                                       valor,
                                     )
                                       ? actual.porcentajeNotaGrupal
-                                      : 100 -
-                                        valor,
+                                      : 100 - valor,
                                 }),
                               );
                             }}
-                          onBlur={() =>
-                                setForm(
-                                  (
-                                    actual,
-                                  ) => ({
-                                    ...actual,
-
-                                    porcentajeNotaIndividual:
-                                      normalizarNumeroEditable(
-                                        actual.porcentajeNotaIndividual,
-                                        0,
-                                        100,
-                                        50,
-                                      ),
-                                  }),
-                                )
-                              }
-                            />
+                            onBlur={() =>
+                              setForm(
+                                (
+                                  actual,
+                                ) => ({
+                                  ...actual,
+                                  porcentajeNotaIndividual:
+                                    normalizarNumeroEditable(
+                                      actual.porcentajeNotaIndividual,
+                                      0,
+                                      100,
+                                      50,
+                                    ),
+                                }),
+                              )
+                            }
+                          />
 
                           <span>
                             %
                           </span>
                         </div>
                       </label>
-                 </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
-                 <div className="tarea-rubrica-selector">
-                   <div className="tarea-rubrica-selector__titulo">
-                     <strong>Rúbrica de calificación</strong>
-                     <small>Elige una rúbrica base de IusAcademy o importa la propia del docente.</small>
-                   </div>
+            {form.tipo === 'EXPOSICION' && (
+              <div className="tarea-config-especifica tarea-config-especifica--exposicion">
+                <div className="tarea-config-especifica__encabezado">
+                  <span>
+                    <strong>Exposición</strong>
+                    <small>Configura la dinámica y, opcionalmente, el guion que preparará el estudiante.</small>
+                  </span>
+                </div>
 
-                   <div className="tarea-rubrica-selector__opciones">
-                     <label className={form.modoRubrica === 'PREDETERMINADA' ? 'activa' : ''}>
-                       <input
-                         type="radio"
-                         name="modo-rubrica"
-                         checked={form.modoRubrica === 'PREDETERMINADA'}
-                         onChange={() =>
-                           setForm((actual) => ({
-                             ...actual,
-                             modoRubrica: 'PREDETERMINADA',
-                             archivoRubrica: null,
-                           }))
-                         }
-                       />
-                       <span>
-                         <b>Predeterminada</b>
-                         <small>Plantilla sugerida y editable al revisar.</small>
-                       </span>
-                     </label>
-
-                     <label className={form.modoRubrica === 'PERSONALIZADA' ? 'activa' : ''}>
-                       <input
-                         type="radio"
-                         name="modo-rubrica"
-                         checked={form.modoRubrica === 'PERSONALIZADA'}
-                         onChange={() =>
-                           setForm((actual) => ({
-                             ...actual,
-                             modoRubrica: 'PERSONALIZADA',
-                           }))
-                         }
-                       />
-                       <span>
-                         <b>Personalizada</b>
-                         <small>Importa criterios y niveles desde Excel.</small>
-                       </span>
-                     </label>
-                   </div>
-                 </div>
-
-                 {form.modoRubrica === 'PERSONALIZADA' && (
-                 <div className="tarea-adjunto-config tarea-adjunto-config--rubrica">
-                   <div>
-                     <strong>Rúbrica desde Excel</strong>
-                     <small>Sube un archivo .xlsx o .xls para importar los criterios de evaluación.</small>
-                   </div>
-
-                   <label className="tarea-adjunto-config__selector">
-                     <FileUp size={16} />
-                     <span>{form.archivoRubrica ? form.archivoRubrica.name : 'Seleccionar Excel'}</span>
-                     <input
-                       type="file"
-                       accept=".xls,.xlsx"
-                       onChange={(evento) =>
-                         setForm((actual) => ({
-                           ...actual,
-                           archivoRubrica: evento.target.files?.[0] ?? null,
-                         }))
-                       }
-                     />
-                   </label>
-                 </div>
-                 )}
-               </div>
-             )}
+                <ConfiguracionExposicionDocente
+                  valor={form.configExposicion}
+                  onChange={(
+                    configuracion: ConfiguracionExposicion,
+                  ) =>
+                    setForm((actual) => ({
+                      ...actual,
+                      configExposicion: configuracion,
+                    }))
+                  }
+                />
               </div>
             )}
 
@@ -4669,29 +4911,6 @@ export default function FormularioTareaInteligente({
                       />
                     )}
 
-                     {form.tipo ===
-                      'EXPOSICION' && (
-                      <ConfiguracionExposicionDocente
-                        valor={
-                          form.configExposicion
-                        }
-                        onChange={(
-                          configuracion:
-                            ConfiguracionExposicion,
-                        ) =>
-                          setForm(
-                            (
-                              actual,
-                            ) => ({
-                              ...actual,
-                              configExposicion:
-                                configuracion,
-                            }),
-                          )
-                        }
-                      />
-                    )}
-
                     {form.tipo ===
                       'DOCUMENTO_COLABORATIVO' && (
                       <ConfiguracionDocumentoColaborativoDocente
@@ -4718,6 +4937,387 @@ export default function FormularioTareaInteligente({
                   </>
                 )}
               </div>
+            )}
+          </div>
+        )}
+
+        {paso === 5 && (
+          <div className="tarea-form__seccion tarea-rubrica-paso">
+            <div className="tarea-form__titulo">
+              <GraduationCap size={18} />
+
+              <div>
+                <strong>Rúbrica de evaluación</strong>
+                <small>
+                  Define cómo se evaluará la actividad mediante criterios, ponderaciones y niveles de desempeño.
+                </small>
+              </div>
+            </div>
+
+            {!form.esCalificable ? (
+              <div className="tarea-nota tarea-nota--informativa">
+                <Info size={17} />
+                <span>
+                  Esta actividad no es calificable. Si deseas utilizar una rúbrica, vuelve a Evaluación y activa la calificación.
+                </span>
+              </div>
+            ) : (
+              <>
+                <label className="tarea-switch tarea-switch--destacado">
+                  <span>
+                    <strong>Usar rúbrica</strong>
+                    <small>
+                      Actívala para evaluar la tarea por criterios. Si la desactivas, la nota se asignará directamente sobre {form.puntajeMaximo || 100} puntos.
+                    </small>
+                  </span>
+
+                  <input
+                    type="checkbox"
+                    checked={form.usarRubrica}
+                    onChange={(evento) =>
+                      setForm((actual) => ({
+                        ...actual,
+                        usarRubrica: evento.target.checked,
+                      }))
+                    }
+                  />
+
+                  <i><b /></i>
+                </label>
+
+                {!form.usarRubrica ? (
+                  <div className="tarea-rubrica-bloque__sin-rubrica">
+                    La actividad se calificará sin rúbrica. Podrás asignar directamente una nota sobre {form.puntajeMaximo || 100} puntos.
+                  </div>
+                ) : (
+                  <>
+                    <div className="tarea-rubrica-selector">
+                      <div className="tarea-rubrica-selector__titulo">
+                        <strong>¿Cómo quieres crear la rúbrica?</strong>
+                        <small>
+                          Parte de una plantilla editable de IusAcademy o importa la rúbrica propia del docente desde Excel.
+                        </small>
+                      </div>
+
+                      <div className="tarea-rubrica-selector__opciones">
+                        <label className={form.modoRubrica === 'PREDETERMINADA' ? 'activa' : ''}>
+                          <input
+                            type="radio"
+                            name="modo-rubrica"
+                            checked={form.modoRubrica === 'PREDETERMINADA'}
+                            onChange={() =>
+                              setForm((actual) => ({
+                                ...actual,
+                                modoRubrica: 'PREDETERMINADA',
+                                archivoRubrica: null,
+                              }))
+                            }
+                          />
+
+                          <span>
+                            <b>Rúbrica IusAcademy</b>
+                            <small>
+                              Carga una plantilla sugerida según el tipo de tarea y personalízala antes de publicar.
+                            </small>
+                          </span>
+                        </label>
+
+                        <label className={form.modoRubrica === 'PERSONALIZADA' ? 'activa' : ''}>
+                          <input
+                            type="radio"
+                            name="modo-rubrica"
+                            checked={form.modoRubrica === 'PERSONALIZADA'}
+                            onChange={() =>
+                              setForm((actual) => ({
+                                ...actual,
+                                modoRubrica: 'PERSONALIZADA',
+                              }))
+                            }
+                          />
+
+                          <span>
+                            <b>Rúbrica personalizada</b>
+                            <small>
+                              Importa criterios, niveles y ponderaciones desde un archivo Excel o PDF.
+                            </small>
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {form.modoRubrica === 'PREDETERMINADA' && (
+                      <div className="tarea-rubrica-editor">
+                        <div className="tarea-rubrica-editor__cabecera">
+                          <div>
+                            <strong>Plantilla sugerida para {etiquetaTipo(form.tipo)}</strong>
+                            <small>
+                              Puedes cambiar el nombre, la descripción, el porcentaje y los niveles de cada criterio.
+                            </small>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="tarea-rubrica-editor__restablecer"
+                            onClick={restablecerRubricaIusAcademy}
+                          >
+                            Restablecer plantilla
+                          </button>
+                        </div>
+
+                        <label className="tarea-rubrica-editor__nombre">
+                          <span>Nombre de la rúbrica</span>
+                          <input
+                            value={form.rubricaIusAcademy.nombre}
+                            maxLength={180}
+                            onChange={(evento) =>
+                              setForm((actual) => ({
+                                ...actual,
+                                rubricaIusAcademy: {
+                                  ...actual.rubricaIusAcademy,
+                                  nombre: evento.target.value,
+                                },
+                              }))
+                            }
+                          />
+                        </label>
+
+                        <div className="tarea-rubrica-editor__resumen">
+                          <span>
+                            <strong>{form.rubricaIusAcademy.criterios.length}</strong>
+                            <small>criterios</small>
+                          </span>
+
+                          <span className={totalRubricaIusAcademy === 100 ? 'valida' : 'invalida'}>
+                            <strong>{totalRubricaIusAcademy}%</strong>
+                            <small>{totalRubricaIusAcademy === 100 ? 'ponderación válida' : 'debe sumar 100%'}</small>
+                          </span>
+                        </div>
+
+                        <div className="tarea-rubrica-editor__criterios">
+                          {form.rubricaIusAcademy.criterios.map((criterio, indiceCriterio) => (
+                            <details
+                              key={`${criterio.orden}-${indiceCriterio}`}
+                              className="tarea-rubrica-editor__criterio"
+                              open={indiceCriterio === 0}
+                            >
+                              <summary>
+                                <span className="tarea-rubrica-editor__numero">{indiceCriterio + 1}</span>
+                                <span>
+                                  <strong>{criterio.nombre || 'Criterio sin nombre'}</strong>
+                                  <small>{criterio.descripcion || 'Sin descripción'}</small>
+                                </span>
+                                <b>{criterio.peso}%</b>
+                              </summary>
+
+                              <div className="tarea-rubrica-editor__contenido">
+                                <div className="tarea-rubrica-editor__grid">
+                                  <label>
+                                    <span>Nombre del criterio</span>
+                                    <input
+                                      value={criterio.nombre}
+                                      maxLength={160}
+                                      onChange={(evento) =>
+                                        actualizarCriterioRubrica(indiceCriterio, {
+                                          nombre: evento.target.value,
+                                        })
+                                      }
+                                    />
+                                  </label>
+
+                                  <label>
+                                    <span>Ponderación</span>
+                                    <div className="tarea-peso-campo">
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        max={100}
+                                        value={mostrarNumeroEditable(criterio.peso)}
+                                        onChange={(evento) =>
+                                          actualizarCriterioRubrica(indiceCriterio, {
+                                            peso: leerNumeroEditable(evento.target.value),
+                                          })
+                                        }
+                                        onBlur={() =>
+                                          actualizarCriterioRubrica(indiceCriterio, {
+                                            peso: normalizarNumeroEditable(criterio.peso, 0, 100, 0),
+                                          })
+                                        }
+                                      />
+                                      <span>%</span>
+                                    </div>
+                                  </label>
+                                </div>
+
+                                <label className="tarea-rubrica-editor__descripcion">
+                                  <span>Descripción</span>
+                                  <textarea
+                                    rows={2}
+                                    value={criterio.descripcion ?? ''}
+                                    maxLength={600}
+                                    onChange={(evento) =>
+                                      actualizarCriterioRubrica(indiceCriterio, {
+                                        descripcion: evento.target.value,
+                                      })
+                                    }
+                                  />
+                                </label>
+
+                                <div className="tarea-rubrica-editor__niveles-titulo">
+                                  <div>
+                                    <strong>Niveles de desempeño</strong>
+                                    <small>Edita la etiqueta, el puntaje máximo y la descripción de cada nivel.</small>
+                                  </div>
+                                </div>
+
+                                <div className="tarea-rubrica-editor__niveles">
+                                  {criterio.niveles.map((nivel, indiceNivel) => (
+                                    <div
+                                      key={`${indiceCriterio}-${nivel.orden}-${indiceNivel}`}
+                                      className="tarea-rubrica-editor__nivel"
+                                    >
+                                      <div className="tarea-rubrica-editor__nivel-grid">
+                                        <label>
+                                          <span>Nivel</span>
+                                          <input
+                                            value={nivel.etiqueta}
+                                            maxLength={80}
+                                            onChange={(evento) =>
+                                              actualizarNivelRubrica(indiceCriterio, indiceNivel, {
+                                                etiqueta: evento.target.value,
+                                              })
+                                            }
+                                          />
+                                        </label>
+
+                                        <label>
+                                          <span>Puntaje hasta</span>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            value={mostrarNumeroEditable(nivel.puntos)}
+                                            onChange={(evento) =>
+                                              actualizarNivelRubrica(indiceCriterio, indiceNivel, {
+                                                puntos: leerNumeroEditable(evento.target.value),
+                                              })
+                                            }
+                                            onBlur={() =>
+                                              actualizarNivelRubrica(indiceCriterio, indiceNivel, {
+                                                puntos: normalizarNumeroEditable(nivel.puntos, 0, 100, 100),
+                                              })
+                                            }
+                                          />
+                                        </label>
+                                      </div>
+
+                                      <label>
+                                        <span>Descripción del nivel</span>
+                                        <textarea
+                                          rows={2}
+                                          value={nivel.descripcion ?? ''}
+                                          maxLength={600}
+                                          onChange={(evento) =>
+                                            actualizarNivelRubrica(indiceCriterio, indiceNivel, {
+                                              descripcion: evento.target.value,
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                <div className="tarea-rubrica-editor__acciones-criterio">
+                                  <button
+                                    type="button"
+                                    className="peligro"
+                                    disabled={form.rubricaIusAcademy.criterios.length <= 1}
+                                    onClick={() => eliminarCriterioRubrica(indiceCriterio)}
+                                  >
+                                    <Trash2 size={14} />
+                                    Eliminar criterio
+                                  </button>
+                                </div>
+                              </div>
+                            </details>
+                          ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          className="tarea-rubrica-editor__agregar"
+                          onClick={agregarCriterioRubrica}
+                        >
+                          <Plus size={15} />
+                          Agregar criterio
+                        </button>
+
+                        <div className={`tarea-rubrica-editor__total ${totalRubricaIusAcademy === 100 ? 'valida' : 'invalida'}`}>
+                          <span>
+                            <strong>Ponderación total</strong>
+                            <small>
+                              {totalRubricaIusAcademy === 100
+                                ? 'La rúbrica está lista para utilizarse.'
+                                : 'Ajusta los porcentajes hasta completar exactamente 100%.'}
+                            </small>
+                          </span>
+                          <b>{totalRubricaIusAcademy}%</b>
+                        </div>
+                      </div>
+                    )}
+
+                    {form.modoRubrica === 'PERSONALIZADA' && (
+                      <div className="tarea-adjunto-config tarea-adjunto-config--rubrica">
+                        <div>
+                          <strong>Importar rúbrica desde Excel o PDF</strong>
+                          <small>
+                            Selecciona un archivo .xlsx o .pdf. En PDF se admite texto seleccionable; los PDF escaneados requieren OCR.
+                          </small>
+                        </div>
+
+                        <label className="tarea-adjunto-config__selector">
+                          <FileUp size={16} />
+                          <span>{form.archivoRubrica ? 'Reemplazar archivo' : 'Seleccionar archivo'}</span>
+                          <input
+                            type="file"
+                            accept=".xlsx,.pdf"
+                            onChange={(evento) =>
+                              setForm((actual) => ({
+                                ...actual,
+                                archivoRubrica: evento.target.files?.[0] ?? null,
+                              }))
+                            }
+                          />
+                        </label>
+
+                        {form.archivoRubrica && (
+                          <div className="tarea-adjunto-config__archivo">
+                            <FileUp size={16} />
+                            <span>
+                              <strong>{form.archivoRubrica.name}</strong>
+                              <small>
+                                {form.archivoRubrica.name.toLowerCase().endsWith('.pdf')
+                                  ? 'PDF'
+                                  : 'Excel'}{' · '}
+                                {tamanioArchivo(form.archivoRubrica.size)}
+                              </small>
+                            </span>
+                            <button
+                              type="button"
+                              aria-label="Eliminar archivo de rúbrica seleccionado"
+                              onClick={() =>
+                                setForm((actual) => ({ ...actual, archivoRubrica: null }))
+                              }
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
             )}
           </div>
         )}
@@ -4866,7 +5466,7 @@ const styles = `
    * ============================================================ */
   .tarea-pasos {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 12px;
     padding: 8px 18px;
   }
@@ -5022,11 +5622,317 @@ const styles = `
     cursor: pointer;
   }
 
-  .tarea-adjunto-config__lista {
-    display: block;
+  .tarea-adjunto-config__archivos {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .tarea-adjunto-config__archivo {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: var(--app-surface);
+  }
+
+  .tarea-adjunto-config__archivo > svg {
+    flex-shrink: 0;
+    color: var(--app-accent-dark);
+  }
+
+  .tarea-adjunto-config__archivo > span {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .tarea-adjunto-config__archivo strong,
+  .tarea-adjunto-config__archivo small {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .tarea-adjunto-config__archivo button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 7px;
+    color: var(--app-danger);
+    background: var(--app-danger-bg);
+    cursor: pointer;
+  }
+
+  .tarea-adjunto-config__archivo button:hover {
+    filter: brightness(.96);
+  }
+
+  .tarea-config-especifica {
+    display: grid;
+    gap: 10px;
+    margin-top: 2px;
+  }
+
+  .tarea-config-especifica__encabezado {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .tarea-config-especifica__encabezado > span {
+    display: grid;
+    gap: 3px;
+  }
+
+  .tarea-config-especifica__encabezado strong {
+    color: var(--app-text);
+    font-size: 13px;
+  }
+
+  .tarea-config-especifica__encabezado small {
+    color: var(--app-text-muted);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .tarea-rubrica-bloque {
+    display: grid;
+    gap: 10px;
+    padding-top: 4px;
+    border-top: 1px solid var(--app-border);
+  }
+
+  .tarea-rubrica-bloque__cabecera {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .tarea-rubrica-bloque__cabecera > div {
+    display: grid;
+    gap: 3px;
+  }
+
+  .tarea-rubrica-bloque__cabecera strong {
+    color: var(--app-text);
+    font-size: 13px;
+  }
+
+  .tarea-rubrica-bloque__cabecera small {
+    color: var(--app-text-muted);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .tarea-rubrica-bloque__sin-rubrica {
+    padding: 9px 11px;
+    border: 1px solid var(--app-border);
+    border-radius: 9px;
+    color: var(--app-text-muted);
+    background: var(--app-surface-alt);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .tarea-rubrica-iusacademy {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--app-border);
+    border-radius: 12px;
+    background: var(--app-surface);
+  }
+
+  .tarea-rubrica-iusacademy__cabecera {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .tarea-rubrica-iusacademy__icono {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: var(--app-accent-soft);
+    color: var(--app-accent-dark);
+  }
+
+  .tarea-rubrica-iusacademy__cabecera > span:nth-child(2) {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .tarea-rubrica-iusacademy__cabecera strong {
+    color: var(--app-text);
+    font-size: 12px;
+  }
+
+  .tarea-rubrica-iusacademy__cabecera small {
+    color: var(--app-text-muted);
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  .tarea-rubrica-iusacademy__estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex: 0 0 auto;
+    padding: 6px 8px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, .10);
+    color: #15803d;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .tarea-rubrica-iusacademy__resumen {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--app-border);
+  }
+
+  .tarea-rubrica-iusacademy__resumen > div {
+    display: grid;
+    gap: 2px;
+  }
+
+  .tarea-rubrica-iusacademy__resumen strong {
+    font-size: 12px;
+  }
+
+  .tarea-rubrica-iusacademy__resumen small {
+    font-size: 10px;
+  }
+
+  .tarea-rubrica-iusacademy__resumen > span {
+    flex: 0 0 auto;
+    padding: 6px 9px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .tarea-rubrica-iusacademy__resumen > span.valida {
+    color: #15803d;
+    background: rgba(34, 197, 94, .10);
+  }
+
+  .tarea-rubrica-iusacademy__resumen > span.invalida {
+    color: var(--app-danger);
+    background: var(--app-danger-bg);
+  }
+
+  .tarea-rubrica-iusacademy__criterios {
+    display: grid;
+    gap: 8px;
+  }
+
+  .tarea-rubrica-iusacademy__criterio {
+    display: grid;
+    gap: 9px;
+    padding: 11px 12px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: var(--app-surface-alt);
+  }
+
+  .tarea-rubrica-iusacademy__criterio-principal {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 9px;
+  }
+
+  .tarea-rubrica-iusacademy__numero {
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    color: var(--app-accent-dark);
+    background: var(--app-accent-soft);
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .tarea-rubrica-iusacademy__criterio-principal > span:nth-child(2) {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .tarea-rubrica-iusacademy__criterio-principal strong {
+    font-size: 11px;
+  }
+
+  .tarea-rubrica-iusacademy__criterio-principal small {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  .tarea-rubrica-iusacademy__criterio-principal > b {
+    color: var(--app-accent-dark);
+    font-size: 12px;
+  }
+
+  .tarea-rubrica-iusacademy__niveles {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    padding-left: 33px;
+  }
+
+  .tarea-rubrica-iusacademy__niveles > span {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    min-width: 0;
+    padding: 5px 7px;
+    border: 1px solid var(--app-border);
+    border-radius: 7px;
+    color: var(--app-text-muted);
+    background: var(--app-surface);
+    font-size: 9px;
+  }
+
+  .tarea-rubrica-iusacademy__niveles b {
+    color: var(--app-text);
+    font-size: 9px;
+  }
+
+  .tarea-rubrica-iusacademy__pie {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    color: var(--app-text-muted);
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  .tarea-rubrica-iusacademy__pie svg {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    color: var(--app-accent-dark);
   }
 
   .tarea-rubrica-selector {
@@ -5060,10 +5966,12 @@ const styles = `
   }
 
   .tarea-rubrica-selector__opciones label {
+    position: relative;
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    padding: 10px;
+    min-height: 72px;
+    padding: 12px;
     border: 1px solid var(--app-border);
     border-radius: 10px;
     background: var(--app-surface);
@@ -5073,11 +5981,29 @@ const styles = `
   .tarea-rubrica-selector__opciones label.activa {
     border-color: var(--app-accent);
     background: var(--app-accent-soft);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--app-accent) 18%, transparent);
+  }
+
+  .tarea-rubrica-selector__opciones label.activa::after {
+    content: '✓';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--app-accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
   }
 
   .tarea-rubrica-selector__opciones input {
-    margin-top: 3px;
-    accent-color: var(--app-accent);
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .tarea-rubrica-selector__opciones span {
@@ -5106,8 +6032,29 @@ const styles = `
       justify-content: center;
     }
 
-    .tarea-rubrica-selector__opciones {
+    .tarea-rubrica-iusacademy__cabecera,
+    .tarea-rubrica-iusacademy__resumen {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .tarea-rubrica-iusacademy__niveles {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding-left: 0;
+    }
+
+    .tarea-rubrica-selector__opciones,
+    .tarea-rubrica-editor__niveles,
+    .tarea-rubrica-editor__grid,
+    .tarea-rubrica-editor__nivel-grid {
       grid-template-columns: 1fr;
+    }
+
+    .tarea-rubrica-editor__cabecera,
+    .tarea-rubrica-editor__resumen,
+    .tarea-rubrica-editor__total {
+      align-items: flex-start;
+      flex-direction: column;
     }
   }
 
@@ -6865,4 +7812,267 @@ const styles = `
       grid-template-columns: 1fr;
     }
   }
+
+  .tarea-rubrica-paso {
+    gap: 16px;
+  }
+
+  .tarea-rubrica-editor {
+    display: grid;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid var(--app-border);
+    border-radius: 14px;
+    background: var(--app-surface-alt);
+  }
+
+  .tarea-rubrica-editor__cabecera,
+  .tarea-rubrica-editor__resumen,
+  .tarea-rubrica-editor__total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .tarea-rubrica-editor__cabecera > div,
+  .tarea-rubrica-editor__cabecera span,
+  .tarea-rubrica-editor__resumen span,
+  .tarea-rubrica-editor__total span {
+    display: grid;
+    gap: 3px;
+  }
+
+  .tarea-rubrica-editor__cabecera strong,
+  .tarea-rubrica-editor__total strong {
+    color: var(--app-text);
+    font-size: 13px;
+  }
+
+  .tarea-rubrica-editor__cabecera small,
+  .tarea-rubrica-editor__total small {
+    color: var(--app-text-muted);
+    font-size: 10.5px;
+    line-height: 1.4;
+  }
+
+  .tarea-rubrica-editor__restablecer,
+  .tarea-rubrica-editor__agregar,
+  .tarea-rubrica-editor__acciones-criterio button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 7px 11px;
+    border: 1px solid var(--app-border-strong);
+    border-radius: 9px;
+    color: var(--app-text-secondary);
+    background: var(--app-surface);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .tarea-rubrica-editor__restablecer:hover,
+  .tarea-rubrica-editor__agregar:hover {
+    border-color: var(--app-accent);
+    color: var(--app-accent-dark);
+    background: var(--app-accent-soft);
+  }
+
+  .tarea-rubrica-editor__nombre,
+  .tarea-rubrica-editor__descripcion,
+  .tarea-rubrica-editor__nivel label,
+  .tarea-rubrica-editor__grid label {
+    display: grid;
+    gap: 6px;
+  }
+
+  .tarea-rubrica-editor__nombre > span,
+  .tarea-rubrica-editor__descripcion > span,
+  .tarea-rubrica-editor__nivel label > span,
+  .tarea-rubrica-editor__grid label > span {
+    color: var(--app-text-secondary);
+    font-size: 10px;
+    font-weight: 850;
+  }
+
+  .tarea-rubrica-editor__resumen {
+    padding: 10px 12px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: var(--app-surface);
+  }
+
+  .tarea-rubrica-editor__resumen span {
+    min-width: 120px;
+  }
+
+  .tarea-rubrica-editor__resumen strong {
+    color: var(--app-text);
+    font-size: 15px;
+  }
+
+  .tarea-rubrica-editor__resumen small {
+    color: var(--app-text-muted);
+    font-size: 9.5px;
+  }
+
+  .tarea-rubrica-editor__resumen .valida strong,
+  .tarea-rubrica-editor__total.valida > b {
+    color: var(--app-success, #15803d);
+  }
+
+  .tarea-rubrica-editor__resumen .invalida strong,
+  .tarea-rubrica-editor__total.invalida > b {
+    color: var(--app-danger);
+  }
+
+  .tarea-rubrica-editor__criterios {
+    display: grid;
+    gap: 10px;
+  }
+
+  .tarea-rubrica-editor__criterio {
+    overflow: hidden;
+    border: 1px solid var(--app-border);
+    border-radius: 12px;
+    background: var(--app-surface);
+  }
+
+  .tarea-rubrica-editor__criterio[open] {
+    border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-border));
+  }
+
+  .tarea-rubrica-editor__criterio summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .tarea-rubrica-editor__criterio summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .tarea-rubrica-editor__criterio summary > span:nth-child(2) {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .tarea-rubrica-editor__criterio summary strong,
+  .tarea-rubrica-editor__criterio summary small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tarea-rubrica-editor__criterio summary strong {
+    color: var(--app-text);
+    font-size: 11.5px;
+  }
+
+  .tarea-rubrica-editor__criterio summary small {
+    color: var(--app-text-muted);
+    font-size: 9.5px;
+  }
+
+  .tarea-rubrica-editor__criterio summary > b {
+    color: var(--app-accent-dark);
+    font-size: 12px;
+  }
+
+  .tarea-rubrica-editor__numero {
+    width: 25px;
+    height: 25px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--app-accent-dark);
+    background: var(--app-accent-soft);
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .tarea-rubrica-editor__contenido {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+    border-top: 1px solid var(--app-border);
+    background: var(--app-surface-alt);
+  }
+
+  .tarea-rubrica-editor__grid,
+  .tarea-rubrica-editor__nivel-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 150px;
+    gap: 10px;
+  }
+
+  .tarea-rubrica-editor__niveles-titulo > div {
+    display: grid;
+    gap: 3px;
+  }
+
+  .tarea-rubrica-editor__niveles-titulo strong {
+    color: var(--app-text);
+    font-size: 11px;
+  }
+
+  .tarea-rubrica-editor__niveles-titulo small {
+    color: var(--app-text-muted);
+    font-size: 9.5px;
+  }
+
+  .tarea-rubrica-editor__niveles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .tarea-rubrica-editor__nivel {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: var(--app-surface);
+  }
+
+  .tarea-rubrica-editor__acciones-criterio {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .tarea-rubrica-editor__acciones-criterio button.peligro {
+    border-color: color-mix(in srgb, var(--app-danger) 35%, var(--app-border));
+    color: var(--app-danger);
+  }
+
+  .tarea-rubrica-editor__acciones-criterio button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+  }
+
+  .tarea-rubrica-editor__agregar {
+    justify-self: start;
+  }
+
+  .tarea-rubrica-editor__total {
+    padding: 11px 12px;
+    border: 1px solid var(--app-border);
+    border-radius: 10px;
+    background: var(--app-surface);
+  }
+
+  .tarea-rubrica-editor__total > b {
+    font-size: 18px;
+  }
+
 `;

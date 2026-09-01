@@ -227,7 +227,7 @@ export function configExposicionInicial():
     ordenTurnos:
       'REGISTRO',
     estructuraGuiada:
-      true,
+      false,
     secciones:
       seccionesGuionInicial(),
     minPalabras:
@@ -461,7 +461,7 @@ export function leerConfiguracionExposicion(
               'estructuraGuiada'
             ] as boolean
           )
-        : true,
+        : false,
     secciones:
       secciones.length >
         0

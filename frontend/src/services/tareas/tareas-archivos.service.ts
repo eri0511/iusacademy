@@ -43,3 +43,24 @@ export function subirArchivoConsigna(
     token,
   );
 }
+
+export async function eliminarArchivoConsigna(
+  archivoId: number,
+  token: string,
+) {
+  const respuesta = await fetch(`${API_URL}/archivos/${archivoId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!respuesta.ok) {
+    const cuerpo = await respuesta.json().catch(() => ({}));
+    throw new Error(
+      typeof cuerpo?.message === 'string'
+        ? cuerpo.message
+        : 'No fue posible eliminar el archivo.',
+    );
+  }
+}
