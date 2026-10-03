@@ -1,3 +1,4 @@
+import { BibliotecaModule } from './modules/biblioteca/biblioteca.module';
 import { Module } from '@nestjs/common';
 
 import { ConfigModule } from '@nestjs/config';
@@ -48,8 +49,11 @@ import { QuizzesModule } from './modules/quizzes/quizzes.module';
 
 import { NotificacionesModule } from './modules/notificaciones/notificaciones.module';
 
+import { AnalisisIaModule } from './modules/analisis-ia/analisis-ia.module';
+
 @Module({
   imports: [
+    BibliotecaModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -95,6 +99,8 @@ import { NotificacionesModule } from './modules/notificaciones/notificaciones.mo
     QuizzesModule,
 
     NotificacionesModule,
+
+    AnalisisIaModule,
   ],
 
   controllers: [AppController],

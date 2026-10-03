@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   ArrowLeft,
+  BrainCircuit,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -666,6 +667,12 @@ export default function RevisarEntregaTarea() {
         `/docente/cursos/${cursoId}/tareas/${tareaId}`,
       );
 
+  const irAnalisisIusAcademy =
+    () =>
+      navigate(
+        `/docente/cursos/${cursoId}/tareas/${tareaId}/entregas/${entregaId}/analisis`,
+      );
+
   const descargar =
     async (
       archivo:
@@ -995,7 +1002,22 @@ export default function RevisarEntregaTarea() {
           </div>
         </div>
 
-        <div className="rtd-header__chips">
+        <div className="rtd-header__right">
+          <button
+            type="button"
+            className="rtd-analysis-btn"
+            onClick={
+              irAnalisisIusAcademy
+            }
+          >
+            <BrainCircuit
+              size={16}
+            />
+
+            Analizar con IusAcademy
+          </button>
+
+          <div className="rtd-header__chips">
           <span className="rtd-chip">
             {datos.sujeto.tipo ===
             'GRUPO' ? (
@@ -1022,6 +1044,7 @@ export default function RevisarEntregaTarea() {
               datos.entrega.estado
             }
           </span>
+          </div>
         </div>
       </header>
 
@@ -1977,6 +2000,37 @@ const styles = `
     margin: 3px 0 0;
     color: var(--app-text-muted);
     font-size: var(--app-font-sm);
+  }
+
+  .rtd-header__right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .rtd-analysis-btn {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 12px;
+    border: 1px solid var(--app-accent);
+    border-radius: 10px;
+    color: #fff;
+    background: var(--app-accent);
+    font: inherit;
+    font-size: var(--app-font-sm);
+    font-weight: var(--app-font-bold);
+    cursor: pointer;
+    transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+  }
+
+  .rtd-analysis-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--app-shadow-sm);
   }
 
   .rtd-header__chips {

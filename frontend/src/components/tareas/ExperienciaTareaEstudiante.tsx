@@ -40,6 +40,9 @@ import Toast, {
   type TipoToast,
 } from '../shared/Toast';
 
+import EditorRespuestaEscrita from './EditorRespuestaEscrita';
+import EditorColaborativoIusAcademy from './EditorColaborativoIusAcademy';
+
 import {
   useAuth,
 } from '../../auth/AuthContext';
@@ -56,6 +59,14 @@ import type {
   TareaCurso,
   TipoTarea,
 } from '../../types/tareas/tareas.types';
+
+import {
+  leerConfiguracionRespuesta,
+} from '../../utils/tareas/respuestaEscrita';
+
+import type {
+  ConfiguracionRespuestaEscrita,
+} from '../../utils/tareas/respuestaEscrita';
 
 const API_URL =
   import.meta.env.VITE_API_URL ??
@@ -420,6 +431,78 @@ function etiquetaSeccion(
     );
 }
 
+
+type IntegranteEditorColaborativo = {
+  estudianteId: number;
+  estudiante: {
+    id?: number;
+    nombres: string;
+    apellidoPaterno: string;
+  };
+};
+
+type ContextoGrupoEditor = {
+  integrantes?: IntegranteEditorColaborativo[];
+};
+
+type EstadoEditorColaborativo = {
+  formato?: string;
+  html?: string;
+};
+
+function extraerHtmlEditorColaborativo(
+  valor:
+    string,
+) {
+  if (
+    !valor.trim()
+  ) {
+    return '';
+  }
+
+  try {
+    const estado =
+      JSON.parse(
+        valor,
+      ) as EstadoEditorColaborativo;
+
+    if (
+      estado.formato ===
+        'IUSACADEMY_COLABORATIVO' &&
+      typeof estado.html ===
+        'string'
+    ) {
+      return estado.html;
+    }
+  } catch {
+    return valor;
+  }
+
+  return valor;
+}
+
+function nombreCompletoUsuario(
+  usuario:
+    {
+      nombres?: string;
+      apellidoPaterno?: string;
+    } | null | undefined,
+) {
+  if (
+    !usuario
+  ) {
+    return '';
+  }
+
+  return [
+    usuario.nombres,
+    usuario.apellidoPaterno,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+}
+
 export default function ExperienciaTareaEstudiante({
   tarea,
   disponible,
@@ -428,6 +511,7 @@ export default function ExperienciaTareaEstudiante({
 }: Props) {
   const {
     accessToken,
+    sesion,
   } =
     useAuth();
 
@@ -521,6 +605,176 @@ export default function ExperienciaTareaEstudiante({
       'DOCUMENTO_COLABORATIVO' ||
     tarea.tipo ===
       'REDACCION_JURIDICA';
+
+  const configuracionRespuesta =
+    useMemo<ConfiguracionRespuestaEscrita>(
+      () =>
+        leerConfiguracionRespuesta(
+          tarea.configuracionTipo,
+        ) ?? {
+          areaDerecho:
+            'LIBRE',
+          minPalabras:
+            1,
+          maxPalabras:
+            5000,
+          estructuraGuiada:
+            true,
+          exigirCitas:
+            false,
+          minCitas:
+            1,
+          bancoNormativo:
+            [],
+        },
+      [
+        tarea.configuracionTipo,
+      ],
+    );
+
+  const esRespuestaEscritaGrupal =
+    tarea.tipo ===
+      'RESPUESTA_ESCRITA' &&
+    tarea.modalidad ===
+      'GRUPAL';
+
+  const usuarioActualColaborativo =
+    useMemo(
+      () => {
+        const usuario =
+          sesion?.usuario;
+
+        if (
+          !usuario
+        ) {
+          return null;
+        }
+
+        return {
+          id:
+            usuario.id,
+          nombre:
+            nombreCompletoUsuario(
+              usuario,
+            ) ||
+            'Estudiante',
+        };
+      },
+      [
+        sesion?.usuario,
+      ],
+    );
+
+  const colaboradoresRespuesta =
+    useMemo(
+      () => {
+        const contexto =
+          entregaApi.contextoGrupo as
+            | (
+                ContextoGrupoEntregaTarea &
+                ContextoGrupoEditor
+              )
+            | null;
+
+        const integrantesContexto =
+          contexto?.integrantes ??
+          [];
+
+        const integrantesAfinidad =
+          entregaApi.equipoAfinidad
+            ?.integrantes ??
+          [];
+
+        const origen =
+          integrantesContexto.length >
+          0
+            ? integrantesContexto
+            : integrantesAfinidad;
+
+        const mapa =
+          new Map<
+            number,
+            {
+              id: number;
+              nombre: string;
+              enLinea: boolean;
+            }
+          >();
+
+        origen.forEach(
+          (
+            integrante,
+          ) => {
+            const id =
+              integrante.estudianteId;
+
+            mapa.set(
+              id,
+              {
+                id,
+                nombre:
+                  `${integrante.estudiante.nombres} ${integrante.estudiante.apellidoPaterno}`.trim(),
+                enLinea:
+                  usuarioActualColaborativo?.id ===
+                  id,
+              },
+            );
+          },
+        );
+
+        if (
+          usuarioActualColaborativo &&
+          !mapa.has(
+            usuarioActualColaborativo.id,
+          )
+        ) {
+          mapa.set(
+            usuarioActualColaborativo.id,
+            {
+              ...usuarioActualColaborativo,
+              enLinea:
+                true,
+            },
+          );
+        }
+
+        return Array.from(
+          mapa.values(),
+        );
+      },
+      [
+        entregaApi.contextoGrupo,
+        entregaApi.equipoAfinidad,
+        usuarioActualColaborativo,
+      ],
+    );
+
+  const respuestaGrupalHtml =
+    useMemo(
+      () => {
+        if (
+          !esRespuestaEscritaGrupal
+        ) {
+          return '';
+        }
+
+        if (
+          estructura?.secciones
+            ?.respuesta
+        ) {
+          return estructura
+            .secciones
+            .respuesta;
+        }
+
+        return contenido;
+      },
+      [
+        contenido,
+        esRespuestaEscritaGrupal,
+        estructura,
+      ],
+    );
 
   const usaArchivos =
     tarea.capacidades.includes(
@@ -1593,21 +1847,129 @@ export default function ExperienciaTareaEstudiante({
                 </p>
               </div>
 
-              <div className="ete-workspace__counter">
-                <strong>
-                  {cantidadPalabras}
-                </strong>
+              {tarea.tipo !==
+                'RESPUESTA_ESCRITA' && (
+                <div className="ete-workspace__counter">
+                  <strong>
+                    {cantidadPalabras}
+                  </strong>
 
-                <span>
-                  {cantidadPalabras ===
-                  1
-                    ? 'palabra'
-                    : 'palabras'}
-                </span>
-              </div>
+                  <span>
+                    {cantidadPalabras ===
+                    1
+                      ? 'palabra'
+                      : 'palabras'}
+                  </span>
+                </div>
+              )}
             </header>
 
-            {estructura?.secciones ? (
+            {tarea.tipo ===
+            'RESPUESTA_ESCRITA' ? (
+              esRespuestaEscritaGrupal ? (
+                <EditorColaborativoIusAcademy
+                  valor={
+                    respuestaGrupalHtml
+                  }
+                  usuario={
+                    usuarioActualColaborativo
+                  }
+                  colaboradores={
+                    colaboradoresRespuesta
+                  }
+                  deshabilitado={
+                    !puedeModificar
+                  }
+                  titulo="Respuesta del equipo"
+                  descripcion="Todos los integrantes trabajan sobre una sola respuesta compartida."
+                  placeholder="Redacten aquí la respuesta del equipo..."
+                  altoMinimo={
+                    430
+                  }
+                  onChange={(
+                    valorColaborativo,
+                  ) => {
+                    const html =
+                      extraerHtmlEditorColaborativo(
+                        valorColaborativo,
+                      );
+
+                    setEstructura(
+                      (
+                        actual,
+                      ) => ({
+                        version:
+                          typeof actual?.version ===
+                            'number'
+                            ? actual.version
+                            : 1,
+                        formato:
+                          'RESPUESTA_ESCRITA',
+                        ...actual,
+                        secciones: {
+                          ...(
+                            actual?.secciones ??
+                            {}
+                          ),
+                          respuesta:
+                            html,
+                        },
+                        citas:
+                          Array.isArray(
+                            actual?.citas,
+                          )
+                            ? actual.citas
+                            : [],
+                      }),
+                    );
+
+                    setContenido(
+                      '',
+                    );
+                  }}
+                />
+              ) : (
+                <EditorRespuestaEscrita
+                  valor={
+                    contenidoParaGuardar
+                  }
+                  config={
+                    configuracionRespuesta
+                  }
+                  deshabilitado={
+                    !puedeModificar
+                  }
+                  onChange={(
+                    serializado,
+                  ) => {
+                    const siguiente =
+                      intentarContenidoEstructurado(
+                        serializado,
+                      );
+
+                    if (
+                      siguiente
+                    ) {
+                      setEstructura(
+                        siguiente,
+                      );
+
+                      setContenido(
+                        '',
+                      );
+                    } else {
+                      setEstructura(
+                        null,
+                      );
+
+                      setContenido(
+                        serializado,
+                      );
+                    }
+                  }}
+                />
+              )
+            ) : estructura?.secciones ? (
               <div className="ete-structured-editor">
                 {Object.entries(
                   estructura.secciones,

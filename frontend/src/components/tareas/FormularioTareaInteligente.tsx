@@ -896,6 +896,14 @@ export default function FormularioTareaInteligente({
       null,
     );
 
+  const [
+    fechaAperturaModificada,
+    setFechaAperturaModificada,
+  ] =
+    useState(
+      false,
+    );
+
   const edicionRestringida =
     Boolean(
       tareaEditar?.tieneTrabajoEstudiantil,
@@ -942,6 +950,11 @@ export default function FormularioTareaInteligente({
       setErrorLocal(
         null,
       );
+
+      setFechaAperturaModificada(
+        false,
+      );
+
       const siguienteFormulario =
         tareaEditar
           ? desdeTarea(
@@ -1268,10 +1281,21 @@ export default function FormularioTareaInteligente({
         return 'Revisa las fechas y horas ingresadas.';
       }
 
-      const apertura =
+      const ahora =
+        new Date();
+
+      const aperturaConfigurada =
         new Date(
           form.fechaApertura,
         );
+
+      const apertura =
+        !tareaEditar &&
+        !fechaAperturaModificada &&
+        aperturaConfigurada <
+          ahora
+          ? ahora
+          : aperturaConfigurada;
 
       const limite =
         new Date(
@@ -1282,9 +1306,6 @@ export default function FormularioTareaInteligente({
         new Date(
           form.fechaCierre,
         );
-
-      const ahora =
-        new Date();
 
       const margenAhora =
         new Date(
@@ -1800,8 +1821,17 @@ export default function FormularioTareaInteligente({
         ? form.requiereRepresentante
         : false,
     fechaApertura:
-      new Date(
-        form.fechaApertura,
+      (
+        !tareaEditar &&
+        !fechaAperturaModificada &&
+        new Date(
+          form.fechaApertura,
+        ) <
+          new Date()
+          ? new Date()
+          : new Date(
+              form.fechaApertura,
+            )
       ).toISOString(),
     fechaLimite:
       new Date(
@@ -1907,7 +1937,7 @@ export default function FormularioTareaInteligente({
       } else {
         for (
           let numero = 1;
-          numero <= 4;
+          numero <= 5;
           numero += 1
         ) {
           const error =
@@ -3665,7 +3695,11 @@ export default function FormularioTareaInteligente({
                   }
                   onChange={(
                     evento,
-                  ) =>
+                  ) => {
+                    setFechaAperturaModificada(
+                      true,
+                    );
+
                     setForm(
                       (
                         actual,
@@ -3674,8 +3708,12 @@ export default function FormularioTareaInteligente({
                         fechaApertura:
                           evento.target.value,
                       }),
-                    )
-                  }
+                    );
+
+                    setErrorLocal(
+                      null,
+                    );
+                  }}
                 />
 
                 <small>

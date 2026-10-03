@@ -146,9 +146,6 @@ const menuPrincipal: MenuItem[] = [
 
     icon:
       Library,
-
-    disabled:
-      true,
   },
   {
     to:

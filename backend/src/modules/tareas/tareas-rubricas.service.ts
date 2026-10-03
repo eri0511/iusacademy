@@ -22,9 +22,14 @@ import {
 
 import type { UsuarioAutenticado } from './interfaces/usuario-autenticado.interface';
 
+import { TareasEvaluacionService } from './tareas-evaluacion.service';
+
 @Injectable()
 export class TareasRubricasService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly evaluacionService: TareasEvaluacionService,
+  ) {}
 
   private async obtenerTareaAutorizada(
     usuario: UsuarioAutenticado,
@@ -1087,6 +1092,12 @@ export class TareasRubricasService {
     const notaBaseEscala100 =
       Math.round((notaBase / ponderacionMax) * 100 * 100) / 100;
 
+    const retroalimentacionRubrica = datos.items
+      .map((item) => item.retroalimentacion?.trim())
+      .filter((texto): texto is string => Boolean(texto))
+      .join(' | ')
+      .slice(0, 4000);
+
     await this.prisma.$transaction(async (transaction) => {
       const calificacion = await transaction.calificacionRubrica.upsert({
         where: {
@@ -1130,6 +1141,30 @@ export class TareasRubricasService {
         }),
       });
     });
+
+    try {
+      await this.evaluacionService.calificarEntrega(
+        usuario,
+        cursoId,
+        tareaId,
+        entregaId,
+        {
+          notaBase: notaBaseEscala100,
+          retroalimentacion: retroalimentacionRubrica || undefined,
+        },
+      );
+    } catch (error) {
+      await this.prisma.calificacionRubrica.update({
+        where: {
+          entregaId,
+        },
+        data: {
+          completada: false,
+        },
+      });
+
+      throw error;
+    }
 
     return notaBaseEscala100;
   }

@@ -1,0 +1,291 @@
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Bookmark, Check, FolderHeart, Plus, Search } from "lucide-react";
+import { mensajeError, useBiblioteca } from "../../contexts/BibliotecaContext";
+import { categorias } from "../../types/biblioteca/biblioteca.types";
+import type {
+  Recurso,
+  Coleccion,
+} from "../../types/biblioteca/biblioteca.types";
+import { TarjetaRecurso } from "../../components/biblioteca/TarjetaRecurso";
+
+export default function BibliotecaGuardados() {
+  const { api, base, avisar } = useBiblioteca();
+  const [busqueda, setBusqueda] = useState("");
+  const [favoritos, setFavoritos] = useState<Recurso[]>([]);
+  const [colecciones, setColecciones] = useState<Coleccion[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+  const [nombreColeccion, setNombre] = useState("");
+  const [ocupado, setOcupado] = useState(false);
+  const [editar, setEditar] = useState<number | null>(null);
+  const [editarNombre, setEditarNombre] = useState("");
+
+  const cargar = useCallback(async () => {
+    try {
+      const [f, c] = await Promise.all([
+        api.get<{ recurso: Recurso }[]>("/favoritos"),
+        api.get<Coleccion[]>("/colecciones"),
+      ]);
+      setFavoritos(f.map((x) => ({ ...x.recurso, esFavorito: true })));
+      setColecciones(c);
+      setError("");
+    } catch (e) {
+      setError(mensajeError(e));
+    } finally {
+      setCargando(false);
+    }
+  }, [api]);
+
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+
+  async function accion(fn: () => Promise<unknown>) {
+    setOcupado(true);
+    try {
+      await fn();
+      await cargar();
+    } catch (e) {
+      avisar(mensajeError(e), true);
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  const favoritosFiltrados = favoritos.filter((r) =>
+    `${r.titulo} ${r.tema} ${r.autorInstitucion ?? ""}`
+      .toLocaleLowerCase("es")
+      .includes(busqueda.toLocaleLowerCase("es")),
+  );
+
+  return (
+    <>
+      <div className="bib-page-heading">
+        <div>
+          <h2>Mis favoritos y colecciones</h2>
+          <p>Guarda referencias y reúne tus documentos por tema.</p>
+        </div>
+        <FolderHeart size={30} />
+      </div>
+
+      {error && (
+        <div className="bib-empty" role="alert">
+          <p>{error}</p>
+          <button onClick={() => void cargar()}>Reintentar</button>
+        </div>
+      )}
+
+      {!cargando && !error && (
+        <section
+          className="bib-stats bib-personal-stats"
+          aria-label="Estadísticas personales"
+        >
+          <article>
+            <span className="bib-stat-icon">
+              <Bookmark size={22} />
+            </span>
+            <div>
+              <strong>{favoritos.length}</strong>
+              <span>Recursos favoritos</span>
+            </div>
+          </article>
+          <article>
+            <span className="bib-stat-icon">
+              <FolderHeart size={22} />
+            </span>
+            <div>
+              <strong>{colecciones.length}</strong>
+              <span>Colecciones personales</span>
+            </div>
+          </article>
+        </section>
+      )}
+
+      <label className="bib-search bib-favorites-search">
+        <Search size={20} />
+        <input
+          aria-label="Buscar en mis favoritos"
+          placeholder="Buscar por título, tema o autor en mis favoritos…"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+      </label>
+
+      <h3 className="bib-section-title">Favoritos</h3>
+
+      {cargando ? (
+        <div className="bib-grid" role="status" aria-label="Cargando favoritos">
+          {[1, 2, 3].map((i) => (
+            <div className="bib-skeleton" key={i} />
+          ))}
+        </div>
+      ) : favoritosFiltrados.length ? (
+        <div className="bib-grid">
+          {favoritosFiltrados.map((r) => (
+            <TarjetaRecurso
+              key={r.id}
+              recurso={r}
+              alGuardar={() => void cargar()}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="bib-empty">
+          <Bookmark size={29} />
+          <p>
+            {busqueda
+              ? "No encontramos favoritos con esa búsqueda."
+              : "Todavía no tienes favoritos."}
+          </p>
+          <Link to={base} className="bib-button">
+            Explorar documentos
+          </Link>
+        </div>
+      )}
+
+      <section className="bib-panel">
+        <h3>Mis colecciones</h3>
+        <form
+          className="bib-inline-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void accion(async () => {
+              await api.send("/colecciones", "POST", {
+                nombre: nombreColeccion.trim(),
+              });
+              setNombre("");
+            });
+          }}
+        >
+          <input
+            required
+            minLength={2}
+            maxLength={100}
+            aria-label="Nombre de la nueva colección"
+            placeholder="Por ejemplo: Contratos de arrendamiento"
+            value={nombreColeccion}
+            onChange={(e) => setNombre(e.target.value)}
+          />
+          <button
+            type="submit"
+            className="bib-button primary"
+            disabled={ocupado}
+          >
+            <Plus size={17} />
+            Crear colección
+          </button>
+        </form>
+      </section>
+
+      {colecciones.map((c) => (
+        <section className="bib-panel" key={c.id}>
+          <div className="bib-section-heading">
+            <div>
+              <h3>
+                <FolderHeart size={20} /> {c.nombre}
+              </h3>
+              <p>{c.recursos.length} documentos disponibles</p>
+            </div>
+            <div className="bib-actions">
+              <button
+                className="bib-button"
+                disabled={ocupado}
+                onClick={() => {
+                  setEditar(c.id);
+                  setEditarNombre(c.nombre);
+                }}
+              >
+                Renombrar
+              </button>
+              <button
+                className="bib-button bib-danger"
+                disabled={ocupado}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `¿Eliminar la colección “${c.nombre}”? Los documentos seguirán en la biblioteca.`,
+                    )
+                  )
+                    void accion(() =>
+                      api.send(`/colecciones/${c.id}`, "DELETE"),
+                    );
+                }}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+
+          {editar === c.id && (
+            <form
+              className="bib-inline-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void accion(async () => {
+                  await api.send(`/colecciones/${c.id}`, "PATCH", {
+                    nombre: editarNombre,
+                    descripcion: c.descripcion ?? "",
+                  });
+                  setEditar(null);
+                });
+              }}
+            >
+              <input
+                aria-label="Nuevo nombre de colección"
+                required
+                minLength={2}
+                maxLength={100}
+                value={editarNombre}
+                onChange={(e) => setEditarNombre(e.target.value)}
+              />
+              <button className="bib-button primary" disabled={ocupado}>
+                <Check size={17} />
+                Guardar
+              </button>
+              <button
+                type="button"
+                className="bib-button"
+                onClick={() => setEditar(null)}
+              >
+                Cancelar
+              </button>
+            </form>
+          )}
+
+          <div className="bib-collection-grid">
+            {c.recursos.map(({ recurso: r }) => (
+              <div className="bib-collection-item" key={r.id}>
+                <Link to={`${base}/recursos/${r.id}`}>
+                  <strong>{r.titulo}</strong>
+                  <small>{categorias[r.categoria]}</small>
+                </Link>
+                <button
+                  className="bib-button bib-text-button"
+                  disabled={ocupado}
+                  onClick={() =>
+                    void accion(() =>
+                      api.send(
+                        `/colecciones/${c.id}/recursos/${r.id}`,
+                        "DELETE",
+                      ),
+                    )
+                  }
+                >
+                  Quitar
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {!c.recursos.length && (
+            <p className="bib-collection-empty">
+              Abre un recurso y añádelo a esta colección para organizar tu
+              consulta.
+            </p>
+          )}
+        </section>
+      ))}
+    </>
+  );
+}

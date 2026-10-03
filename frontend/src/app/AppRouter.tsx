@@ -1,3 +1,12 @@
+import BibliotecaLayout from '../layouts/BibliotecaLayout';
+import BibliotecaCatalogo from '../pages/biblioteca/BibliotecaCatalogo';
+import BibliotecaCategorias from '../pages/biblioteca/BibliotecaCategorias';
+import BibliotecaDetalle from '../pages/biblioteca/BibliotecaDetalle';
+import BibliotecaGuardados from '../pages/biblioteca/BibliotecaGuardados';
+import BibliotecaActividad from '../pages/biblioteca/BibliotecaActividad';
+import BibliotecaEditor from '../pages/biblioteca/BibliotecaEditor';
+import BibliotecaGestion from '../pages/biblioteca/BibliotecaGestion';
+import BibliotecaPermiso, { BibliotecaRegreso } from '../components/biblioteca/BibliotecaPermiso';
 import {
   BrowserRouter,
   Navigate,
@@ -45,7 +54,9 @@ import ForoCurso from '../pages/docente/curso/ForoCurso';
 import GruposCurso from '../pages/docente/curso/GruposCurso';
 import QuizzesCurso from '../pages/docente/curso/QuizzesCurso';
 import RecursosCurso from '../pages/docente/curso/RecursosCurso';
+import AnalisisEntregaIusAcademy from '../pages/docente/curso/AnalisisEntregaIA';
 import RevisarEntregaTarea from '../pages/docente/curso/RevisarEntregaTarea';
+import SalaExposicionDocente from '../pages/docente/curso/SalaExposicionDocente';
 import TablonCurso from '../pages/docente/curso/TablonCurso';
 import TareasCurso from '../pages/docente/curso/TareasCurso';
 
@@ -60,6 +71,7 @@ import CalificacionesCursoEstudiante from '../pages/estudiante/cursos/Calificaci
 import DetalleForoEstudiante from '../pages/estudiante/cursos/DetalleForoEstudiante';
 import DetalleQuizEstudiante from '../pages/estudiante/cursos/DetalleQuizEstudiante';
 import DetalleTareaEstudiante from '../pages/estudiante/cursos/DetalleTareaEstudiante';
+import SalaExposicionEstudiante from '../pages/estudiante/cursos/SalaExposicionEstudiante';
 import ForoCursoEstudiante from '../pages/estudiante/cursos/ForoCursoEstudiante';
 import MisCursosEstudiante from '../pages/estudiante/cursos/MisCursos';
 import QuizzesCursoEstudiante from '../pages/estudiante/cursos/QuizzesCursoEstudiante';
@@ -202,6 +214,23 @@ function AppRouter() {
                     <AdminInicio />
                   }
                 />
+
+                <Route path="biblioteca" element={<BibliotecaLayout />}>
+                  <Route index element={<BibliotecaCatalogo />} />
+                  <Route path="categorias" element={<BibliotecaCategorias />} />
+                  <Route path="recursos/:id" element={<BibliotecaDetalle />} />
+                  <Route path="guardados" element={<BibliotecaGuardados />} />
+                  <Route path="descargas" element={<BibliotecaActividad tipo="descarga" />} />
+                  <Route path="actividad" element={<BibliotecaActividad tipo="consulta" />} />
+                  <Route element={<BibliotecaPermiso />}>
+                    <Route path="nuevo" element={<BibliotecaEditor />} />
+                    <Route path="recursos/:id/editar" element={<BibliotecaEditor />} />
+                  </Route>
+                  <Route element={<BibliotecaPermiso soloAdmin />}>
+                    <Route path="gestion" element={<BibliotecaGestion />} />
+                  </Route>
+                  <Route path="*" element={<BibliotecaRegreso />} />
+                </Route>
 
                 <Route
                   path="usuarios"
@@ -360,6 +389,20 @@ function AppRouter() {
                   />
 
                   <Route
+                    path="tareas/:tareaId/entregas/:entregaId/analisis"
+                    element={
+                      <AnalisisEntregaIusAcademy />
+                    }
+                  />
+
+                  <Route
+                    path="tareas/:tareaId/exposicion"
+                    element={
+                      <SalaExposicionDocente />
+                    }
+                  />
+
+                  <Route
                     path="quizzes"
                     element={
                       <QuizzesCurso />
@@ -412,15 +455,22 @@ function AppRouter() {
                   />
                 </Route>
 
-                <Route
-                  path="biblioteca"
-                  element={
-                    <PaginaProximamente
-                      titulo="Biblioteca jurídica"
-                      descripcion="Aquí administraremos documentos jurídicos generales de la plataforma."
-                    />
-                  }
-                />
+                <Route path="biblioteca" element={<BibliotecaLayout />}>
+                  <Route index element={<BibliotecaCatalogo />} />
+                  <Route path="categorias" element={<BibliotecaCategorias />} />
+                  <Route path="recursos/:id" element={<BibliotecaDetalle />} />
+                  <Route path="guardados" element={<BibliotecaGuardados />} />
+                  <Route path="descargas" element={<BibliotecaActividad tipo="descarga" />} />
+                  <Route path="actividad" element={<BibliotecaActividad tipo="consulta" />} />
+                  <Route element={<BibliotecaPermiso />}>
+                    <Route path="nuevo" element={<BibliotecaEditor />} />
+                    <Route path="recursos/:id/editar" element={<BibliotecaEditor />} />
+                  </Route>
+                  <Route element={<BibliotecaPermiso soloAdmin />}>
+                    <Route path="gestion" element={<BibliotecaGestion />} />
+                  </Route>
+                  <Route path="*" element={<BibliotecaRegreso />} />
+                </Route>
 
                 <Route
                   path="calendario"
@@ -545,6 +595,13 @@ function AppRouter() {
                   />
 
                   <Route
+                    path="tareas/:tareaId/exposicion"
+                    element={
+                      <SalaExposicionEstudiante />
+                    }
+                  />
+
+                  <Route
                     path="quizzes"
                     element={
                       <QuizzesCursoEstudiante />
@@ -573,15 +630,22 @@ function AppRouter() {
                   />
                 </Route>
 
-                <Route
-                  path="biblioteca"
-                  element={
-                    <PaginaProximamente
-                      titulo="Biblioteca jurídica"
-                      descripcion="Aquí el estudiante consultará contratos, demandas, memoriales y otros recursos."
-                    />
-                  }
-                />
+                <Route path="biblioteca" element={<BibliotecaLayout />}>
+                  <Route index element={<BibliotecaCatalogo />} />
+                  <Route path="categorias" element={<BibliotecaCategorias />} />
+                  <Route path="recursos/:id" element={<BibliotecaDetalle />} />
+                  <Route path="guardados" element={<BibliotecaGuardados />} />
+                  <Route path="descargas" element={<BibliotecaActividad tipo="descarga" />} />
+                  <Route path="actividad" element={<BibliotecaActividad tipo="consulta" />} />
+                  <Route element={<BibliotecaPermiso />}>
+                    <Route path="nuevo" element={<BibliotecaEditor />} />
+                    <Route path="recursos/:id/editar" element={<BibliotecaEditor />} />
+                  </Route>
+                  <Route element={<BibliotecaPermiso soloAdmin />}>
+                    <Route path="gestion" element={<BibliotecaGestion />} />
+                  </Route>
+                  <Route path="*" element={<BibliotecaRegreso />} />
+                </Route>
 
                 <Route
                   path="calendario"

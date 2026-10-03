@@ -1314,8 +1314,7 @@ export default function Cursos() {
       </section>
 
       {panelAbierto && (
-        <div className="form-modal-backdrop">
-          <section className="form-card form-card--modal">
+        <section className="form-card">
           <div className="form-card-header">
             <div>
               <span className="section-eyebrow">
@@ -1545,8 +1544,7 @@ export default function Cursos() {
               </button>
             </div>
           </form>
-          </section>
-        </div>
+        </section>
       )}
 
       <section className="cursos-card">
@@ -2810,32 +2808,6 @@ const styles = `
     font-size: 12px;
   }
 
-  .form-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 7600;
-    display: grid;
-    place-items: center;
-    padding: 24px;
-    overflow-y: auto;
-    background:
-      rgba(15, 23, 42, 0.34);
-    backdrop-filter:
-      blur(6px);
-  }
-
-  .form-card--modal {
-    width:
-      min(
-        980px,
-        100%
-      );
-    max-height:
-      calc(100vh - 48px);
-    margin: auto;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
 
   .form-card,
   .cursos-card {
@@ -4084,8 +4056,6 @@ const styles = `
   }
 
   html[data-theme='oscuro']
-  .form-modal-backdrop,
-  html[data-theme='oscuro']
   .modal-backdrop {
     background:
       var(--app-overlay);
@@ -4123,14 +4093,6 @@ const styles = `
       padding: 18px;
     }
 
-    .form-modal-backdrop {
-      padding: 12px;
-    }
-
-    .form-card--modal {
-      max-height:
-        calc(100vh - 24px);
-    }
 
     .cursos-header {
       flex-direction: column;

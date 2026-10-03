@@ -1,22 +1,22 @@
 import {
-  useMemo,
-} from 'react';
-
-import {
   BookMarked,
   CheckCircle2,
-  Gavel,
+  FileText,
   Plus,
   Trash2,
   Type,
 } from 'lucide-react';
 
 import {
-  SECCIONES_RESPUESTA_ESCRITA,
+  useMemo,
+} from 'react';
+
+import EditorTextoEnriquecidoTarea from './EditorTextoEnriquecidoTarea';
+
+import {
   TIPOS_CITA_JURIDICA,
   nuevoIdCita,
   nuevaRespuestaEscrita,
-  palabrasPorSeccion,
   parsearRespuestaEscrita,
   serializarRespuestaEscrita,
   totalPalabrasRespuesta,
@@ -36,6 +36,7 @@ type Props = {
     serializado:
       string,
   ) => void;
+  deshabilitado?: boolean;
 };
 
 export default function EditorRespuestaEscrita(
@@ -43,6 +44,8 @@ export default function EditorRespuestaEscrita(
     valor,
     config,
     onChange,
+    deshabilitado =
+      false,
   }: Props,
 ) {
   const estado =
@@ -57,27 +60,54 @@ export default function EditorRespuestaEscrita(
       ],
     );
 
-  const palabrasPorSeccionActual =
-    useMemo(
-      () =>
-        palabrasPorSeccion(
-          estado,
-        ),
-      [
-        estado,
-      ],
-    );
-
   const total =
     totalPalabrasRespuesta(
       estado,
     );
+
+  const porDebajo =
+    total <
+    config.minPalabras;
 
   const dentroDeRango =
     total >=
       config.minPalabras &&
     total <=
       config.maxPalabras;
+
+  const porEncima =
+    total >
+    config.maxPalabras;
+
+  const porcentajeProgreso =
+    Math.min(
+      100,
+      Math.max(
+        0,
+        (
+          total /
+          Math.max(
+            1,
+            config.maxPalabras,
+          )
+        ) *
+          100,
+      ),
+    );
+
+  const faltantesMinimo =
+    Math.max(
+      0,
+      config.minPalabras -
+        total,
+    );
+
+  const excedentesMaximo =
+    Math.max(
+      0,
+      total -
+        config.maxPalabras,
+    );
 
   const citasCompletas =
     estado.citas.filter(
@@ -104,24 +134,18 @@ export default function EditorRespuestaEscrita(
         ),
       );
 
-  const editarSeccion =
+  const editarRespuesta =
     (
-      clave:
-        string,
-      texto:
+      html:
         string,
     ) =>
       guardar(
         {
           ...estado,
-          secciones:
-            {
-              ...estado.secciones,
-              [
-                clave
-              ]:
-                texto,
-            },
+          secciones: {
+            respuesta:
+              html,
+          },
         },
       );
 
@@ -195,156 +219,169 @@ export default function EditorRespuestaEscrita(
   return (
     <>
       <div className="ere">
-        <div className="ere__panel">
-          <div className="ere__panel-cabecera">
-            <div className="ere__panel-titulo">
-              <span className="ere__panel-icono">
-                <Gavel
-                  size={18}
-                />
-              </span>
-
-              <div>
-                <strong>
-                  Respuesta jurídica guiada
-                </strong>
-
-                <small>
-                  Desarrolla tu respuesta con la estructura y fuentes que solicita el docente.
-                </small>
-              </div>
-            </div>
-
-            <div className={`ere__contador ${dentroDeRango ? 'bueno' : 'aviso'}`}>
-              <Type
-                size={15}
-              />
-
-              <span>
-                {total}
-              </span>
-
-              <small>
-                / {
-                  config.minPalabras
-                } – {
-                  config.maxPalabras
-                } palabras
-              </small>
-            </div>
-          </div>
-
-          <div className="ere__insignias">
-            <span>
-              {config.estructuraGuiada
-                ? 'Estructura guiada'
-                : 'Respuesta libre'}
-            </span>
-
-            <span>
-              {config.exigirCitas
-                ? `Mínimo ${config.minCitas} fuente(s) citada(s)`
-                : 'Citas opcionales'}
-            </span>
-          </div>
-        </div>
-
-        <div className="ere__secciones">
-          {SECCIONES_RESPUESTA_ESCRITA.map(
-            (
-              seccion,
-            ) => (
-              <div
-                key={
-                  seccion.clave
-                }
-                className="ere__seccion"
-              >
-                <div className="ere__seccion-titulo">
-                  <strong>
-                    {seccion.titulo}
-                  </strong>
-
-                  <small
-                    className={
-                      palabrasPorSeccionActual[
-                        seccion.clave
-                      ] >
-                        0
-                        ? 'tiene'
-                        : ''
-                    }
-                  >
-                    {
-                      palabrasPorSeccionActual[
-                        seccion.clave
-                      ]
-                    }{' '}
-                    palabras
-                  </small>
-                </div>
-
-                <p>
-                  {
-                    seccion.consigna
-                  }
-                </p>
-
-                <textarea
-                  className="ere__textarea"
-                  value={
-                    estado.secciones[
-                      seccion.clave
-                    ] ??
-                    ''
-                  }
-                  maxLength={
-                    50000
-                  }
-                  placeholder={`Escribe aquí tu desarrollo de "${seccion.titulo.toLowerCase()}"...`}
-                  onChange={(
-                    evento,
-                  ) =>
-                    editarSeccion(
-                      seccion.clave,
-                      evento.target
-                        .value,
-                    )
-                  }
-                />
-              </div>
-            ),
-          )}
-        </div>
-
-        <div className="ere__citas">
-          <div className="ere__citas-titulo">
-            <span className="ere__citas-icono">
-              <BookMarked
-                size={17}
+        <div className="ere__encabezado">
+          <div className="ere__identidad">
+            <span className="ere__icono">
+              <FileText
+                size={18}
               />
             </span>
 
             <div>
               <strong>
-                Fuentes citadas
+                Redacta tu respuesta
               </strong>
 
               <small>
-                {
-                  citasCompletas.length
-                }{' '}
-                de{' '}
-                {
-                  config
-                    .minCitas
-                }{' '}
-                requeridas
+                Analiza la consigna y desarrolla una respuesta completa con tu propio criterio jurídico.
               </small>
+            </div>
+          </div>
+
+          <div
+            className={`ere__contador ${
+              dentroDeRango
+                ? 'is-ok'
+                : porEncima
+                  ? 'is-over'
+                  : 'is-under'
+            }`}
+            aria-live="polite"
+          >
+            <Type
+              size={15}
+            />
+
+            <strong>
+              {total}
+            </strong>
+
+            <span>
+              / {config.maxPalabras}
+            </span>
+
+            <i>
+              {porDebajo
+                ? `Faltan ${faltantesMinimo}`
+                : dentroDeRango
+                  ? 'Correcto'
+                  : `+${excedentesMaximo}`}
+            </i>
+          </div>
+        </div>
+
+        <EditorTextoEnriquecidoTarea
+          valor={
+            estado.secciones[
+              'respuesta'
+            ] ??
+            ''
+          }
+          deshabilitado={
+            deshabilitado
+          }
+          altoMinimo={
+            360
+          }
+          placeholder="Escribe aquí tu respuesta. Fundamenta, argumenta y desarrolla tus ideas con claridad..."
+          onChange={
+            editarRespuesta
+          }
+        />
+
+        <div
+          className={`ere__progreso ${
+            dentroDeRango
+              ? 'is-ok'
+              : porEncima
+                ? 'is-over'
+                : 'is-under'
+          }`}
+        >
+          <div className="ere__progreso-top">
+            <span>
+              {porDebajo
+                ? `Faltan ${faltantesMinimo} palabra(s) para alcanzar el mínimo`
+                : dentroDeRango
+                  ? 'Extensión adecuada para la entrega'
+                  : `Excediste el máximo por ${excedentesMaximo} palabra(s)`}
+            </span>
+          </div>
+
+          <div
+            className="ere__progreso-barra"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={
+              config.maxPalabras
+            }
+            aria-valuenow={
+              Math.min(
+                total,
+                config.maxPalabras,
+              )
+            }
+          >
+            <span
+              style={{
+                width:
+                  `${porcentajeProgreso}%`,
+              }}
+            />
+          </div>
+
+          <div className="ere__progreso-marcas">
+            <span>
+              0
+            </span>
+
+            <span>
+              Mín. {config.minPalabras}
+            </span>
+
+            <span>
+              Máx. {config.maxPalabras}
+            </span>
+          </div>
+        </div>
+
+        <div className="ere__ayuda">
+          <span>
+            <CheckCircle2
+              size={15}
+            />
+          </span>
+
+          <p>
+            IusAcademy no te indica qué apartados debes redactar. El análisis de estructura, fundamentación y calidad jurídica se realizará posteriormente sobre tu respuesta.
+          </p>
+        </div>
+
+        <section className="ere__citas">
+          <header className="ere__citas-header">
+            <div className="ere__citas-identidad">
+              <span>
+                <BookMarked
+                  size={17}
+                />
+              </span>
+
+              <div>
+                <strong>
+                  Fuentes citadas
+                </strong>
+
+                <small>
+                  Registra las normas, jurisprudencia o doctrina que utilizaste en tu respuesta.
+                </small>
+              </div>
             </div>
 
             <button
               type="button"
+              disabled={
+                deshabilitado
+              }
               onClick={
                 agregarCita
               }
@@ -355,20 +392,31 @@ export default function EditorRespuestaEscrita(
 
               Agregar cita
             </button>
-          </div>
+          </header>
 
-          {config.exigirCitas &&
-            !citasCumplidas && (
-              <p className="ere__citas-pendiente">
-                Aún faltan fuentes para cumplir el requisito del docente.
+          {config.exigirCitas && (
+            <div className="ere__citas-requisito">
+              <span>
+                {
+                  citasCompletas.length
+                } / {
+                  config.minCitas
+                }
+              </span>
+
+              <p>
+                {citasCumplidas
+                  ? 'Cumpliste el mínimo de fuentes solicitado.'
+                  : `Debes registrar al menos ${config.minCitas} fuente(s).`}
               </p>
-            )}
+            </div>
+          )}
 
           {config.bancoNormativo.length >
             0 && (
             <div className="ere__banco">
               <strong>
-                Banco normativo sugerido por el docente
+                Material normativo sugerido por el docente
               </strong>
 
               <ul>
@@ -378,17 +426,19 @@ export default function EditorRespuestaEscrita(
                   ) => (
                     <li
                       key={
-                        item.id
+                        item.id ??
+                        item.norma
                       }
                     >
-                      <em>
+                      <b>
                         {
                           item.norma
                         }
-                      </em>
+                      </b>
 
-                      {item.detalle &&
-                        ` — ${item.detalle}`}
+                      {item.detalle
+                        ? ` — ${item.detalle}`
+                        : ''}
                     </li>
                   ),
                 )}
@@ -403,7 +453,7 @@ export default function EditorRespuestaEscrita(
                 (
                   cita,
                 ) => (
-                  <div
+                  <article
                     key={
                       cita.id
                     }
@@ -412,6 +462,9 @@ export default function EditorRespuestaEscrita(
                     <select
                       value={
                         cita.tipo
+                      }
+                      disabled={
+                        deshabilitado
                       }
                       onChange={(
                         evento,
@@ -451,7 +504,10 @@ export default function EditorRespuestaEscrita(
                         value={
                           cita.referencia
                         }
-                        placeholder="Referencia (ej. Código Civil, art. 984)"
+                        disabled={
+                          deshabilitado
+                        }
+                        placeholder="Referencia, por ejemplo: Código Civil, art. 984"
                         onChange={(
                           evento,
                         ) =>
@@ -470,7 +526,10 @@ export default function EditorRespuestaEscrita(
                         value={
                           cita.fundamento
                         }
-                        placeholder="Fundamento o aplicabilidad"
+                        disabled={
+                          deshabilitado
+                        }
+                        placeholder="¿Cómo utilizaste esta fuente en tu argumentación?"
                         onChange={(
                           evento,
                         ) =>
@@ -488,364 +547,649 @@ export default function EditorRespuestaEscrita(
 
                     <button
                       type="button"
-                      className="ere__cita-quitar"
+                      className="ere__quitar"
+                      disabled={
+                        deshabilitado
+                      }
+                      title="Quitar cita"
                       onClick={() =>
                         quitarCita(
                           cita.id,
                         )
                       }
-                      aria-label="Quitar cita"
                     >
                       <Trash2
                         size={15}
                       />
                     </button>
-                  </div>
+                  </article>
                 ),
               )}
             </div>
           )}
-        </div>
+        </section>
 
-        <div className="ere__estado">
-          <CheckCircle2
-            size={15}
-          />
-
-          <span>
-            {dentroDeRango
-              ? 'Dentro del rango de palabras'
-              : total <
-                  config.minPalabras
-                ? `Te faltan ${config.minPalabras - total} palabra(s) para el mínimo.`
-                : `Superaste el máximo en ${total - config.maxPalabras} palabra(s).`}
-          </span>
-        </div>
       </div>
 
-      {estilos}
+      <style>{`
+        .ere {
+          display:
+            grid;
+          gap:
+            10px;
+        }
+
+        .ere__encabezado {
+          display:
+            flex;
+          align-items:
+            center;
+          justify-content:
+            space-between;
+          flex-wrap:
+            wrap;
+          gap:
+            10px;
+          padding:
+            0 2px;
+        }
+
+        .ere__identidad {
+          display:
+            flex;
+          align-items:
+            center;
+          gap:
+            10px;
+          min-width:
+            0;
+        }
+
+        .ere__icono,
+        .ere__citas-identidad > span {
+          width:
+            38px;
+          height:
+            38px;
+          display:
+            grid;
+          place-items:
+            center;
+          flex:
+            0 0 38px;
+          border-radius:
+            11px;
+          color:
+            var(--app-accent-dark);
+          background:
+            var(--app-accent-soft);
+        }
+
+        .ere__identidad strong,
+        .ere__citas-identidad strong {
+          display:
+            block;
+          color:
+            var(--app-text);
+          font-size:
+            var(--app-font-md);
+        }
+
+        .ere__identidad small,
+        .ere__citas-identidad small {
+          display:
+            block;
+          margin-top:
+            2px;
+          color:
+            var(--app-text-muted);
+          font-size:
+            var(--app-font-xs);
+          line-height:
+            1.45;
+        }
+
+        .ere__contador {
+          display:
+            inline-flex;
+          align-items:
+            center;
+          gap:
+            5px;
+          min-height:
+            38px;
+          padding:
+            7px 10px;
+          border:
+            1px solid;
+          border-radius:
+            999px;
+          font-size:
+            var(--app-font-xs);
+          white-space:
+            nowrap;
+          transition:
+            color .18s ease,
+            border-color .18s ease,
+            background .18s ease;
+        }
+
+        .ere__contador strong {
+          font-size:
+            var(--app-font-md);
+        }
+
+        .ere__contador i {
+          margin-left:
+            3px;
+          padding-left:
+            8px;
+          border-left:
+            1px solid
+            currentColor;
+          font-style:
+            normal;
+          font-weight:
+            850;
+        }
+
+        .ere__contador.is-under {
+          color:
+            #b42318;
+          border-color:
+            #f7b4ad;
+          background:
+            #fff1ef;
+        }
+
+        .ere__contador.is-ok {
+          color:
+            #087a49;
+          border-color:
+            #a8dfc3;
+          background:
+            #effbf5;
+        }
+
+        .ere__contador.is-over {
+          color:
+            #b54708;
+          border-color:
+            #f5c48d;
+          background:
+            #fff7ed;
+        }
+
+        .ere__progreso {
+          display:
+            grid;
+          gap:
+            5px;
+          padding:
+            0 2px 2px;
+        }
+
+        .ere__progreso-top,
+        .ere__progreso-marcas {
+          display:
+            flex;
+          align-items:
+            center;
+          justify-content:
+            space-between;
+          gap:
+            12px;
+        }
+
+        .ere__progreso-top {
+          font-size:
+            var(--app-font-xs);
+        }
+
+        .ere__progreso-top span {
+          color:
+            var(--app-text-secondary);
+        }
+
+        .ere__progreso-top strong {
+          font-size:
+            var(--app-font-xs);
+        }
+
+        .ere__progreso-barra {
+          height:
+            7px;
+          overflow:
+            hidden;
+          border-radius:
+            999px;
+          background:
+            var(--app-border);
+        }
+
+        .ere__progreso-barra > span {
+          display:
+            block;
+          height:
+            100%;
+          border-radius:
+            inherit;
+          transition:
+            width .18s ease,
+            background .18s ease;
+        }
+
+        .ere__progreso.is-under
+        .ere__progreso-barra > span {
+          background:
+            #dc2626;
+        }
+
+        .ere__progreso.is-ok
+        .ere__progreso-barra > span {
+          background:
+            #16a34a;
+        }
+
+        .ere__progreso.is-over
+        .ere__progreso-barra > span {
+          background:
+            #d97706;
+        }
+
+        .ere__progreso.is-under
+        .ere__progreso-top strong {
+          color:
+            #b42318;
+        }
+
+        .ere__progreso.is-ok
+        .ere__progreso-top strong {
+          color:
+            #087a49;
+        }
+
+        .ere__progreso.is-over
+        .ere__progreso-top strong {
+          color:
+            #b54708;
+        }
+
+        .ere__progreso-marcas {
+          color:
+            var(--app-text-muted);
+          font-size:
+            10px;
+        }
+
+        .ere__ayuda {
+          display:
+            flex;
+          align-items:
+            center;
+          gap:
+            7px;
+          padding:
+            1px 2px;
+          color:
+            var(--app-text-muted);
+        }
+
+        .ere__ayuda > span {
+          width:
+            24px;
+          height:
+            24px;
+          display:
+            grid;
+          place-items:
+            center;
+          flex:
+            0 0 24px;
+          border-radius:
+            999px;
+          color:
+            var(--app-accent-dark);
+          background:
+            var(--app-accent-soft);
+        }
+
+        .ere__ayuda p {
+          margin:
+            0;
+          color:
+            var(--app-text-muted);
+          font-size:
+            10px;
+          line-height:
+            1.45;
+        }
+
+        .ere__citas {
+          display:
+            grid;
+          gap:
+            10px;
+          padding:
+            14px;
+          border:
+            1px solid
+            var(--app-border);
+          border-radius:
+            14px;
+          background:
+            var(--app-surface-alt);
+        }
+
+        .ere__citas-header {
+          display:
+            flex;
+          align-items:
+            center;
+          justify-content:
+            space-between;
+          gap:
+            12px;
+          flex-wrap:
+            wrap;
+        }
+
+        .ere__citas-identidad {
+          display:
+            flex;
+          align-items:
+            center;
+          gap:
+            9px;
+        }
+
+        .ere__citas-header > button {
+          min-height:
+            36px;
+          display:
+            inline-flex;
+          align-items:
+            center;
+          justify-content:
+            center;
+          gap:
+            6px;
+          padding:
+            8px 11px;
+          border:
+            1px solid
+            var(--app-accent);
+          border-radius:
+            10px;
+          color:
+            #fff;
+          background:
+            var(--app-accent);
+          font:
+            inherit;
+          font-size:
+            var(--app-font-xs);
+          font-weight:
+            850;
+          cursor:
+            pointer;
+        }
+
+        .ere__citas-header > button:hover:not(:disabled) {
+          background:
+            var(--app-accent-hover);
+          border-color:
+            var(--app-accent-hover);
+        }
+
+        .ere__citas-header > button:disabled {
+          opacity:
+            .55;
+          cursor:
+            not-allowed;
+        }
+
+        .ere__citas-requisito {
+          display:
+            flex;
+          align-items:
+            center;
+          gap:
+            8px;
+          padding:
+            8px 10px;
+          border-radius:
+            10px;
+          color:
+            var(--app-text-secondary);
+          background:
+            var(--app-surface);
+        }
+
+        .ere__citas-requisito > span {
+          min-width:
+            42px;
+          padding:
+            4px 7px;
+          border-radius:
+            999px;
+          color:
+            var(--app-accent-dark);
+          background:
+            var(--app-accent-soft);
+          font-size:
+            var(--app-font-xs);
+          font-weight:
+            900;
+          text-align:
+            center;
+        }
+
+        .ere__citas-requisito p {
+          margin:
+            0;
+          font-size:
+            var(--app-font-xs);
+        }
+
+        .ere__banco {
+          padding:
+            10px 11px;
+          border:
+            1px solid
+            color-mix(
+              in srgb,
+              var(--app-accent) 20%,
+              var(--app-border)
+            );
+          border-radius:
+            10px;
+          background:
+            var(--app-surface);
+        }
+
+        .ere__banco > strong {
+          color:
+            var(--app-accent-dark);
+          font-size:
+            var(--app-font-xs);
+        }
+
+        .ere__banco ul {
+          margin:
+            7px 0 0;
+          padding-left:
+            18px;
+          color:
+            var(--app-text-secondary);
+          font-size:
+            var(--app-font-xs);
+          line-height:
+            1.55;
+        }
+
+        .ere__citas-lista {
+          display:
+            grid;
+          gap:
+            8px;
+        }
+
+        .ere__cita {
+          display:
+            grid;
+          grid-template-columns:
+            150px
+            minmax(
+              0,
+              1fr
+            )
+            36px;
+          align-items:
+            start;
+          gap:
+            8px;
+          padding:
+            10px;
+          border:
+            1px solid
+            var(--app-border);
+          border-radius:
+            11px;
+          background:
+            var(--app-surface);
+        }
+
+        .ere__cita select,
+        .ere__cita input {
+          width:
+            100%;
+          min-height:
+            38px;
+          box-sizing:
+            border-box;
+          border:
+            1px solid
+            var(--app-border);
+          border-radius:
+            9px;
+          padding:
+            8px 10px;
+          color:
+            var(--app-text);
+          background:
+            var(--app-surface);
+          font:
+            inherit;
+          font-size:
+            var(--app-font-xs);
+          outline:
+            none;
+        }
+
+        .ere__cita select:focus,
+        .ere__cita input:focus {
+          border-color:
+            var(--app-accent);
+          box-shadow:
+            0 0 0 3px
+            color-mix(
+              in srgb,
+              var(--app-accent) 10%,
+              transparent
+            );
+        }
+
+        .ere__cita-campos {
+          display:
+            grid;
+          gap:
+            7px;
+        }
+
+        .ere__quitar {
+          width:
+            36px;
+          height:
+            36px;
+          display:
+            grid;
+          place-items:
+            center;
+          border:
+            1px solid
+            color-mix(
+              in srgb,
+              var(--app-danger) 25%,
+              var(--app-border)
+            );
+          border-radius:
+            9px;
+          color:
+            var(--app-danger);
+          background:
+            var(--app-surface);
+          cursor:
+            pointer;
+        }
+
+        .ere__quitar:disabled,
+        .ere__cita select:disabled,
+        .ere__cita input:disabled {
+          opacity:
+            .55;
+          cursor:
+            not-allowed;
+        }
+
+        .ere__estado {
+          display:
+            flex;
+          align-items:
+            center;
+          gap:
+            7px;
+          color:
+            var(--app-text-muted);
+          font-size:
+            var(--app-font-xs);
+        }
+
+        .ere__estado > svg {
+          color:
+            currentColor;
+        }
+
+        .ere__estado.is-under {
+          color:
+            #b42318;
+        }
+
+        .ere__estado.is-ok {
+          color:
+            #087a49;
+        }
+
+        .ere__estado.is-over {
+          color:
+            #b54708;
+        }
+
+        @media (
+          max-width:
+            720px
+        ) {
+          .ere__cita {
+            grid-template-columns:
+              1fr;
+          }
+
+          .ere__quitar {
+            justify-self:
+              end;
+          }
+        }
+      `}</style>
     </>
   );
 }
-
-const estilos = (
-  <style>{`
-    .ere {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .ere__panel {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      background: rgba(255,255,255,0.45);
-      border: 1px solid rgba(160,139,106,0.28);
-      border-radius: 14px;
-      padding: 14px 16px;
-    }
-
-    .ere__panel-cabecera {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .ere__panel-titulo {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
-    .ere__panel-icono {
-      width: 36px;
-      height: 36px;
-      flex: 0 0 36px;
-      display: grid;
-      place-items: center;
-      border-radius: 10px;
-      background: var(--app-primario, #8a6b4d);
-      color: #fff;
-    }
-
-    .ere__panel-titulo strong {
-      font-size: 14px;
-      color: var(--app-texto, #2b2b2b);
-    }
-
-    .ere__panel-titulo small {
-      display: block;
-      margin-top: 2px;
-      font-size: 12px;
-      line-height: 1.4;
-      color: var(--app-texto-suave, #6b6b6b);
-    }
-
-    .ere__contador {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .ere__contador.bueno {
-      background: rgba(35,132,83,0.12);
-      color: #238453;
-    }
-
-    .ere__contador.aviso {
-      background: rgba(178,89,39,0.14);
-      color: #b25927;
-    }
-
-    .ere__contador small {
-      font-weight: 500;
-    }
-
-    .ere__insignias {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .ere__insignias span {
-      border-radius: 999px;
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 600;
-      background: rgba(120,110,95,0.08);
-      color: var(--app-texto-suave, #6b6b6b);
-    }
-
-    .ere__secciones {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .ere__seccion {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .ere__seccion-titulo {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .ere__seccion-titulo strong {
-      font-size: 13px;
-      color: var(--app-texto, #2b2b2b);
-    }
-
-    .ere__seccion-titulo small {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--app-texto-suave, #6b6b6b);
-    }
-
-    .ere__seccion-titulo small.tiene {
-      color: #238453;
-    }
-
-    .ere__seccion p {
-      margin: 0;
-      font-size: 12px;
-      line-height: 1.4;
-      color: var(--app-texto-suave, #6b6b6b);
-    }
-
-    .ere__textarea {
-      width: 100%;
-      min-height: 130px;
-      border: 1px solid rgba(120,110,95,0.35);
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 14px;
-      line-height: 1.6;
-      font-family: inherit;
-      background: #fff;
-      color: var(--app-texto, #2b2b2b);
-      outline: none;
-      resize: vertical;
-    }
-
-    .ere__textarea:focus {
-      border-color: var(--app-primario, #8a6b4d);
-      box-shadow: 0 0 0 3px rgba(138,107,77,0.14);
-    }
-
-    .ere__citas {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      background: rgba(255,255,255,0.45);
-      border: 1px solid rgba(160,139,106,0.28);
-      border-radius: 14px;
-      padding: 14px 16px;
-    }
-
-    .ere__citas-titulo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .ere__citas-icono {
-      width: 32px;
-      height: 32px;
-      flex: 0 0 32px;
-      display: grid;
-      place-items: center;
-      border-radius: 9px;
-      background: rgba(138,107,77,0.14);
-      color: var(--app-primario, #8a6b4d);
-    }
-
-    .ere__citas-titulo > div {
-      flex: 1;
-    }
-
-    .ere__citas-titulo strong {
-      font-size: 13px;
-      color: var(--app-texto, #2b2b2b);
-    }
-
-    .ere__citas-titulo small {
-      display: block;
-      font-size: 11px;
-      color: var(--app-texto-suave, #6b6b6b);
-    }
-
-    .ere__citas-titulo button {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border: 0;
-      border-radius: 9px;
-      padding: 7px 12px;
-      font-size: 12px;
-      font-weight: 600;
-      color: #fff;
-      background: var(--app-primario, #8a6b4d);
-      cursor: pointer;
-    }
-
-    .ere__citas-pendiente {
-      margin: 0;
-      font-size: 12px;
-      color: #b25927;
-    }
-
-    .ere__banco {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      border-left: 3px solid rgba(138,107,77,0.45);
-      background: rgba(138,107,77,0.06);
-      border-radius: 0 10px 10px 0;
-      padding: 10px 12px;
-    }
-
-    .ere__banco strong {
-      font-size: 12px;
-      color: var(--app-texto, #2b2b2b);
-    }
-
-    .ere__banco ul {
-      margin: 0;
-      padding-left: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 12px;
-      color: var(--app-texto-suave, #6b6b6b);
-    }
-
-    .ere__banco li em {
-      font-style: normal;
-      font-weight: 600;
-      color: #5b4a34;
-    }
-
-    .ere__citas-lista {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .ere__cita {
-      display: grid;
-      grid-template-columns: 130px 1fr auto;
-      gap: 8px;
-      align-items: start;
-    }
-
-    .ere__cita select,
-    .ere__cita input {
-      border: 1px solid rgba(120,110,95,0.35);
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 12px;
-      background: #fff;
-      color: var(--app-texto, #2b2b2b);
-      outline: none;
-    }
-
-    .ere__cita select {
-      cursor: pointer;
-    }
-
-    .ere__cita-campos {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .ere__cita-quitar {
-      display: grid;
-      place-items: center;
-      width: 30px;
-      height: 30px;
-      border: 0;
-      border-radius: 8px;
-      background: rgba(178,59,59,0.10);
-      color: #b23b3b;
-      cursor: pointer;
-    }
-
-    .ere__estado {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      border-radius: 10px;
-      padding: 9px 12px;
-      font-size: 12px;
-    }
-
-    .ere__estado {
-      background: rgba(35,132,83,0.10);
-      color: #238453;
-    }
-
-    @media (max-width: 640px) {
-      .ere__palabras {
-        grid-template-columns: 1fr;
-      }
-
-      .ere__cita {
-        grid-template-columns: 1fr;
-      }
-    }
-  `}</style>
-);

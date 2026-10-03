@@ -99,6 +99,49 @@ enum AccionHistorialGrupo {
   CONJUNTO_IMPORTADO
 }
 
+enum MetodoOrdenExposicion {
+  ORDEN_ENTREGA
+  ALEATORIO
+  ALFABETICO
+  MANUAL
+}
+
+enum EstadoJornadaExposicion {
+  CONFIGURANDO
+  LISTA
+  EN_CURSO
+  PAUSADA
+  FINALIZADA
+  CANCELADA
+}
+
+enum EstadoTurnoExposicion {
+  PENDIENTE
+  EN_ESPERA
+  EN_CURSO
+  PAUSADO
+  FINALIZADO
+  AUSENTE
+}
+
+enum EstadoPreguntaExposicion {
+  PENDIENTE
+  SELECCIONADA
+  RESPONDIDA
+  DESCARTADA
+}
+
+/**
+ * Estado del análisis inteligente de una exposición.
+ * El análisis es orientativo y nunca modifica la calificación académica.
+ */
+enum EstadoAnalisisExposicion {
+  PENDIENTE
+  PROCESANDO
+  COMPLETADO
+  ERROR
+}
+
 enum EstadoTarea {
   BORRADOR
   PROGRAMADA
@@ -521,6 +564,17 @@ enum TipoNotificacion {
 }
 
 model Usuario {
+  bibliotecaRecursos          RecursoBiblioteca[]          @relation("BibliotecaAutor")
+  bibliotecaVersiones         VersionContenidoBiblioteca[] @relation("BibliotecaVersionAutor")
+  bibliotecaPermiso           PermisoGestionBiblioteca?    @relation("BibliotecaDocentePermiso")
+  bibliotecaPermisosOtorgados PermisoGestionBiblioteca[]   @relation("BibliotecaOtorgaPermiso")
+  bibliotecaPermisosRevocados PermisoGestionBiblioteca[]   @relation("BibliotecaRevocaPermiso")
+  bibliotecaFavoritos         FavoritoBiblioteca[]
+  bibliotecaColecciones       ColeccionBiblioteca[]
+  bibliotecaReportes          ReporteRecursoBiblioteca[]   @relation("BibliotecaReportante")
+  bibliotecaReportesAtendidos ReporteRecursoBiblioteca[]   @relation("BibliotecaAtiendeReporte")
+  bibliotecaHistorial         HistorialBiblioteca[]
+
   id Int @id @default(autoincrement())
 
   nombres         String
@@ -615,6 +669,16 @@ model Usuario {
   extensionesPlazoAutorizadas ExtensionPlazoTarea[] @relation("ExtensionesPlazoAutorizadas")
 
   extensionesPlazoBeneficiario ExtensionPlazoBeneficiario[] @relation("ExtensionesPlazoBeneficiario")
+
+  jornadasExposicionCreadas JornadaExposicion[] @relation("JornadasExposicionCreador")
+
+  preguntasExposicion PreguntaExposicion[] @relation("PreguntasExposicionAutor")
+
+  votosPreguntaExposicion VotoPreguntaExposicion[] @relation("VotosPreguntaExposicionUsuario")
+
+  turnosExposicionPresentados TurnoExposicion[] @relation("TurnosExposicionPresentador")
+
+  analisisExposicionGenerados AnalisisExposicion[] @relation("AnalisisExposicionGenerador")
 
   @@index([rol])
   @@index([estaActivo])
@@ -1789,6 +1853,8 @@ model TareaCurso {
 
   rubrica RubricaTarea?
 
+  jornadasExposicion JornadaExposicion[]
+
   @@index([cursoId])
   @@index([autorId])
   @@index([hitoId])
@@ -2020,6 +2086,8 @@ model EntregaTarea {
   calificacionRubrica CalificacionRubrica?
   sesionesEdicion     SesionEdicionTarea[]
 
+  turnosExposicion TurnoExposicion[]
+
   @@unique([tareaId, estudianteId])
   @@unique([tareaId, grupoCursoId])
   @@unique([tareaId, equipoAfinidadTareaId])
@@ -2041,10 +2109,10 @@ model SesionEdicionTarea {
   entregaTareaId Int
   autorId        Int
 
-  iniciadaEn    DateTime @default(now())
-  ultimoLatidoEn DateTime @default(now())
-  segundosActivos Int @default(0)
-  cantidadPegados Int @default(0)
+  iniciadaEn      DateTime @default(now())
+  ultimoLatidoEn  DateTime @default(now())
+  segundosActivos Int      @default(0)
+  cantidadPegados Int      @default(0)
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
@@ -2816,7 +2884,7 @@ model Notificacion {
    */
   enlace String?
 
-  esLeida Boolean @default(false)
+  esLeida Boolean   @default(false)
   leidaEn DateTime?
 
   creadoEn DateTime @default(now())
@@ -2829,10 +2897,202 @@ model Notificacion {
 }
 
 /**
+ * Configuración y estado de una jornada de exposiciones asociada a una tarea.
+ * Una tarea puede tener varias jornadas para soportar exposiciones en fechas distintas.
+ */
+model JornadaExposicion {
+  id Int @id @default(autoincrement())
+
+  tareaId   Int
+  creadorId Int
+
+  metodoOrden MetodoOrdenExposicion
+  estado      EstadoJornadaExposicion @default(CONFIGURANDO)
+
+  duracionSegundos Int
+  avisoSegundos    Int @default(120)
+
+  permitirTiempoExtra Boolean @default(true)
+  mostrarSiguiente    Boolean @default(true)
+
+  generadaEn   DateTime?
+  iniciadaEn   DateTime?
+  finalizadaEn DateTime?
+  canceladaEn  DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  tarea   TareaCurso @relation(fields: [tareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  creador Usuario    @relation("JornadasExposicionCreador", fields: [creadorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  turnos TurnoExposicion[]
+
+  @@index([tareaId])
+  @@index([creadorId])
+  @@index([estado])
+  @@index([tareaId, estado])
+}
+
+model TurnoExposicion {
+  id Int @id @default(autoincrement())
+
+  jornadaId Int
+  entregaId Int
+
+  presentadorId Int?
+
+  orden  Int
+  estado EstadoTurnoExposicion @default(PENDIENTE)
+
+  iniciadoEn   DateTime?
+  pausadoEn    DateTime?
+  reanudadoEn  DateTime?
+  finalizadoEn DateTime?
+
+  segundosPausaAcumulados Int @default(0)
+  segundosUtilizados      Int @default(0)
+
+  diapositivaActual Int @default(1)
+
+  observacionDocente String?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  jornada     JornadaExposicion @relation(fields: [jornadaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  entrega     EntregaTarea      @relation(fields: [entregaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  presentador Usuario?          @relation("TurnosExposicionPresentador", fields: [presentadorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  preguntas PreguntaExposicion[]
+
+  analisis AnalisisExposicion?
+
+  @@unique([jornadaId, entregaId])
+  @@unique([jornadaId, orden])
+  @@index([jornadaId])
+  @@index([entregaId])
+  @@index([presentadorId])
+  @@index([estado])
+  @@index([jornadaId, estado])
+}
+
+/**
+ * Resultado persistente del análisis inteligente de una exposición.
+ * No participa en el cálculo de CalificacionEstudiante ni modifica la rúbrica.
+ */
+model AnalisisExposicion {
+  id Int @id @default(autoincrement())
+
+  turnoId       Int @unique
+  generadoPorId Int
+
+  estado EstadoAnalisisExposicion @default(PENDIENTE)
+
+  /**
+   * Permite regenerar el análisis conservando trazabilidad de la versión actual.
+   */
+  version Int @default(1)
+
+  motor String @default("IUSACADEMY_ANALISIS_V1")
+
+  puntuacionEstructura        Decimal? @db.Decimal(5, 2)
+  puntuacionContenidoJuridico Decimal? @db.Decimal(5, 2)
+  puntuacionPresentacion      Decimal? @db.Decimal(5, 2)
+  puntuacionGlobal            Decimal? @db.Decimal(5, 2)
+
+  resumen String?
+
+  fortalezas   String[] @default([])
+  advertencias String[] @default([])
+  omisiones    String[] @default([])
+
+  retroalimentacionSugerida String?
+
+  /**
+   * Evidencias y métricas utilizadas por el motor: archivos, cantidad de
+   * palabras, preguntas, duración, estructura guiada, etc.
+   */
+  evidencias Json?
+
+  /**
+   * Huella de la entrada utilizada para detectar cambios entre regeneraciones.
+   */
+  hashEntrada String?
+
+  error String?
+
+  iniciadoEn   DateTime?
+  finalizadoEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  turno TurnoExposicion @relation(fields: [turnoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  generadoPor Usuario @relation("AnalisisExposicionGenerador", fields: [generadoPorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([generadoPorId])
+  @@index([estado])
+  @@index([finalizadoEn])
+}
+
+model PreguntaExposicion {
+  id Int @id @default(autoincrement())
+
+  turnoId Int
+  autorId Int
+
+  contenido String
+  estado    EstadoPreguntaExposicion @default(PENDIENTE)
+
+  /**
+   * Contexto exacto en el que se realizó la pregunta.
+   * Se captura desde el turno activo en el servidor para que el estudiante
+   * no pueda alterar manualmente la diapositiva o el instante de la exposición.
+   */
+  diapositiva        Int?
+  segundosExposicion Int?
+
+  destacada Boolean @default(false)
+
+  respondidaEn DateTime?
+  descartadaEn DateTime?
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  turno TurnoExposicion @relation(fields: [turnoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  autor Usuario         @relation("PreguntasExposicionAutor", fields: [autorId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  votos VotoPreguntaExposicion[]
+
+  @@index([turnoId])
+  @@index([autorId])
+  @@index([estado])
+  @@index([turnoId, estado, creadoEn])
+}
+
+model VotoPreguntaExposicion {
+  id Int @id @default(autoincrement())
+
+  preguntaId Int
+  usuarioId  Int
+
+  creadoEn DateTime @default(now())
+
+  pregunta PreguntaExposicion @relation(fields: [preguntaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  usuario  Usuario            @relation("VotosPreguntaExposicionUsuario", fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([preguntaId, usuarioId])
+  @@index([preguntaId])
+  @@index([usuarioId])
+}
+
+/**
  * Extensión de plazo aplicada a una tarea para un conjunto de estudiantes.
  * Permite que un docente amplíe individualmente (o por grupo/equipo) las
  * fechas de una tarea sin alterar los plazos globales de la misma.
- *
  * Se modela la extensión como un registro por tarea con una lista de
  * beneficiarios, de modo que la misma extensión pueda cubrir varios
  * estudiantes a la vez.
@@ -2840,7 +3100,7 @@ model Notificacion {
 model ExtensionPlazoTarea {
   id Int @id @default(autoincrement())
 
-  tareaId     Int
+  tareaId         Int
   autorizadoPorId Int
 
   fechaAperturaExtendida      DateTime?
@@ -2854,8 +3114,8 @@ model ExtensionPlazoTarea {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  tarea         TareaCurso             @relation(fields: [tareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  autorizadoPor Usuario                @relation("ExtensionesPlazoAutorizadas", fields: [autorizadoPorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  tarea         TareaCurso @relation(fields: [tareaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  autorizadoPor Usuario    @relation("ExtensionesPlazoAutorizadas", fields: [autorizadoPorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   beneficiarios ExtensionPlazoBeneficiario[]
 
@@ -2875,4 +3135,215 @@ model ExtensionPlazoBeneficiario {
 
   @@unique([extensionId, estudianteId])
   @@index([estudianteId])
+}
+
+enum CategoriaBiblioteca {
+  MEMORIAL
+  CONTRATO
+  DEMANDA
+  JURISPRUDENCIA
+  CODIGO
+  LEY
+  SENTENCIA
+  DOCTRINA
+  GUIA
+  CASO_PRACTICO
+  OTRO
+}
+
+enum EstadoRecursoBiblioteca {
+  BORRADOR
+  PUBLICADO
+  ARCHIVADO
+}
+
+enum VigenciaBiblioteca {
+  NO_APLICA
+  POR_VERIFICAR
+  VIGENTE
+  MODIFICADA
+  DEROGADA
+}
+
+enum TipoContenidoBiblioteca {
+  ARCHIVO
+  ENLACE
+}
+
+enum EstadoReporteBiblioteca {
+  PENDIENTE
+  EN_REVISION
+  RESUELTO
+  DESCARTADO
+}
+
+model RecursoBiblioteca {
+  id                   Int                          @id @default(autoincrement())
+  titulo               String
+  descripcion          String
+  finalidad            String?
+  categoria            CategoriaBiblioteca
+  tema                 String
+  etiquetas            String[]                     @default([])
+  autorInstitucion     String?
+  fuente               String?
+  fechaDocumento       DateTime?
+  numeroNorma          String?
+  tribunal             String?
+  numeroResolucion     String?
+  vigencia             VigenciaBiblioteca           @default(NO_APLICA)
+  vigenciaVerificadaEn DateTime?
+  observacionVigencia  String?
+  destacado            Boolean                      @default(false)
+  estado               EstadoRecursoBiblioteca      @default(BORRADOR)
+  publicadoEn          DateTime?
+  archivadoEn          DateTime?
+  creadoPorId          Int
+  creadoEn             DateTime                     @default(now())
+  actualizadoEn        DateTime                     @updatedAt
+  creadoPor            Usuario                      @relation("BibliotecaAutor", fields: [creadoPorId], references: [id], onDelete: Restrict)
+  contenidos           ContenidoBiblioteca[]
+  favoritos            FavoritoBiblioteca[]
+  colecciones          ColeccionRecursoBiblioteca[]
+  reportes             ReporteRecursoBiblioteca[]
+  historial            HistorialBiblioteca[]
+  relacionesOrigen     RelacionRecursoBiblioteca[]  @relation("BibliotecaOrigen")
+  relacionesDestino    RelacionRecursoBiblioteca[]  @relation("BibliotecaDestino")
+
+  @@index([estado, categoria])
+  @@index([estado, tema])
+  @@index([estado, destacado, actualizadoEn])
+  @@index([creadoPorId])
+}
+
+model ContenidoBiblioteca {
+  id            Int                          @id @default(autoincrement())
+  recursoId     Int
+  titulo        String
+  tipo          TipoContenidoBiblioteca
+  urlExterna    String?
+  orden         Int                          @default(0)
+  estaActivo    Boolean                      @default(true)
+  creadoEn      DateTime                     @default(now())
+  actualizadoEn DateTime                     @updatedAt
+  recurso       RecursoBiblioteca            @relation(fields: [recursoId], references: [id], onDelete: Restrict)
+  versiones     VersionContenidoBiblioteca[]
+
+  @@index([recursoId, estaActivo, orden])
+}
+
+model VersionContenidoBiblioteca {
+  esVigente           Boolean             @default(true)
+  id                  Int                 @id @default(autoincrement())
+  contenidoId         Int
+  numeroVersion       Int
+  nombreOriginal      String
+  nombreAlmacenado    String
+  ruta                String
+  mimeType            String
+  extension           String
+  tamanioBytes        Int
+  hashSha256          String
+  motivoActualizacion String?
+  subidoPorId         Int
+  cantidadDescargas   Int                 @default(0)
+  creadoEn            DateTime            @default(now())
+  contenido           ContenidoBiblioteca @relation(fields: [contenidoId], references: [id], onDelete: Restrict)
+  subidoPor           Usuario             @relation("BibliotecaVersionAutor", fields: [subidoPorId], references: [id], onDelete: Restrict)
+
+  @@unique([contenidoId, numeroVersion])
+  @@index([hashSha256])
+  @@index([subidoPorId])
+}
+
+model PermisoGestionBiblioteca {
+  id            Int       @id @default(autoincrement())
+  docenteId     Int       @unique
+  otorgadoPorId Int
+  revocadoPorId Int?
+  estaActivo    Boolean   @default(true)
+  otorgadoEn    DateTime  @default(now())
+  revocadoEn    DateTime?
+  docente       Usuario   @relation("BibliotecaDocentePermiso", fields: [docenteId], references: [id], onDelete: Restrict)
+  otorgadoPor   Usuario   @relation("BibliotecaOtorgaPermiso", fields: [otorgadoPorId], references: [id], onDelete: Restrict)
+  revocadoPor   Usuario?  @relation("BibliotecaRevocaPermiso", fields: [revocadoPorId], references: [id], onDelete: Restrict)
+
+  @@index([estaActivo])
+}
+
+model FavoritoBiblioteca {
+  usuarioId Int
+  recursoId Int
+  creadoEn  DateTime          @default(now())
+  usuario   Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  recurso   RecursoBiblioteca @relation(fields: [recursoId], references: [id], onDelete: Restrict)
+
+  @@id([usuarioId, recursoId])
+  @@index([recursoId])
+}
+
+model ColeccionBiblioteca {
+  id            Int                          @id @default(autoincrement())
+  usuarioId     Int
+  nombre        String
+  descripcion   String?
+  creadoEn      DateTime                     @default(now())
+  actualizadoEn DateTime                     @updatedAt
+  usuario       Usuario                      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  recursos      ColeccionRecursoBiblioteca[]
+
+  @@unique([usuarioId, nombre])
+}
+
+model ColeccionRecursoBiblioteca {
+  coleccionId Int
+  recursoId   Int
+  agregadoEn  DateTime            @default(now())
+  coleccion   ColeccionBiblioteca @relation(fields: [coleccionId], references: [id], onDelete: Cascade)
+  recurso     RecursoBiblioteca   @relation(fields: [recursoId], references: [id], onDelete: Restrict)
+
+  @@id([coleccionId, recursoId])
+  @@index([recursoId])
+}
+
+model RelacionRecursoBiblioteca {
+  origenId  Int
+  destinoId Int
+  origen    RecursoBiblioteca @relation("BibliotecaOrigen", fields: [origenId], references: [id], onDelete: Cascade)
+  destino   RecursoBiblioteca @relation("BibliotecaDestino", fields: [destinoId], references: [id], onDelete: Cascade)
+
+  @@id([origenId, destinoId])
+  @@index([destinoId])
+}
+
+model ReporteRecursoBiblioteca {
+  id            Int                     @id @default(autoincrement())
+  recursoId     Int
+  usuarioId     Int
+  motivo        String
+  estado        EstadoReporteBiblioteca @default(PENDIENTE)
+  respuesta     String?
+  atendidoPorId Int?
+  atendidoEn    DateTime?
+  creadoEn      DateTime                @default(now())
+  recurso       RecursoBiblioteca       @relation(fields: [recursoId], references: [id], onDelete: Restrict)
+  usuario       Usuario                 @relation("BibliotecaReportante", fields: [usuarioId], references: [id], onDelete: Restrict)
+  atendidoPor   Usuario?                @relation("BibliotecaAtiendeReporte", fields: [atendidoPorId], references: [id], onDelete: Restrict)
+
+  @@index([estado, creadoEn])
+  @@index([recursoId])
+}
+
+model HistorialBiblioteca {
+  id        Int                @id @default(autoincrement())
+  recursoId Int?
+  actorId   Int
+  accion    String
+  datos     Json?
+  creadoEn  DateTime           @default(now())
+  recurso   RecursoBiblioteca? @relation(fields: [recursoId], references: [id], onDelete: Restrict)
+  actor     Usuario            @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([recursoId, creadoEn])
+  @@index([actorId])
 }

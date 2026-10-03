@@ -177,17 +177,70 @@ export function nuevoIdCita():
   return siguienteId;
 }
 
+export function htmlATextoPlano(
+  html:
+    string,
+): string {
+  return html
+    .replace(
+      /<br\s*\/?\s*>/gi,
+      ' ',
+    )
+    .replace(
+      /<\/p>/gi,
+      ' ',
+    )
+    .replace(
+      /<\/div>/gi,
+      ' ',
+    )
+    .replace(
+      /<\/li>/gi,
+      ' ',
+    )
+    .replace(
+      /<[^>]+>/g,
+      ' ',
+    )
+    .replace(
+      /&nbsp;/gi,
+      ' ',
+    )
+    .replace(
+      /&amp;/gi,
+      '&',
+    )
+    .replace(
+      /&lt;/gi,
+      '<',
+    )
+    .replace(
+      /&gt;/gi,
+      '>',
+    )
+    .replace(
+      /&quot;/gi,
+      '"',
+    )
+    .replace(
+      /&#039;/gi,
+      "'",
+    )
+    .replace(
+      /\s+/g,
+      ' ',
+    )
+    .trim();
+}
+
 export function contarPalabras(
   texto:
     string,
 ): number {
   const limpio =
-    texto
-      .replace(
-        /\s+/g,
-        ' ',
-      )
-      .trim();
+    htmlATextoPlano(
+      texto,
+    );
 
   if (
     !limpio
@@ -202,30 +255,15 @@ export function contarPalabras(
 
 export function nuevaRespuestaEscrita():
   RespuestaEscritaEstado {
-  const secciones:
-    Record<
-      string,
-      string
-    > =
-      {};
-
-  SECCIONES_RESPUESTA_ESCRITA.forEach(
-    (
-      seccion,
-    ) => {
-      secciones[
-        seccion.clave
-      ] =
-        '';
-    },
-  );
-
   return {
     version:
       1,
     formato:
       'RESPUESTA_ESCRITA',
-    secciones,
+    secciones: {
+      respuesta:
+        '',
+    },
     citas: [],
   };
 }
@@ -267,37 +305,53 @@ export function parsearRespuestaEscrita(
       return null;
     }
 
+    const seccionesAnalizadas =
+      analizado.secciones as Record<
+        string,
+        unknown
+      >;
+
+    const respuestaDirecta =
+      seccionesAnalizadas[
+        'respuesta'
+      ];
+
     const secciones:
       Record<
         string,
         string
       > =
-        {};
+        typeof respuestaDirecta ===
+          'string'
+          ? {
+              respuesta:
+                respuestaDirecta,
+            }
+          : {};
 
-    SECCIONES_RESPUESTA_ESCRITA.forEach(
-      (
-        seccion,
-      ) => {
-        const valor =
-          (
-            analizado
-              .secciones as Record<
-                string,
-                unknown
-              >
-          )[
+    if (
+      typeof respuestaDirecta !==
+        'string'
+    ) {
+      SECCIONES_RESPUESTA_ESCRITA.forEach(
+        (
+          seccion,
+        ) => {
+          const valor =
+            seccionesAnalizadas[
+              seccion.clave
+            ];
+
+          secciones[
             seccion.clave
-          ];
-
-        secciones[
-          seccion.clave
-        ] =
-          typeof valor ===
-            'string'
-            ? valor
-            : '';
-      },
-    );
+          ] =
+            typeof valor ===
+              'string'
+              ? valor
+              : '';
+        },
+      );
+    }
 
     const citas =
       Array.isArray(
@@ -366,27 +420,44 @@ export function compilarRespuestaEscrita(
     string[] =
     [];
 
-  SECCIONES_RESPUESTA_ESCRITA.forEach(
-    (
-      seccion,
-    ) => {
-      const texto =
-        (
-          estado.secciones[
-            seccion.clave
-          ] ??
-          ''
-        ).trim();
+  const respuesta =
+    htmlATextoPlano(
+      estado.secciones[
+        'respuesta'
+      ] ??
+        '',
+    );
 
-      if (
-        texto
-      ) {
-        bloques.push(
-          `${seccion.titulo}\n${texto}`,
-        );
-      }
-    },
-  );
+  if (
+    respuesta
+  ) {
+    bloques.push(
+      respuesta,
+    );
+  } else {
+    SECCIONES_RESPUESTA_ESCRITA.forEach(
+      (
+        seccion,
+      ) => {
+        const texto =
+          htmlATextoPlano(
+            estado.secciones[
+              seccion.clave
+            ] ??
+              '',
+          );
+
+        if (
+          texto
+        ) {
+          bloques.push(
+            `${seccion.titulo}
+${texto}`,
+          );
+        }
+      },
+    );
+  }
 
   if (
     estado.citas.length >
@@ -397,7 +468,8 @@ export function compilarRespuestaEscrita(
         (
           cita,
         ) =>
-          `• ${cita.referencia}${cita.fundamento.trim() ? `\n   ${cita.fundamento.trim()}` : ''}`,
+          `• ${cita.referencia}${cita.fundamento.trim() ? `
+   ${cita.fundamento.trim()}` : ''}`,
       );
 
     bloques.push(
@@ -417,6 +489,23 @@ export function palabrasPorSeccion(
   string,
   number
 > {
+  if (
+    typeof estado.secciones[
+      'respuesta'
+    ] ===
+      'string'
+  ) {
+    return {
+      respuesta:
+        contarPalabras(
+          estado.secciones[
+            'respuesta'
+          ] ??
+            '',
+        ),
+    };
+  }
+
   const resultado:
     Record<
       string,

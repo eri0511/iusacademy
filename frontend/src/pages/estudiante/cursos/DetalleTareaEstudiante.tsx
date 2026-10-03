@@ -7,25 +7,22 @@ import {
   CheckCircle2,
   Clock3,
   Crown,
+  Eye,
   File,
-  FilePenLine,
   Files,
+  Loader2,
   GraduationCap,
   Info,
-  ListChecks,
   Lock,
   Plus,
   Presentation,
   RefreshCw,
-  Scale,
   ShieldCheck,
   Users,
   UsersRound,
-  Workflow,
 } from 'lucide-react';
 
 import type {
-  ComponentType,
   CSSProperties,
 } from 'react';
 
@@ -44,11 +41,19 @@ import AulaHeader from '../../../components/aula/AulaHeader';
 import AulaModal from '../../../components/aula/AulaModal';
 import AulaSkeleton from '../../../components/aula/AulaSkeleton';
 
+import Toast, {
+  type TipoToast,
+} from '../../../components/shared/Toast';
+
 import EstadoTemporalTareaEstudiante, {
   type EstadoTemporalTarea,
 } from '../../../components/tareas/EstadoTemporalTareaEstudiante';
 
 import ExperienciaTareaEstudiante from '../../../components/tareas/ExperienciaTareaEstudiante';
+
+import {
+  visualTipoTarea,
+} from '../../../config/tareasVisual.config';
 
 import FormarEquipoAfinidadTareaModal, {
   type EstudianteDisponibleAfinidadTarea,
@@ -66,137 +71,35 @@ import {
 import type {
   ResponsableEntregaGrupo,
   TareaCurso,
-  TipoTarea,
 } from '../../../types/tareas/tareas.types';
 
 const API_URL =
   import.meta.env.VITE_API_URL ??
   'http://localhost:3000';
 
-type TipoVisual = {
-  nombre:
-    string;
-  descripcion:
-    string;
-  color:
-    string;
-  fondo:
-    string;
-  icono:
-    ComponentType<{
-      size?: number;
-    }>;
+
+type ArchivoDocente =
+  TareaCurso['archivos'][number];
+
+type ToastArchivo = {
+  visible: boolean;
+  tipo: TipoToast;
+  titulo: string;
+  mensaje?: string;
 };
 
-const tipos:
-  Record<
-    TipoTarea,
-    TipoVisual
-  > = {
-    ENTREGA_ARCHIVOS: {
-      nombre:
-        'Entrega de archivos',
-      descripcion:
-        'Sube informes, documentos, imágenes u otras evidencias permitidas.',
-      color:
-        '#f97316',
-      fondo:
-        '#fff7ed',
-      icono:
-        Files,
-    },
-
-    RESPUESTA_ESCRITA: {
-      nombre:
-        'Respuesta escrita',
-      descripcion:
-        'Desarrolla tu respuesta directamente dentro de IusAcademy.',
-      color:
-        '#2563eb',
-      fondo:
-        '#eff6ff',
-      icono:
-        FilePenLine,
-    },
-
-    DOCUMENTO_COLABORATIVO: {
-      nombre:
-        'Documento colaborativo',
-      descripcion:
-        'Tu equipo construirá un documento compartido con seguimiento de aportes.',
-      color:
-        '#7c3aed',
-      fondo:
-        '#f5f3ff',
-      icono:
-        Workflow,
-    },
-
-    REDACCION_JURIDICA: {
-      nombre:
-        'Redacción jurídica',
-      descripcion:
-        'Redacta el documento jurídico solicitado siguiendo las instrucciones del docente.',
-      color:
-        '#dc2626',
-      fondo:
-        '#fef2f2',
-      icono:
-        Scale,
-    },
-
-    EXPOSICION: {
-      nombre:
-        'Exposición',
-      descripcion:
-        'Consulta la consigna y prepara el material requerido para tu presentación.',
-      color:
-        '#d97706',
-      fondo:
-        '#fffbeb',
-      icono:
-        Presentation,
-    },
-
-    CASO_PRACTICO: {
-      nombre:
-        'Caso práctico',
-      descripcion:
-        'Analiza el caso planteado y desarrolla una solución jurídicamente fundamentada.',
-      color:
-        '#16a34a',
-      fondo:
-        '#f0fdf4',
-      icono:
-        ListChecks,
-    },
-
-    MIXTA: {
-      nombre:
-        'Actividad mixta',
-      descripcion:
-        'Completa los componentes configurados por el docente dentro de una sola actividad.',
-      color:
-        '#0f766e',
-      fondo:
-        '#f0fdfa',
-      icono:
-        Workflow,
-    },
-
-    PRESENCIAL: {
-      nombre:
-        'Actividad presencial',
-      descripcion:
-        'La evidencia principal será registrada por el docente según la actividad realizada en aula.',
-      color:
-        '#64748b',
-      fondo:
-        '#f8fafc',
-      icono:
-        CheckCircle2,
-    },
-  };
+function esPdfDocente(
+  archivo:
+    ArchivoDocente,
+) {
+  return (
+    archivo.mimeType ===
+      'application/pdf' ||
+    archivo.extension
+      .toLowerCase() ===
+      'pdf'
+  );
+}
 
 
 function etiquetaComponente(
@@ -574,6 +477,25 @@ export default function DetalleTareaEstudiante() {
     useState(
       0,
     );
+
+
+  const [
+    archivoAbriendoId,
+    setArchivoAbriendoId,
+  ] =
+    useState<number | null>(
+      null,
+    );
+
+  const [
+    toastArchivo,
+    setToastArchivo,
+  ] =
+    useState<ToastArchivo>({
+      visible: false,
+      tipo: 'informacion',
+      titulo: '',
+    });
 
   useEffect(
     () => {
@@ -1054,6 +976,228 @@ export default function DetalleTareaEstudiante() {
       }
     };
 
+
+  const abrirArchivoDocente =
+    async (
+      archivo:
+        ArchivoDocente,
+    ) => {
+      if (
+        !accessToken
+      ) {
+        setToastArchivo({
+          visible: true,
+          tipo: 'error',
+          titulo: 'Sesión no disponible',
+          mensaje:
+            'Tu sesión terminó. Inicia sesión nuevamente.',
+        });
+
+        return;
+      }
+
+      if (
+        !esPdfDocente(
+          archivo,
+        )
+      ) {
+        setToastArchivo({
+          visible: true,
+          tipo: 'informacion',
+          titulo: 'Vista previa no disponible',
+          mensaje:
+            'Por ahora la vista directa está habilitada para archivos PDF.',
+        });
+
+        return;
+      }
+
+      const ventana =
+        window.open(
+          '',
+          '_blank',
+        );
+
+      if (
+        !ventana
+      ) {
+        setToastArchivo({
+          visible: true,
+          tipo: 'advertencia',
+          titulo: 'No se pudo abrir el archivo',
+          mensaje:
+            'El navegador no permitió crear una nueva pestaña. Intenta nuevamente.',
+        });
+
+        return;
+      }
+
+      ventana.opener =
+        null;
+
+      ventana.document.title =
+        archivo.nombreOriginal;
+
+      ventana.document.body.innerHTML = `
+        <div style="
+          min-height: 100vh;
+          display: grid;
+          place-items: center;
+          margin: 0;
+          padding: 24px;
+          box-sizing: border-box;
+          font-family: Arial, sans-serif;
+          color: #475569;
+          background: #fffaf4;
+        ">
+          <div style="text-align: center;">
+            <strong style="display: block; color: #0f172a; font-size: 16px; margin-bottom: 6px;">
+              Cargando archivo…
+            </strong>
+            <span style="font-size: 13px;">
+              ${archivo.nombreOriginal}
+            </span>
+          </div>
+        </div>
+      `;
+
+      setArchivoAbriendoId(
+        archivo.id,
+      );
+
+      try {
+        const respuesta =
+          await fetch(
+            `${API_URL}/archivos/${archivo.id}/descargar`,
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${accessToken}`,
+              },
+            },
+          );
+
+        if (
+          !respuesta.ok
+        ) {
+          const cuerpo =
+            await respuesta
+              .json()
+              .catch(
+                () =>
+                  null,
+              );
+
+          throw new Error(
+            mensajeApi(
+              cuerpo,
+              'No fue posible abrir el archivo.',
+            ),
+          );
+        }
+
+        const blob =
+          await respuesta.blob();
+
+        const pdf =
+          blob.type ===
+            'application/pdf'
+            ? blob
+            : new Blob(
+                [
+                  blob,
+                ],
+                {
+                  type:
+                    'application/pdf',
+                },
+              );
+
+        const url =
+          URL.createObjectURL(
+            pdf,
+          );
+
+        ventana.document.open();
+        ventana.document.write(`<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${archivo.nombreOriginal
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;')}</title>
+    <style>
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        background: #111827;
+      }
+
+      body {
+        overflow: hidden;
+      }
+
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+        background: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <iframe
+      src="${url}"
+      title="${archivo.nombreOriginal
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;')}"
+    ></iframe>
+  </body>
+</html>`);
+        ventana.document.close();
+
+        const liberarUrl =
+          () => {
+            URL.revokeObjectURL(
+              url,
+            );
+          };
+
+        ventana.addEventListener(
+          'beforeunload',
+          liberarUrl,
+          { once: true },
+        );
+      } catch (
+        causa
+      ) {
+        ventana.close();
+
+        setToastArchivo({
+          visible: true,
+          tipo: 'error',
+          titulo: 'No se pudo abrir el archivo',
+          mensaje:
+            causa instanceof Error
+              ? causa.message
+              : 'No fue posible abrir el PDF.',
+        });
+      } finally {
+        setArchivoAbriendoId(
+          null,
+        );
+      }
+    };
+
   if (
     cargando
   ) {
@@ -1101,7 +1245,7 @@ export default function DetalleTareaEstudiante() {
   }
 
   const tipo =
-    tipos[
+    visualTipoTarea[
       tarea.tipo
     ];
 
@@ -1111,9 +1255,9 @@ export default function DetalleTareaEstudiante() {
   const estilo =
     {
       '--dte-color':
-        tipo.color,
+        'var(--app-accent)',
       '--dte-fondo':
-        tipo.fondo,
+        'var(--app-accent-soft)',
     } as CSSProperties;
 
   const responsable =
@@ -1181,7 +1325,7 @@ export default function DetalleTareaEstudiante() {
         }
         descripcion={
           tarea.descripcion ||
-          tipo.descripcion
+          tipo.descripcionEstudiante
         }
         informacion={`Apertura: ${fecha(
           tarea.fechaApertura,
@@ -1319,13 +1463,36 @@ export default function DetalleTareaEstudiante() {
           )}
         </div>
 
+        {tarea.tipo === 'EXPOSICION' && (
+          <section className="dte-sala-exposicion">
+            <div>
+              <span className="dte-sala-exposicion__icon">
+                <Presentation size={20} />
+              </span>
+              <div>
+                <strong>Sala de exposición</strong>
+                <small>
+                  Sigue las diapositivas en vivo, revisa tu turno y participa con preguntas durante la jornada.
+                </small>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(`/estudiante/cursos/${cursoId}/tareas/${tareaId}/exposicion`)}
+            >
+              <Presentation size={16} />
+              Entrar a la sala
+            </button>
+          </section>
+        )}
+
         <h2>
           Actividad
         </h2>
 
         <p className="dte-actividad__descripcion">
           {tarea.descripcion ||
-            tipo.descripcion}
+            tipo.descripcionEstudiante}
         </p>
 
         {tarea.instrucciones && (
@@ -1372,6 +1539,13 @@ export default function DetalleTareaEstudiante() {
                     key={
                       archivo.id
                     }
+                    className={
+                      esPdfDocente(
+                        archivo,
+                      )
+                        ? 'dte-archivo-card dte-archivo-card--abrible'
+                        : 'dte-archivo-card'
+                    }
                   >
                     <span>
                       <File
@@ -1393,11 +1567,52 @@ export default function DetalleTareaEstudiante() {
                       </small>
                     </div>
 
-                    {!archivo.permiteDescarga && (
-                      <Lock
-                        size={14}
-                      />
-                    )}
+                    <div className="dte-archivo-card__acciones">
+                      {esPdfDocente(
+                        archivo,
+                      ) && (
+                        <button
+                          type="button"
+                          title="Abrir PDF"
+                          disabled={
+                            archivoAbriendoId ===
+                            archivo.id
+                          }
+                          onClick={() =>
+                            void abrirArchivoDocente(
+                              archivo,
+                            )
+                          }
+                        >
+                          {archivoAbriendoId ===
+                          archivo.id ? (
+                            <Loader2
+                              size={14}
+                              className="dte-spin"
+                            />
+                          ) : (
+                            <Eye
+                              size={14}
+                            />
+                          )}
+
+                          <span>
+                            Abrir
+                          </span>
+                        </button>
+                      )}
+
+                      {!archivo.permiteDescarga && (
+                        <span
+                          className="dte-archivo-card__bloqueo"
+                          title="Descarga no permitida"
+                        >
+                          <Lock
+                            size={14}
+                          />
+                        </span>
+                      )}
+                    </div>
                   </article>
                 ),
               )}
@@ -1885,6 +2100,31 @@ export default function DetalleTareaEstudiante() {
         </div>
       </AulaModal>
 
+      <Toast
+        visible={
+          toastArchivo.visible
+        }
+        tipo={
+          toastArchivo.tipo
+        }
+        titulo={
+          toastArchivo.titulo
+        }
+        mensaje={
+          toastArchivo.mensaje
+        }
+        onCerrar={() =>
+          setToastArchivo(
+            (
+              actual,
+            ) => ({
+              ...actual,
+              visible: false,
+            }),
+          )
+        }
+      />
+
       <style>
         {styles}
       </style>
@@ -2250,6 +2490,77 @@ const styles = `
     border: 1px solid var(--app-border);
     border-radius: 11px;
     background: var(--app-surface-alt);
+  }
+
+  .dte-archivo-card--abrible {
+    transition:
+      border-color .16s ease,
+      box-shadow .16s ease,
+      background .16s ease;
+  }
+
+  .dte-archivo-card--abrible:hover {
+    border-color:
+      color-mix(
+        in srgb,
+        var(--dte-color) 38%,
+        var(--app-border)
+      );
+    background:
+      color-mix(
+        in srgb,
+        var(--dte-fondo) 28%,
+        var(--app-surface-alt)
+      );
+  }
+
+  .dte-archivo-card__acciones {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .dte-archivo-card__acciones button {
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 9px;
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--dte-color) 35%,
+        var(--app-border)
+      );
+    border-radius: 9px;
+    color: var(--dte-color);
+    background: var(--app-surface);
+    font: inherit;
+    font-size: 10px;
+    font-weight: 850;
+    cursor: pointer;
+  }
+
+  .dte-archivo-card__acciones button:hover:not(:disabled) {
+    border-color: var(--dte-color);
+    background: var(--dte-fondo);
+  }
+
+  .dte-archivo-card__acciones button:disabled {
+    opacity: .55;
+    cursor: wait;
+  }
+
+  .dte-archivo-card__bloqueo {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    color: var(--app-text-muted);
+    background: var(--app-surface);
   }
 
   .dte-archivos__grid article > span {
@@ -2815,6 +3126,74 @@ const styles = `
     font-size: var(--app-font-md);
   }
 
+
+  .dte-sala-exposicion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding: 14px 15px;
+    border: 1px solid rgba(241, 139, 75, .28);
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--app-accent-soft), var(--app-surface));
+  }
+
+  .dte-sala-exposicion > div {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+  }
+
+  .dte-sala-exposicion__icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: 12px;
+    color: var(--app-accent-dark);
+    background: #fff;
+  }
+
+  .dte-sala-exposicion strong,
+  .dte-sala-exposicion small {
+    display: block;
+  }
+
+  .dte-sala-exposicion strong {
+    font-size: 13px;
+  }
+
+  .dte-sala-exposicion small {
+    margin-top: 3px;
+    color: var(--app-text-secondary);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .dte-sala-exposicion button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 9px 12px;
+    border: 1px solid var(--app-accent);
+    border-radius: 12px;
+    color: #fff;
+    background: var(--app-accent);
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .dte-sala-exposicion button:hover {
+    border-color: var(--app-accent-hover);
+    background: var(--app-accent-hover);
+  }
+
   @media (
     max-width:
       720px
@@ -2840,6 +3219,15 @@ const styles = `
     .dte-equipo-afinidad__integrantes,
     .dte-grupo__resumen {
       grid-template-columns: 1fr;
+    }
+
+    .dte-sala-exposicion {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .dte-sala-exposicion button {
+      width: 100%;
     }
 
     .dte-grupo__cabecera {

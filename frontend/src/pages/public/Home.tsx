@@ -11,7 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-import drFranzImg from '../../assets/drfranz.png';
+import drFranzImg from '../../assets/drFranz.png';
 
 export default function Home() {
   return (

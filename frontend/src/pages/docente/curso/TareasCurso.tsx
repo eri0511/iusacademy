@@ -3,7 +3,6 @@ import {
   CheckCircle2,
   ClipboardList,
   Edit3,
-  FileText,
   LockKeyhole,
   Plus,
   RefreshCw,
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import {
+  type CSSProperties,
   useMemo,
   useState,
 } from 'react';
@@ -49,6 +49,10 @@ import {
 import useTareasCurso from '../../../hooks/tareas/useTareasCurso';
 
 import {
+  visualTipoTarea,
+} from '../../../config/tareasVisual.config';
+
+import {
   crearRubricaTarea,
   importarRubricaArchivo,
   rubricaPredeterminada,
@@ -59,7 +63,6 @@ import type {
   CrearTareaDatos,
   EstadoTarea,
   TareaCurso,
-  TipoTarea,
 } from '../../../types/tareas/tareas.types';
 
 const API_URL =
@@ -79,17 +82,6 @@ const etiquetasEstado: Record<EstadoTarea, string> = {
   DISPONIBLE: 'Disponible',
   CERRADA: 'Cerrada',
   ANULADA: 'Anulada',
-};
-
-const nombresTipo: Record<TipoTarea, string> = {
-  ENTREGA_ARCHIVOS: 'Entrega de archivos',
-  RESPUESTA_ESCRITA: 'Respuesta escrita',
-  DOCUMENTO_COLABORATIVO: 'Documento colaborativo',
-  REDACCION_JURIDICA: 'Redacción jurídica',
-  EXPOSICION: 'Exposición',
-  CASO_PRACTICO: 'Caso práctico',
-  MIXTA: 'Actividad mixta',
-  PRESENCIAL: 'Presencial',
 };
 
 function fechaCompacta(
@@ -319,9 +311,27 @@ function TareaCard({
       ? 'Grupal'
       : 'Individual';
 
+  const visual =
+    visualTipoTarea[
+      tarea.tipo
+    ];
+
+  const IconoTipo =
+    visual.icono;
+
+  const estiloTipo = {
+    '--tarea-tipo-color':
+      visual.color,
+    '--tarea-tipo-fondo':
+      visual.fondo,
+  } as CSSProperties;
+
   return (
     <article
-      className={`tarea-card tarea-card--${tarea.tipo.toLowerCase()}`}
+      className="tarea-card"
+      style={
+        estiloTipo
+      }
     >
       <div className="tarea-card__menu">
         <AulaDropdown
@@ -369,10 +379,10 @@ function TareaCard({
             </span>
 
             <span className="tarea-chip tarea-chip--tipo">
-              <FileText
+              <IconoTipo
                 size={12}
               />
-              {nombresTipo[tarea.tipo]}
+              {visual.nombre}
             </span>
 
             {tarea.capacidades.includes(
@@ -399,9 +409,9 @@ function TareaCard({
 
         <div className="tarea-card__meta">
           <span>
-            {nombresTipo[
+            {visualTipoTarea[
               tarea.tipo
-            ]}
+            ].nombre}
           </span>
 
           <span>
@@ -1485,73 +1495,7 @@ const styles = `
   }
 
 
-  /*
-   * ============================================================
-   * IDENTIDAD VISUAL POR TIPO DE TAREA
-   * ============================================================
-   *
-   * Solo coloreamos:
-   * - la línea vertical izquierda;
-   * - el chip que identifica el tipo.
-   *
-   * El resto del card mantiene la identidad visual de IusAcademy.
-   */
-  .tarea-card--entrega_archivos {
-    --tarea-tipo-color:
-      #f97316;
-    --tarea-tipo-fondo:
-      #fff7ed;
-  }
-
-  .tarea-card--respuesta_escrita {
-    --tarea-tipo-color:
-      #2563eb;
-    --tarea-tipo-fondo:
-      #eff6ff;
-  }
-
-  .tarea-card--documento_colaborativo {
-    --tarea-tipo-color:
-      #7c3aed;
-    --tarea-tipo-fondo:
-      #f5f3ff;
-  }
-
-  .tarea-card--redaccion_juridica {
-    --tarea-tipo-color:
-      #dc2626;
-    --tarea-tipo-fondo:
-      #fef2f2;
-  }
-
-  .tarea-card--exposicion {
-    --tarea-tipo-color:
-      #d97706;
-    --tarea-tipo-fondo:
-      #fffbeb;
-  }
-
-  .tarea-card--caso_practico {
-    --tarea-tipo-color:
-      #16a34a;
-    --tarea-tipo-fondo:
-      #f0fdf4;
-  }
-
-  .tarea-card--mixta {
-    --tarea-tipo-color:
-      #0f766e;
-    --tarea-tipo-fondo:
-      #f0fdfa;
-  }
-
-  .tarea-card--presencial {
-    --tarea-tipo-color:
-      #64748b;
-    --tarea-tipo-fondo:
-      #f8fafc;
-  }
-
+  /* La identidad de color se inyecta desde tareasVisual.config.ts. */
   .tarea-card {
     border-left-color:
       var(

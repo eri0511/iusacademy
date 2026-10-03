@@ -101,6 +101,11 @@ const menuPrincipal: MenuItem[] = [
     end: true,
   },
   {
+    to: '/admin/biblioteca',
+    label: 'Biblioteca jurídica',
+    icon: BookOpen,
+  },
+  {
     to: '/admin/usuarios',
     label: 'Usuarios',
     icon: Users,

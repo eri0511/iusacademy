@@ -18,7 +18,7 @@ import {
   Info,
   Laptop,
   Lock,
-  MonitorUp,
+  Loader2,
   Presentation,
   RefreshCw,
   Scale,
@@ -32,7 +32,6 @@ import {
 } from 'lucide-react';
 
 import type {
-  ComponentType,
   CSSProperties,
   ReactNode,
 } from 'react';
@@ -59,12 +58,17 @@ import Toast, {
 import useDetalleTarea from '../../../hooks/tareas/useDetalleTarea';
 import useSeguimientoTareaDocente from '../../../hooks/tareas/useSeguimientoTareaDocente';
 
+import {
+  visualTipoTarea,
+} from '../../../config/tareasVisual.config';
+
 import CalificacionesTareaDocente from '../../../components/tareas/docente/CalificacionesTareaDocente';
 import RegistroEvidenciaPresencial from '../../../components/tareas/docente/RegistroEvidenciaPresencial';
 import ConfiguracionRubricaTarea from '../../../components/tareas/docente/ConfiguracionRubricaTarea';
 import EquiposTareaDocente from '../../../components/tareas/docente/EquiposTareaDocente';
 import HistorialTareaDocente from '../../../components/tareas/docente/HistorialTareaDocente';
 import ExtensionPlazoTareaDocente from '../../../components/tareas/docente/ExtensionPlazoTareaDocente';
+import SalaExposicionDocente from './SalaExposicionDocente';
 
 import { useAuth } from '../../../auth/AuthContext';
 
@@ -83,29 +87,18 @@ import type {
   CrearTareaDatos,
   ResponsableEntregaGrupo,
   TareaCurso,
-  TipoTarea,
 } from '../../../types/tareas/tareas.types';
+
+const API_URL =
+  import.meta.env.VITE_API_URL ??
+  'http://localhost:3000';
 
 type Pestana =
   | 'actividad'
   | 'equipos'
   | 'calificaciones'
+  | 'sala_exposicion'
   | 'historial';
-
-type ConfiguracionTipoVisual = {
-  nombre:
-    string;
-  descripcion:
-    string;
-  icono:
-    ComponentType<{
-      size?: number;
-    }>;
-  color:
-    string;
-  fondo:
-    string;
-};
 
 type Confirmacion = {
   titulo:
@@ -119,171 +112,6 @@ type Confirmacion = {
   accion:
     () => Promise<unknown>;
 };
-
-const configuracionTipos:
-  Record<
-    TipoTarea,
-    ConfiguracionTipoVisual
-  > = {
-    ENTREGA_ARCHIVOS: {
-      nombre:
-        'Entrega de archivos',
-      descripcion:
-        'Actividad orientada a informes, documentos, imágenes y evidencias adjuntas.',
-      icono:
-        Files,
-      color:
-        '#f97316',
-      fondo:
-        '#fff7ed',
-    },
-
-    RESPUESTA_ESCRITA: {
-      nombre:
-        'Respuesta escrita',
-      descripcion:
-        'Desarrollo individual mediante el editor interno de IusAcademy.',
-      icono:
-        FilePenLine,
-      color:
-        '#2563eb',
-      fondo:
-        '#eff6ff',
-    },
-
-    DOCUMENTO_COLABORATIVO: {
-      nombre:
-        'Documento colaborativo',
-      descripcion:
-        'Construcción conjunta con autoría, historial y seguimiento de contribuciones.',
-      icono:
-        Workflow,
-      color:
-        '#7c3aed',
-      fondo:
-        '#f5f3ff',
-    },
-
-    REDACCION_JURIDICA: {
-      nombre:
-        'Redacción jurídica',
-      descripcion:
-        'Producción guiada de memoriales, demandas, contratos y otros documentos jurídicos.',
-      icono:
-        Scale,
-      color:
-        '#dc2626',
-      fondo:
-        '#fef2f2',
-    },
-
-    EXPOSICION: {
-      nombre:
-        'Exposición',
-      descripcion:
-        'Actividad para presentaciones, material de apoyo y evaluación de exposición.',
-      icono:
-        Presentation,
-      color:
-        '#d97706',
-      fondo:
-        '#fffbeb',
-    },
-
-    CASO_PRACTICO: {
-      nombre:
-        'Caso práctico',
-      descripcion:
-        'Resolución estructurada de problemas jurídicos y aplicación de conceptos.',
-      icono:
-        BookOpenCheck,
-      color:
-        '#16a34a',
-      fondo:
-        '#f0fdf4',
-    },
-
-    MIXTA: {
-      nombre:
-        'Actividad mixta',
-      descripcion:
-        'Combina varios componentes y evidencias dentro de una sola actividad.',
-      icono:
-        Workflow,
-      color:
-        '#0f766e',
-      fondo:
-        '#f0fdfa',
-    },
-
-    PRESENCIAL: {
-      nombre:
-        'Actividad presencial',
-      descripcion:
-        'Evidencia registrada principalmente por el docente para una actividad realizada en aula.',
-      icono:
-        MonitorUp,
-      color:
-        '#64748b',
-      fondo:
-        '#f8fafc',
-    },
-  };
-
-const etiquetasEstado = {
-  BORRADOR:
-    'Borrador',
-  PROGRAMADA:
-    'Programada',
-  DISPONIBLE:
-    'Disponible',
-  CERRADA:
-    'Cerrada',
-  ANULADA:
-    'Anulada',
-} as const;
-
-function fecha(
-  valor?:
-    string | null,
-) {
-  if (!valor) {
-    return 'Sin definir';
-  }
-
-  const fechaValor =
-    new Date(
-      valor,
-    );
-
-  if (
-    Number.isNaN(
-      fechaValor.getTime(),
-    )
-  ) {
-    return 'Sin definir';
-  }
-
-  return new Intl.DateTimeFormat(
-    'es-BO',
-    {
-      day:
-        '2-digit',
-      month:
-        '2-digit',
-      year:
-        'numeric',
-      hour:
-        '2-digit',
-      minute:
-        '2-digit',
-      hour12:
-        false,
-    },
-  ).format(
-    fechaValor,
-  );
-}
 
 function etiqueta(
   valor?:
@@ -402,6 +230,40 @@ function tiempoRestante(
 
 
 
+const etiquetasEstado = {
+  BORRADOR: 'Borrador',
+  PROGRAMADA: 'Programada',
+  DISPONIBLE: 'Disponible',
+  CERRADA: 'Cerrada',
+  ANULADA: 'Anulada',
+} as const;
+
+function fecha(
+  valor?: string | null,
+) {
+  if (!valor) {
+    return 'Sin definir';
+  }
+
+  const fechaValor = new Date(valor);
+
+  if (Number.isNaN(fechaValor.getTime())) {
+    return 'Sin definir';
+  }
+
+  return new Intl.DateTimeFormat(
+    'es-BO',
+    {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    },
+  ).format(fechaValor);
+}
+
 function obtenerTextoConfiguracion<
   T extends string,
 >(
@@ -456,6 +318,18 @@ function tamanioArchivo(
   ).toFixed(1)} MB`;
 }
 
+function esPdfConsigna(
+  archivo:
+    TareaCurso['archivos'][number],
+) {
+  return (
+    archivo.mimeType ===
+      'application/pdf' ||
+    archivo.extension.toLowerCase() ===
+      'pdf'
+  );
+}
+
 function BloqueExperiencia({
   tarea,
 }: {
@@ -463,7 +337,7 @@ function BloqueExperiencia({
     TareaCurso;
 }) {
   const tipo =
-    configuracionTipos[
+    visualTipoTarea[
       tarea.tipo
     ];
 
@@ -484,9 +358,9 @@ function BloqueExperiencia({
           className="dt-experiencia__icono"
           style={{
             color:
-              tipo.color,
+              'var(--app-accent)',
             background:
-              tipo.fondo,
+              'var(--app-accent-soft)',
           }}
         >
           <Icono
@@ -504,7 +378,7 @@ function BloqueExperiencia({
           </h3>
 
           <p>
-            {tipo.descripcion}
+            {tipo.descripcionDocente}
           </p>
         </div>
       </header>
@@ -905,6 +779,14 @@ export default function DetalleTarea() {
         '',
     });
 
+  const [
+    archivoAbriendoId,
+    setArchivoAbriendoId,
+  ] =
+    useState<number | null>(
+      null,
+    );
+
   const mostrarToast =
     (
       tipo:
@@ -921,6 +803,214 @@ export default function DetalleTarea() {
         titulo,
         mensaje,
       });
+    };
+
+  const abrirArchivoDocente =
+    async (
+      archivo:
+        TareaCurso['archivos'][number],
+    ) => {
+      if (
+        !esPdfConsigna(
+          archivo,
+        )
+      ) {
+        mostrarToast(
+          'informacion',
+          'Vista previa no disponible',
+          'Por ahora la apertura directa está disponible para archivos PDF.',
+        );
+
+        return;
+      }
+
+      if (
+        !accessToken
+      ) {
+        mostrarToast(
+          'error',
+          'Sesión no disponible',
+          'Inicia sesión nuevamente para abrir el archivo.',
+        );
+
+        return;
+      }
+
+      const nuevaVentana =
+        window.open(
+          '',
+          '_blank',
+        );
+
+      if (
+        !nuevaVentana
+      ) {
+        mostrarToast(
+          'advertencia',
+          'No se pudo abrir el archivo',
+          'El navegador bloqueó la nueva pestaña. Intenta nuevamente.',
+        );
+
+        return;
+      }
+
+      nuevaVentana.opener =
+        null;
+
+      nuevaVentana.document.title =
+        archivo.nombreOriginal;
+
+      nuevaVentana.document.body.style.margin =
+        '0';
+
+      nuevaVentana.document.body.style.minHeight =
+        '100vh';
+
+      nuevaVentana.document.body.style.display =
+        'grid';
+
+      nuevaVentana.document.body.style.placeItems =
+        'center';
+
+      nuevaVentana.document.body.style.fontFamily =
+        'Arial, sans-serif';
+
+      nuevaVentana.document.body.style.background =
+        '#f8fafc';
+
+      const mensajeCarga =
+        nuevaVentana.document.createElement(
+          'div',
+        );
+
+      mensajeCarga.textContent =
+        'Cargando archivo...';
+
+      mensajeCarga.style.color =
+        '#475569';
+
+      mensajeCarga.style.fontSize =
+        '14px';
+
+      nuevaVentana.document.body.appendChild(
+        mensajeCarga,
+      );
+
+      setArchivoAbriendoId(
+        archivo.id,
+      );
+
+      try {
+        const respuesta =
+          await fetch(
+            `${API_URL}/archivos/${archivo.id}/descargar`,
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${accessToken}`,
+              },
+            },
+          );
+
+        if (
+          !respuesta.ok
+        ) {
+          const cuerpo =
+            await respuesta
+              .json()
+              .catch(
+                () =>
+                  null,
+              );
+
+          const mensaje =
+            cuerpo &&
+            typeof cuerpo ===
+              'object' &&
+            'message' in
+              cuerpo
+              ? String(
+                  (
+                    cuerpo as {
+                      message?:
+                        string | string[];
+                    }
+                  ).message ??
+                  '',
+                )
+              : '';
+
+          throw new Error(
+            mensaje ||
+            'No fue posible abrir el archivo.',
+          );
+        }
+
+        const blob =
+          await respuesta.blob();
+
+        const url =
+          URL.createObjectURL(
+            blob,
+          );
+
+        nuevaVentana.document.body.replaceChildren();
+
+        const visor =
+          nuevaVentana.document.createElement(
+            'iframe',
+          );
+
+        visor.src =
+          url;
+
+        visor.title =
+          `Vista previa de ${archivo.nombreOriginal}`;
+
+        visor.style.width =
+          '100%';
+
+        visor.style.height =
+          '100vh';
+
+        visor.style.border =
+          '0';
+
+        nuevaVentana.document.body.style.display =
+          'block';
+
+        nuevaVentana.document.body.style.background =
+          '#111827';
+
+        nuevaVentana.document.body.appendChild(
+          visor,
+        );
+
+        window.setTimeout(
+          () => {
+            URL.revokeObjectURL(
+              url,
+            );
+          },
+          60000,
+        );
+      } catch (
+        causa
+      ) {
+        nuevaVentana.close();
+
+        mostrarToast(
+          'error',
+          'No se pudo abrir el archivo',
+          causa instanceof Error
+            ? causa.message
+            : 'Ocurrió un error al cargar el PDF.',
+        );
+      } finally {
+        setArchivoAbriendoId(
+          null,
+        );
+      }
     };
 
   const tarea =
@@ -964,6 +1054,19 @@ export default function DetalleTarea() {
                     'Calificaciones',
                   icono:
                     TableProperties,
+                },
+              ]
+            : []),
+          ...(tarea.tipo ===
+          'EXPOSICION'
+            ? [
+                {
+                  id:
+                    'sala_exposicion' as const,
+                  texto:
+                    'Sala de exposición',
+                  icono:
+                    Presentation,
                 },
               ]
             : []),
@@ -1027,7 +1130,7 @@ export default function DetalleTarea() {
   }
 
   const tipo =
-    configuracionTipos[
+    visualTipoTarea[
       tarea.tipo
     ];
 
@@ -1195,9 +1298,9 @@ export default function DetalleTarea() {
   const estiloTipo =
     {
       '--dt-type-color':
-        tipo.color,
+        'var(--app-accent)',
       '--dt-type-bg':
-        tipo.fondo,
+        'var(--app-accent-soft)',
     } as CSSProperties;
 
   return (
@@ -1217,7 +1320,7 @@ export default function DetalleTarea() {
         }
         descripcion={
           tarea.descripcion ||
-          tipo.descripcion
+          tipo.descripcionDocente
         }
         informacion={`Límite: ${fecha(tarea.fechaLimite)} · Cierre: ${fecha(cierreReferencia)}`}
         acciones={[
@@ -1467,11 +1570,44 @@ export default function DetalleTarea() {
                             </small>
                           </div>
 
-                          {!archivo.permiteDescarga && (
-                            <Lock
-                              size={14}
-                            />
-                          )}
+                          <div className="dt-archivos-docente__acciones">
+                            {esPdfConsigna(
+                              archivo,
+                            ) && (
+                              <button
+                                type="button"
+                                disabled={
+                                  archivoAbriendoId ===
+                                  archivo.id
+                                }
+                                onClick={() =>
+                                  void abrirArchivoDocente(
+                                    archivo,
+                                  )
+                                }
+                              >
+                                {archivoAbriendoId ===
+                                archivo.id ? (
+                                  <Loader2
+                                    size={14}
+                                    className="dt-spin"
+                                  />
+                                ) : (
+                                  <Eye
+                                    size={14}
+                                  />
+                                )}
+
+                                Abrir
+                              </button>
+                            )}
+
+                            {!archivo.permiteDescarga && (
+                              <Lock
+                                size={14}
+                              />
+                            )}
+                          </div>
                         </article>
                       ),
                     )}
@@ -1931,6 +2067,20 @@ export default function DetalleTarea() {
       )}
 
       {pestana ===
+        'sala_exposicion' &&
+        tarea.tipo ===
+          'EXPOSICION' && (
+        <div className="dt-sala-exposicion-vista">
+          <SalaExposicionDocente
+            cursoId={idCurso}
+            tareaId={idTarea}
+            integrado
+            tareaEstado={tarea.estado}
+          />
+        </div>
+      )}
+
+      {pestana ===
         'historial' && (
         <section className="dt-panel">
           <header className="dt-panel__header">
@@ -2033,7 +2183,7 @@ export default function DetalleTarea() {
               <p>
                 {
                   tarea.descripcion ||
-                  tipo.descripcion
+                  tipo.descripcionDocente
                 }
               </p>
             </section>
@@ -2270,12 +2420,6 @@ export default function DetalleTarea() {
         tareaId={
           idTarea
         }
-        colorTipo={
-          tipo.color
-        }
-        fondoTipo={
-          tipo.fondo
-        }
         abierto={
           rubricaAbierta
         }
@@ -2465,6 +2609,11 @@ const styles = `
 .dt-estadisticas span {
   color: var(--app-text-muted);
   font-size: 11px;
+}
+
+
+.dt-sala-exposicion-vista {
+  min-width: 0;
 }
 
 @media (max-width: 900px) {
@@ -2857,6 +3006,67 @@ const styles = `
   .dt-archivos-docente__grid small {
     color: var(--app-text-muted);
     font-size: var(--app-font-xs);
+  }
+
+  .dt-archivos-docente__acciones {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+  }
+
+  .dt-archivos-docente__acciones > svg {
+    flex: 0 0 auto;
+    color: var(--app-text-muted);
+  }
+
+  .dt-archivos-docente__acciones button {
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 9px;
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--dt-type-color) 45%,
+        var(--app-border)
+      );
+    border-radius: 9px;
+    color: var(--dt-type-color);
+    background: var(--app-surface);
+    font: inherit;
+    font-size: var(--app-font-xs);
+    font-weight: 850;
+    cursor: pointer;
+  }
+
+  .dt-archivos-docente__acciones button:hover:not(:disabled) {
+    border-color: var(--dt-type-color);
+    background: var(--dt-type-bg);
+  }
+
+  .dt-archivos-docente__acciones button:disabled {
+    opacity: .6;
+    cursor: wait;
+  }
+
+  .dt-spin {
+    animation:
+      dtSpin
+      .8s
+      linear
+      infinite;
+  }
+
+  @keyframes dtSpin {
+    to {
+      transform:
+        rotate(
+          360deg
+        );
+    }
   }
 
   .dt-archivos-docente__nota {

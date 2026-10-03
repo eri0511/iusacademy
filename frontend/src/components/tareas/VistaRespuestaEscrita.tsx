@@ -15,9 +15,194 @@ import {
   totalPalabrasRespuesta,
 } from '../../utils/tareas/respuestaEscrita';
 
+const ETIQUETAS_PERMITIDAS =
+  new Set([
+    'P',
+    'BR',
+    'STRONG',
+    'B',
+    'EM',
+    'I',
+    'U',
+    'H2',
+    'BLOCKQUOTE',
+    'UL',
+    'OL',
+    'LI',
+    'A',
+    'DIV',
+    'SPAN',
+  ]);
+
+function sanitizarHtmlRespuesta(
+  html:
+    string,
+) {
+  if (
+    typeof document ===
+      'undefined'
+  ) {
+    return '';
+  }
+
+  const plantilla =
+    document.createElement(
+      'template',
+    );
+
+  plantilla.innerHTML =
+    html;
+
+  const elementos =
+    Array.from(
+      plantilla.content.querySelectorAll(
+        '*',
+      ),
+    ).reverse();
+
+  elementos.forEach(
+    (
+      elemento,
+    ) => {
+      if (
+        [
+          'SCRIPT',
+          'STYLE',
+          'IFRAME',
+          'OBJECT',
+          'EMBED',
+          'FORM',
+          'INPUT',
+          'BUTTON',
+        ].includes(
+          elemento.tagName,
+        )
+      ) {
+        elemento.remove();
+        return;
+      }
+
+      if (
+        !ETIQUETAS_PERMITIDAS.has(
+          elemento.tagName,
+        )
+      ) {
+        elemento.replaceWith(
+          ...Array.from(
+            elemento.childNodes,
+          ),
+        );
+
+        return;
+      }
+
+      Array.from(
+        elemento.attributes,
+      ).forEach(
+        (
+          atributo,
+        ) => {
+          const nombre =
+            atributo.name.toLowerCase();
+
+          if (
+            elemento.tagName ===
+              'A' &&
+            (
+              nombre ===
+                'href' ||
+              nombre ===
+                'target' ||
+              nombre ===
+                'rel'
+            )
+          ) {
+            return;
+          }
+
+          if (
+            nombre ===
+              'style' &&
+            /^text-align\s*:\s*(left|center|right|justify)\s*;?$/i.test(
+              atributo.value,
+            )
+          ) {
+            return;
+          }
+
+          elemento.removeAttribute(
+            atributo.name,
+          );
+        },
+      );
+
+      if (
+        elemento.tagName ===
+          'A'
+      ) {
+        const href =
+          elemento.getAttribute(
+            'href',
+          ) ??
+          '';
+
+        if (
+          !/^(https?:\/\/|mailto:)/i.test(
+            href,
+          )
+        ) {
+          elemento.removeAttribute(
+            'href',
+          );
+        }
+
+        elemento.setAttribute(
+          'target',
+          '_blank',
+        );
+
+        elemento.setAttribute(
+          'rel',
+          'noopener noreferrer',
+        );
+      }
+    },
+  );
+
+  return plantilla.innerHTML;
+}
+
 type Props = {
   contenido: string;
 };
+
+function ContenidoRespuesta({
+  html,
+}: {
+  html:
+    string;
+}) {
+  const seguro =
+    useMemo(
+      () =>
+        sanitizarHtmlRespuesta(
+          html,
+        ),
+      [
+        html,
+      ],
+    );
+
+  return (
+    <div
+      className="vre__contenido-enriquecido"
+      dangerouslySetInnerHTML={{
+        __html:
+          seguro,
+      }}
+    />
+  );
+}
 
 export default function VistaRespuestaEscrita(
   {
@@ -81,42 +266,65 @@ export default function VistaRespuestaEscrita(
         </div>
 
         <div className="vre__secciones">
-          {SECCIONES_RESPUESTA_ESCRITA.map(
-            (
-              seccion,
-            ) => {
-              const texto =
-                estado.secciones[
-                  seccion.clave
-                ]?.trim();
+          {estado.secciones[
+            'respuesta'
+          ] ? (
+            <article className="vre__seccion vre__seccion--respuesta">
+              <div className="vre__seccion-titulo">
+                <strong>
+                  Respuesta desarrollada
+                </strong>
+              </div>
 
-              if (
-                !texto
-              ) {
-                return null;
-              }
-
-              return (
-                <section
-                  key={
+              <ContenidoRespuesta
+                html={
+                  estado.secciones[
+                    'respuesta'
+                  ]
+                }
+              />
+            </article>
+          ) : (
+            SECCIONES_RESPUESTA_ESCRITA.map(
+              (
+                seccion,
+              ) => {
+                const texto =
+                  estado.secciones[
                     seccion.clave
-                  }
-                  className="vre__seccion"
-                >
-                  <h4>
-                    {
-                      seccion.titulo
-                    }
-                  </h4>
+                  ] ??
+                  '';
 
-                  <p>
-                    {
-                      texto
+                if (
+                  !texto.trim()
+                ) {
+                  return null;
+                }
+
+                return (
+                  <article
+                    key={
+                      seccion.clave
                     }
-                  </p>
-                </section>
-              );
-            },
+                    className="vre__seccion"
+                  >
+                    <div className="vre__seccion-titulo">
+                      <strong>
+                        {
+                          seccion.titulo
+                        }
+                      </strong>
+                    </div>
+
+                    <ContenidoRespuesta
+                      html={
+                        texto
+                      }
+                    />
+                  </article>
+                );
+              },
+            )
           )}
         </div>
 

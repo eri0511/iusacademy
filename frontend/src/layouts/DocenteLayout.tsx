@@ -114,7 +114,6 @@ const menuPrincipal: MenuItem[] = [
     to: '/docente/biblioteca',
     label: 'Biblioteca jurídica',
     icon: Library,
-    disabled: true,
   },
   {
     to: '/docente/casos',

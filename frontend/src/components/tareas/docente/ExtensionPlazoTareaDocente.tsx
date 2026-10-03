@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   useEffect,
   useMemo,
   useState,
@@ -227,6 +228,13 @@ export default function ExtensionPlazoTareaDocente({
   const accessToken =
     sesion?.accessToken ??
     '';
+
+  const estiloTipo = {
+    '--exd-color':
+      'var(--app-accent)',
+    '--exd-fondo':
+      'var(--app-accent-soft)',
+  } as CSSProperties;
 
   const [
     estudiantes,
@@ -857,7 +865,12 @@ export default function ExtensionPlazoTareaDocente({
           </div>
         }
       >
-        <div className="exd-contenido">
+        <div
+          className="exd-contenido"
+          style={
+            estiloTipo
+          }
+        >
           <div
             className="exd-tabs"
             role="tablist"
@@ -1511,17 +1524,17 @@ const styles = `
   }
 
   .exd-tabs button:hover:not(.activo) {
-    color: var(--app-accent-dark);
-    background: var(--app-accent-softer);
+    color: var(--exd-color);
+    background: var(--exd-fondo);
   }
 
   .exd-tabs button.activo {
-    color: var(--app-accent-dark);
-    background: var(--app-accent-softer);
+    color: var(--exd-color);
+    background: var(--exd-fondo);
   }
 
   .exd-tabs button.activo::after {
-    background: var(--app-accent);
+    background: var(--exd-color);
   }
 
   .exd-tabs button:focus-visible {
@@ -1529,7 +1542,7 @@ const styles = `
       inset 0 0 0 2px
       color-mix(
         in srgb,
-        var(--app-accent) 18%,
+        var(--exd-color) 18%,
         transparent
       );
   }
@@ -1541,7 +1554,7 @@ const styles = `
     place-items: center;
     padding: 0 6px;
     border-radius: 999px;
-    color: var(--app-accent-dark);
+    color: var(--exd-color);
     background: var(--app-accent-soft);
     font-size: 0.66rem;
     font-weight: 900;
@@ -1601,8 +1614,8 @@ const styles = `
     padding: 8px;
     border: 1px solid var(--app-accent-soft);
     border-radius: 10px;
-    color: var(--app-accent-dark);
-    background: var(--app-accent-softer);
+    color: var(--exd-color);
+    background: var(--exd-fondo);
     flex-shrink: 0;
   }
 
@@ -1656,13 +1669,13 @@ const styles = `
   }
 
   .exd-modos button.activo {
-    border-color: var(--app-accent);
-    background: var(--app-accent-softer);
+    border-color: var(--exd-color);
+    background: var(--exd-fondo);
     box-shadow:
       0 0 0 1px
       color-mix(
         in srgb,
-        var(--app-accent) 8%,
+        var(--exd-color) 8%,
         transparent
       );
   }
@@ -1672,7 +1685,7 @@ const styles = `
       0 0 0 3px
       color-mix(
         in srgb,
-        var(--app-accent) 12%,
+        var(--exd-color) 12%,
         transparent
       );
   }
@@ -1688,8 +1701,8 @@ const styles = `
   }
 
   .exd-modos button.activo .exd-modos__radio {
-    border-color: var(--app-accent);
-    background: var(--app-accent);
+    border-color: var(--exd-color);
+    background: var(--exd-color);
   }
 
   .exd-modos button > span:last-child {
@@ -1717,12 +1730,12 @@ const styles = `
     border: 1px solid var(--app-accent-soft);
     border-radius: 11px;
     color: var(--app-text-secondary);
-    background: var(--app-accent-softer);
+    background: var(--exd-fondo);
     font-size: 0.78rem;
   }
 
   .exd-resumen-todos svg {
-    color: var(--app-accent-dark);
+    color: var(--exd-color);
     flex-shrink: 0;
   }
 
@@ -1751,8 +1764,8 @@ const styles = `
   .exd-personalizado__cabecera > strong {
     padding: 4px 9px;
     border-radius: 999px;
-    color: var(--app-accent-dark);
-    background: var(--app-accent-softer);
+    color: var(--exd-color);
+    background: var(--exd-fondo);
     font-size: 0.7rem;
   }
 
@@ -1772,8 +1785,8 @@ const styles = `
   }
 
   .exd-buscar:focus-within {
-    border-color: var(--app-accent);
-    box-shadow: 0 0 0 3px var(--app-accent-softer);
+    border-color: var(--exd-color);
+    box-shadow: 0 0 0 3px var(--exd-fondo);
   }
 
   .exd-buscar input {
@@ -1823,15 +1836,15 @@ const styles = `
   }
 
   .exd-fila--activa {
-    border-color: var(--app-accent);
-    background: var(--app-accent-softer);
+    border-color: var(--exd-color);
+    background: var(--exd-fondo);
   }
 
   .exd-fila input {
     width: 16px;
     height: 16px;
     flex-shrink: 0;
-    accent-color: var(--app-accent);
+    accent-color: var(--exd-color);
   }
 
   .exd-fila-nombre {
@@ -1844,7 +1857,7 @@ const styles = `
   }
 
   .exd-fila-check {
-    color: var(--app-accent-dark);
+    color: var(--exd-color);
   }
 
   .exd-fechas-grid {
@@ -1889,8 +1902,8 @@ const styles = `
 
   .exd-campo input:focus,
   .exd-campo textarea:focus {
-    border-color: var(--app-accent);
-    box-shadow: 0 0 0 3px var(--app-accent-softer);
+    border-color: var(--exd-color);
+    box-shadow: 0 0 0 3px var(--exd-fondo);
   }
 
   .exd-historial-vacio {
@@ -1908,7 +1921,7 @@ const styles = `
   }
 
   .exd-historial-vacio svg {
-    color: var(--app-accent-dark);
+    color: var(--exd-color);
   }
 
   .exd-historial-vacio strong {
@@ -2028,7 +2041,7 @@ const styles = `
 
   .exd-extension-fechas svg {
     margin-top: 2px;
-    color: var(--app-accent-dark);
+    color: var(--exd-color);
     flex-shrink: 0;
   }
 
@@ -2037,7 +2050,7 @@ const styles = `
     padding: 8px 10px;
     border-radius: 8px;
     color: var(--app-text-secondary);
-    background: var(--app-accent-softer);
+    background: var(--exd-fondo);
     font-size: 0.73rem;
     line-height: 1.45;
   }
@@ -2105,7 +2118,7 @@ const styles = `
   .exd-footer .exd-footer-accion > .exd-accion-secundaria:hover {
     border-color: var(--app-accent-soft) !important;
     color: var(--app-accent-dark) !important;
-    background: var(--app-accent-softer) !important;
+    background: var(--app-accent-soft) !important;
   }
 
   .exd-footer .exd-footer-accion > .exd-accion-primaria {
@@ -2120,9 +2133,9 @@ const styles = `
   }
 
   .exd-footer .exd-footer-accion > .exd-accion-primaria:hover:not(:disabled) {
-    border-color: var(--app-accent-dark) !important;
+    border-color: var(--app-accent-hover) !important;
     color: #ffffff !important;
-    background: var(--app-accent-dark) !important;
+    background: var(--app-accent-hover) !important;
   }
 
   .exd-footer .exd-footer-accion > button:focus-visible {
@@ -2130,7 +2143,7 @@ const styles = `
       0 0 0 3px
       color-mix(
         in srgb,
-        var(--app-accent) 10%,
+        var(--exd-color) 10%,
         transparent
       ) !important;
   }

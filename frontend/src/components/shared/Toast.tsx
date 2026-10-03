@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
 } from 'react';
 
 import {
@@ -48,6 +49,12 @@ export default function Toast({
   duracion = 5000,
   onCerrar,
 }: ToastProps) {
+  const onCerrarRef = useRef(onCerrar);
+
+  useEffect(() => {
+    onCerrarRef.current = onCerrar;
+  }, [onCerrar]);
+
   useEffect(
     () => {
       if (
@@ -59,7 +66,7 @@ export default function Toast({
       const temporizador =
         window.setTimeout(
           () => {
-            onCerrar();
+            onCerrarRef.current();
           },
           duracion,
         );
@@ -73,7 +80,6 @@ export default function Toast({
     [
       visible,
       duracion,
-      onCerrar,
     ],
   );
 
