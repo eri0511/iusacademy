@@ -89,12 +89,7 @@ const styles = `
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(
-    90deg,
-    var(--app-accent),
-    var(--app-accent-dark),
-    transparent
-  );
+  background: var(--app-accent);
 }
 .bib-create-panel-header {
   display: flex;
@@ -196,12 +191,7 @@ const styles = `
   margin-bottom: 18px;
 }
 .bib-create-panel::before {
-  background: linear-gradient(
-    90deg,
-    var(--app-accent),
-    color-mix(in srgb, var(--app-accent) 45%, var(--app-warning-bg)),
-    transparent 80%
-  );
+  background: var(--app-accent);
 }
 .bib-create-panel-header {
   margin-bottom: 22px;

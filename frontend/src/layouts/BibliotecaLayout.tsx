@@ -91,20 +91,13 @@ function BibliotecaShell() {
 
   return (
     <section className="biblioteca-compartida-shell">
-
-      {/* =====================================================
-          HEADER BIBLIOTECA
-          ===================================================== */}
-
       <header className="biblioteca-encabezado">
         <div className="biblioteca-encabezado__contenido">
-
           <div className="biblioteca-encabezado__superior">
             BIBLIOTECA JURÍDICA
           </div>
 
           <div className="biblioteca-encabezado__principal">
-
             <div className="biblioteca-encabezado__icono">
               <LibraryBig
                 size={29}
@@ -113,7 +106,6 @@ function BibliotecaShell() {
             </div>
 
             <div className="biblioteca-encabezado__informacion">
-
               <h1>
                 Biblioteca virtual
               </h1>
@@ -124,13 +116,11 @@ function BibliotecaShell() {
               </p>
 
               <div className="biblioteca-encabezado__chips">
-
                 <span>
                   <BookOpen
                     size={14}
                     strokeWidth={1.9}
                   />
-
                   Recursos jurídicos
                 </span>
 
@@ -139,7 +129,6 @@ function BibliotecaShell() {
                     size={14}
                     strokeWidth={1.9}
                   />
-
                   Categorías organizadas
                 </span>
 
@@ -148,20 +137,13 @@ function BibliotecaShell() {
                     size={14}
                     strokeWidth={1.9}
                   />
-
                   Material descargable
                 </span>
-
               </div>
             </div>
-
           </div>
         </div>
       </header>
-
-      {/* =====================================================
-          NAVEGACIÓN
-          ===================================================== */}
 
       <nav
         className="biblioteca-navegacion"
@@ -174,11 +156,10 @@ function BibliotecaShell() {
             icon: Icon,
             exact,
           }) => {
-            const activo =
-              estaActivo(
-                to,
-                exact,
-              );
+            const activo = estaActivo(
+              to,
+              exact,
+            );
 
             return (
               <Link
@@ -204,10 +185,6 @@ function BibliotecaShell() {
         )}
       </nav>
 
-      {/* =====================================================
-          CONTENIDO
-          ===================================================== */}
-
       <main className="biblioteca-compartida-content biblioteca-view-transition">
         <Outlet />
       </main>
@@ -215,7 +192,6 @@ function BibliotecaShell() {
       <style>
         {styles}
       </style>
-
     </section>
   );
 }
@@ -234,13 +210,8 @@ const styles = `
       50px;
 
     color:
-      var(--app-text, #0f172a);
+      var(--app-text);
   }
-
-
-  /* =========================================================
-     ENCABEZADO
-     ========================================================= */
 
   .biblioteca-encabezado {
     position: relative;
@@ -250,150 +221,136 @@ const styles = `
 
     overflow: hidden;
 
-    background:
-      linear-gradient(
-        110deg,
-        var(--app-surface, #fffdf9) 0%,
-        var(--app-surface, #fffdf9) 72%,
-        rgba(255, 248, 240, .92) 100%
-      );
-
     border:
       1px solid
-      var(
-        --app-border,
-        rgba(241, 139, 75, .20)
-      );
+      var(--app-border);
 
-    border-radius: 24px;
+    border-radius: 26px;
+
+    background:
+      var(--app-surface);
 
     box-shadow:
-      var(
-        --app-shadow-sm,
-        0 6px 20px rgba(15, 23, 42, .04)
+      var(--app-shadow),
+      inset 0 1px 0
+      color-mix(
+        in srgb,
+        var(--app-surface-raised)
+        72%,
+        transparent
       );
   }
 
+  .biblioteca-encabezado::before {
+    content: "";
+
+    position: absolute;
+
+    inset:
+      0
+      auto
+      0
+      0;
+
+    width: 5px;
+
+    background:
+      var(--app-accent);
+  }
 
   .biblioteca-encabezado__contenido {
+    position: relative;
+    z-index: 1;
+
     width: 100%;
 
     padding:
-      24px
+      23px
       30px;
   }
-
-
-  /* TÍTULO SUPERIOR */
 
   .biblioteca-encabezado__superior {
     margin:
       0
       0
-      13px
-      76px;
+      5px
+      75px;
 
     color:
-      var(
-        --app-accent,
-        #f18b4b
-      );
+      var(--app-accent-dark);
 
     font-size: 11px;
     font-weight: 850;
     line-height: 1;
 
-    letter-spacing: .16em;
+    letter-spacing: .15em;
+    text-transform: uppercase;
   }
-
 
   .biblioteca-encabezado__principal {
     display: flex;
     align-items: center;
 
-    gap: 18px;
+    gap: 17px;
   }
 
-
-  /* ICONO PRINCIPAL */
-
   .biblioteca-encabezado__icono {
-    width: 60px;
-    height: 60px;
+    width: 58px;
+    height: 58px;
 
     flex:
       0
       0
-      60px;
+      58px;
 
     display: grid;
     place-items: center;
 
-    color:
-      var(
-        --app-accent,
-        #f18b4b
-      );
-
-    background:
-      var(
-        --app-accent-soft,
-        #fff3e9
-      );
-
     border:
       1px solid
-      var(
-        --app-border,
-        rgba(241, 139, 75, .20)
-      );
+      var(--app-border-strong);
 
     border-radius: 18px;
+
+    color:
+      var(--app-accent-dark);
+
+    background:
+      var(--app-accent-soft);
+
+    box-shadow:
+      var(--app-shadow-sm);
   }
-
-
-  /* INFORMACIÓN */
 
   .biblioteca-encabezado__informacion {
     min-width: 0;
   }
 
-
   .biblioteca-encabezado__informacion h1 {
     margin: 0;
 
     color:
-      var(
-        --app-text,
-        #0f172a
-      );
+      var(--app-text);
 
-    font-size: 27px;
-    font-weight: 850;
+    font-size: 31px;
+    font-weight: 900;
     line-height: 1.1;
 
     letter-spacing: -.025em;
   }
 
-
   .biblioteca-encabezado__informacion p {
     margin:
-      7px
+      6px
       0
       0;
 
     color:
-      var(
-        --app-text-secondary,
-        #475569
-      );
+      var(--app-text-soft);
 
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.45;
   }
-
-
-  /* CHIPS */
 
   .biblioteca-encabezado__chips {
     display: flex;
@@ -402,60 +359,31 @@ const styles = `
 
     gap: 7px;
 
-    margin-top: 11px;
+    margin-top: 12px;
   }
 
-
   .biblioteca-encabezado__chips span {
-    min-height: 29px;
-
-    padding:
-      6px
-      10px;
+    padding: 5px 9px;
 
     display: inline-flex;
     align-items: center;
-
     gap: 6px;
 
-    color:
-      #d8611b;
-
-    background:
-      var(
-        --app-accent-soft,
-        #fff3e9
-      );
-
-    border:
-      1px solid
-      var(
-        --app-border,
-        rgba(241, 139, 75, .20)
-      );
-
+    border: 1px solid var(--app-warning-border);
     border-radius: 999px;
 
-    font-size: 10.5px;
+    color: var(--app-warning-strong);
+    background: var(--app-warning-bg);
+
+    font-size: 10px;
     font-weight: 750;
-    line-height: 1;
-
-    white-space: nowrap;
   }
-
 
   .biblioteca-encabezado__chips span svg {
-    color:
-      var(
-        --app-accent,
-        #f18b4b
-      );
+    flex-shrink: 0;
+
+    color: currentColor;
   }
-
-
-  /* =========================================================
-     NAVEGACIÓN
-     ========================================================= */
 
   .biblioteca-navegacion {
     width: 100%;
@@ -477,27 +405,17 @@ const styles = `
     padding: 6px;
 
     background:
-      var(
-        --app-surface,
-        #fffdf9
-      );
+      var(--app-surface);
 
     border:
       1px solid
-      var(
-        --app-border,
-        rgba(241, 139, 75, .20)
-      );
+      var(--app-border);
 
     border-radius: 19px;
 
     box-shadow:
-      var(
-        --app-shadow-sm,
-        0 6px 20px rgba(15, 23, 42, .03)
-      );
+      var(--app-shadow-sm);
   }
-
 
   .biblioteca-navegacion__item {
     min-width: 0;
@@ -520,10 +438,7 @@ const styles = `
     border-radius: 13px;
 
     color:
-      var(
-        --app-text-secondary,
-        #475569
-      );
+      var(--app-text-secondary);
 
     background:
       transparent;
@@ -539,9 +454,9 @@ const styles = `
       color 150ms ease,
       background 150ms ease,
       border-color 150ms ease,
+      box-shadow 150ms ease,
       transform 150ms ease;
   }
-
 
   .biblioteca-navegacion__item svg {
     flex-shrink: 0;
@@ -550,73 +465,48 @@ const styles = `
       transform 150ms ease;
   }
 
-
-  /* HOVER */
-
   .biblioteca-navegacion__item:hover {
     color:
-      #d8611b;
+      var(--app-accent-dark);
 
     background:
-      var(
-        --app-accent-soft,
-        #fff3e9
-      );
+      var(--app-accent-soft);
 
     border-color:
-      var(
-        --app-border,
-        rgba(241, 139, 75, .20)
-      );
+      var(--app-border-strong);
   }
-
 
   .biblioteca-navegacion__item:hover svg {
     transform:
       translateY(-1px);
   }
 
-
-  /* ACTIVO */
-
   .biblioteca-navegacion__item.activo {
-    color:
-      #fff;
+    color: #fff;
 
-    background:
-      linear-gradient(
-        135deg,
-        var(
-          --app-accent,
-          #f18b4b
-        ),
-        #ef6b1d
-      );
+    background: var(--app-accent);
 
-    border-color:
-      transparent;
+    border-color: var(--app-accent);
 
-    box-shadow:
-      0
-      6px
-      16px
-      rgba(
-        239,
-        107,
-        29,
-        .16
-      );
+    box-shadow: var(--app-shadow-sm);
   }
-
 
   .biblioteca-navegacion__item.activo svg {
     color: #fff;
   }
 
+  .biblioteca-navegacion__item:focus-visible {
+    outline:
+      3px solid
+      color-mix(
+        in srgb,
+        var(--app-accent)
+        24%,
+        transparent
+      );
 
-  /* =========================================================
-     CONTENIDO
-     ========================================================= */
+    outline-offset: 2px;
+  }
 
   .biblioteca-compartida-content {
     width: 100%;
@@ -625,14 +515,12 @@ const styles = `
     position: relative;
   }
 
-
   .biblioteca-view-transition {
     animation:
       bibliotecaEntrada
       160ms
       ease-out;
   }
-
 
   @keyframes bibliotecaEntrada {
     from {
@@ -654,11 +542,6 @@ const styles = `
     }
   }
 
-
-  /* =========================================================
-     RESPONSIVE
-     ========================================================= */
-
   @media (
     max-width:
       1100px
@@ -675,7 +558,6 @@ const styles = `
     }
   }
 
-
   @media (
     max-width:
       760px
@@ -687,22 +569,18 @@ const styles = `
         36px;
     }
 
-
     .biblioteca-encabezado {
       border-radius: 21px;
     }
-
 
     .biblioteca-encabezado__contenido {
       padding:
         22px;
     }
 
-
     .biblioteca-encabezado__superior {
       margin-left: 0;
     }
-
 
     .biblioteca-encabezado__principal {
       align-items:
@@ -710,7 +588,6 @@ const styles = `
 
       gap: 14px;
     }
-
 
     .biblioteca-encabezado__icono {
       width: 54px;
@@ -723,11 +600,9 @@ const styles = `
         16px;
     }
 
-
     .biblioteca-encabezado__informacion h1 {
       font-size: 25px;
     }
-
 
     .biblioteca-encabezado__chips {
       margin-left:
@@ -737,7 +612,6 @@ const styles = `
         17px;
     }
   }
-
 
   @media (
     max-width:
@@ -750,7 +624,6 @@ const styles = `
         30px;
     }
 
-
     .biblioteca-navegacion {
       grid-template-columns:
         repeat(
@@ -762,35 +635,29 @@ const styles = `
         );
     }
 
-
     .biblioteca-navegacion__item {
       justify-content:
         flex-start;
     }
-
 
     .biblioteca-encabezado__contenido {
       padding:
         19px;
     }
 
-
     .biblioteca-encabezado__principal {
       gap: 12px;
     }
 
-
     .biblioteca-encabezado__informacion h1 {
       font-size: 23px;
     }
-
 
     .biblioteca-encabezado__chips {
       margin-left:
         -66px;
     }
   }
-
 
   @media (
     max-width:
@@ -801,7 +668,6 @@ const styles = `
         1fr;
     }
   }
-
 
   @media (
     prefers-reduced-motion:

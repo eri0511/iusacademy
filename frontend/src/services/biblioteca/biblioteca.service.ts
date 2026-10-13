@@ -1,6 +1,9 @@
 const API_URL = (
   import.meta.env.VITE_API_URL ?? "http://localhost:3000"
 ).replace(/\/$/, "");
+
+import { notificarSesionExpirada } from '../../utils/session-expirada';
+
 export class ErrorBiblioteca extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -26,11 +29,13 @@ export function crearApiBiblioteca(token: string) {
     }
     if (!res.ok) {
       const error = await res.json().catch(() => ({}));
-      if (res.status === 401)
+      if (res.status === 401) {
+        notificarSesionExpirada();
         throw new ErrorBiblioteca(
           "Tu sesión venció. Vuelve a iniciar sesión.",
           401,
         );
+      }
       const mensaje =
         error.message ?? error.mensaje ?? "No se pudo completar la operación";
       throw new ErrorBiblioteca(

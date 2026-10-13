@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -15,6 +16,8 @@ import type {
   RespuestaLogin,
   Sesion,
 } from './auth.types';
+
+import { EVENTO_SESION_EXPIRADA } from '../utils/session-expirada';
 
 const API_URL =
   import.meta.env.VITE_API_URL ??
@@ -276,6 +279,21 @@ export function AuthProvider({
 
       setSesion(null);
     }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      cerrarSesion();
+    };
+
+    window.addEventListener(EVENTO_SESION_EXPIRADA, handler);
+
+    return () => {
+      window.removeEventListener(
+        EVENTO_SESION_EXPIRADA,
+        handler,
+      );
+    };
+  }, [cerrarSesion]);
 
   const valor =
     useMemo<AuthContextValue>(

@@ -48,11 +48,15 @@ export function BibliotecaProvider({ children }: { children: ReactNode }) {
       setFallo("");
     } catch (e) {
       setCapacidades({ puedeGestionar: false, puedeDelegar: false });
-      setFallo(
-        e instanceof Error
-          ? e.message
-          : "No se pudo conectar con la biblioteca",
-      );
+      if (
+        !(e instanceof ErrorBiblioteca && e.status === 401)
+      ) {
+        setFallo(
+          e instanceof Error
+            ? e.message
+            : "No se pudo conectar con la biblioteca",
+        );
+      }
     } finally {
       setCargando(false);
     }

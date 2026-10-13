@@ -7,7 +7,6 @@ import {
 
 import { useAuth } from '../../auth/AuthContext';
 
-import AvatarUsuario from '../../components/shared/AvatarUsuario';
 
 import {
   CheckCircle2,
@@ -40,6 +39,7 @@ type Usuario = {
   apellidoMaterno?: string | null;
   correo: string;
   fotoPerfilUrl?: string | null;
+  tratamiento?: 'DR' | 'DRA' | null;
   rol: Rol;
   estaActivo: boolean;
   cuentaActivada: boolean;
@@ -54,6 +54,7 @@ type FormularioUsuario = {
   apellidoMaterno: string;
   correo: string;
   rol: Rol;
+  tratamiento?: 'DR' | 'DRA' | null;
 };
 
 type TipoToast =
@@ -106,12 +107,30 @@ const crearHeadersAutorizados = (
     `Bearer ${accessToken}`,
 });
 
+function construirUrlFoto(
+  fotoPerfilUrl: string | null | undefined,
+): string | null {
+  if (!fotoPerfilUrl) {
+    return null;
+  }
+
+  if (
+    fotoPerfilUrl.startsWith('http://') ||
+    fotoPerfilUrl.startsWith('https://')
+  ) {
+    return fotoPerfilUrl;
+  }
+
+  return `${API_URL}${fotoPerfilUrl}`;
+}
+
 const formularioInicial: FormularioUsuario = {
   nombres: '',
   apellidoPaterno: '',
   apellidoMaterno: '',
   correo: '',
   rol: 'ESTUDIANTE',
+  tratamiento: null,
 };
 
 const roles: {
@@ -343,6 +362,10 @@ export default function Usuarios() {
     setFormulario((anterior) => ({
       ...anterior,
       rol,
+      tratamiento:
+        rol === 'DOCENTE'
+          ? anterior.tratamiento
+          : null,
     }));
   };
 
@@ -367,6 +390,7 @@ export default function Usuarios() {
         usuario.apellidoMaterno ?? '',
       correo: usuario.correo,
       rol: usuario.rol,
+      tratamiento: usuario.tratamiento ?? null,
     });
 
     setUsuarioEditandoId(
@@ -415,6 +439,19 @@ export default function Usuarios() {
         'error',
         'Correo no válido',
         'Solo se permiten correos institucionales @unifranz.edu.bo.',
+      );
+
+      return false;
+    }
+
+    if (
+      formulario.rol === 'DOCENTE' &&
+      !formulario.tratamiento
+    ) {
+      mostrarToast(
+        'error',
+        'Tratamiento requerido',
+        'Selecciona Dr. o Dra. para el docente.',
       );
 
       return false;
@@ -474,6 +511,11 @@ export default function Usuarios() {
 
             rol:
               formulario.rol,
+
+            tratamiento:
+              formulario.rol === 'DOCENTE'
+                ? formulario.tratamiento
+                : null,
           }),
         },
       );
@@ -1179,6 +1221,36 @@ export default function Usuarios() {
               </div>
             </div>
 
+            {formulario.rol === 'DOCENTE' && (
+              <div className="tratamiento-section">
+                <span className="campo-title">
+                  Tratamiento profesional
+                </span>
+
+                <div className="roles">
+                  {(['DR', 'DRA'] as const).map((tratamiento) => (
+                    <button
+                      key={tratamiento}
+                      type="button"
+                      className={`rol-chip ${
+                        formulario.tratamiento ===
+                        tratamiento
+                          ? 'active'
+                          : ''
+                      }`}
+                      onClick={() =>
+                        setFormulario((anterior) => ({
+                          ...anterior,
+                          tratamiento,
+                        }))
+                      }>
+                        {tratamiento === 'DR' ? 'Dr.' : 'Dra.'}
+                      </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {!usuarioEditandoId && (
               <div className="password-info">
                 <div className="password-info-icon">
@@ -1378,19 +1450,40 @@ export default function Usuarios() {
                       <tr key={usuario.id}>
                         <td>
                           <div className="user-cell">
-                            <AvatarUsuario
-                              fotoPerfilUrl={
-                                usuario.fotoPerfilUrl
-                              }
-                              nombres={
-                                usuario.nombres
-                              }
-                              apellidoPaterno={
-                                usuario.apellidoPaterno
-                              }
-                              size={46}
-                              className="table-avatar"
-                            />
+                            <div
+                              className={`table-avatar ${
+                                construirUrlFoto(
+                                  usuario.fotoPerfilUrl,
+                                )
+                                  ? 'has-image'
+                                  : 'has-initials'
+                              }`}
+                            >
+                              {construirUrlFoto(
+                                usuario.fotoPerfilUrl,
+                              ) ? (
+                                <img
+                                  src={
+                                    construirUrlFoto(
+                                      usuario.fotoPerfilUrl,
+                                    ) ?? undefined
+                                  }
+                                  alt={`Fotografía de ${usuario.nombres} ${usuario.apellidoPaterno}`}
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <span
+                                  aria-label={`Iniciales de ${usuario.nombres} ${usuario.apellidoPaterno}`}
+                                >
+                                  {usuario.nombres
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                  {usuario.apellidoPaterno
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </span>
+                              )}
+                            </div>
 
                             <div>
                               <strong>
@@ -2900,7 +2993,45 @@ const styles = `
   }
 
   .table-avatar {
+    width: 46px;
+    height: 46px;
+
+    display: grid;
+    place-items: center;
+
     flex-shrink: 0;
+    overflow: hidden;
+
+    border:
+      1px solid
+      var(--app-border-strong);
+
+    border-radius: 30%;
+
+    color:
+      var(--app-accent-dark);
+
+    background:
+      var(--app-accent-soft);
+
+    font-size: 15px;
+    font-weight: 850;
+  }
+
+  .table-avatar img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+
+  .table-avatar.has-image {
+    background:
+      var(--app-surface-raised);
+  }
+
+  .table-avatar.has-initials span {
+    line-height: 1;
   }
 
   .user-cell strong {

@@ -359,6 +359,15 @@ export class BibliotecaService {
             where: { usuarioId: usuario.id },
             select: { usuarioId: true },
           },
+          creadoPor: {
+            select: {
+              id: true,
+              nombres: true,
+              apellidoPaterno: true,
+              apellidoMaterno: true,
+              rol: true,
+            },
+          },
         },
       }),
     ]);
@@ -424,13 +433,27 @@ export class BibliotecaService {
             },
           },
         },
+        creadoPor: {
+          select: {
+            id: true,
+            nombres: true,
+            apellidoPaterno: true,
+            apellidoMaterno: true,
+            rol: true,
+          },
+        },
       },
     });
     if (!recurso) throw new NotFoundException('El recurso no existe');
-    const { favoritos, relacionesOrigen, ...datos } = recurso;
+    const { favoritos, relacionesOrigen, creadoPor, ...datos } = recurso;
     return {
       ...datos,
       esFavorito: favoritos.length > 0,
+      relacionado: creadoPor
+        ? creadoPor.rol === Rol.ADMINISTRADOR
+          ? 'Equipo IusAcademy'
+          : `${creadoPor.nombres} ${creadoPor.apellidoPaterno}`
+        : 'Equipo IusAcademy',
       relacionados: relacionesOrigen.map((x) => x.destino),
     };
   }
@@ -826,7 +849,17 @@ export class BibliotecaService {
           include: {
             contenidos: {
               where: { estaActivo: true },
+              orderBy: { orden: 'asc' },
               include: contenidoInclude,
+            },
+            creadoPor: {
+              select: {
+                id: true,
+                nombres: true,
+                apellidoPaterno: true,
+                apellidoMaterno: true,
+                rol: true,
+              },
             },
           },
         },
@@ -849,8 +882,8 @@ export class BibliotecaService {
       });
     return { esFavorito: agregar };
   }
-  colecciones(usuario: UsuarioBiblioteca) {
-    return this.prisma.coleccionBiblioteca.findMany({
+  async colecciones(usuario: UsuarioBiblioteca) {
+    const colecciones = await this.prisma.coleccionBiblioteca.findMany({
       where: { usuarioId: usuario.id },
       orderBy: { actualizadoEn: 'desc' },
       include: {
@@ -858,12 +891,45 @@ export class BibliotecaService {
           where: { recurso: { estado: 'PUBLICADO' } },
           include: {
             recurso: {
-              select: { id: true, titulo: true, categoria: true, tema: true },
+              include: {
+                contenidos: {
+                  where: { estaActivo: true },
+                  orderBy: { orden: 'asc' },
+                  include: contenidoInclude,
+                },
+                favoritos: {
+                  where: { usuarioId: usuario.id },
+                  select: { usuarioId: true },
+                },
+                creadoPor: {
+                  select: {
+                    id: true,
+                    nombres: true,
+                    apellidoPaterno: true,
+                    apellidoMaterno: true,
+                    rol: true,
+                  },
+                },
+              },
             },
           },
         },
       },
     });
+
+    return colecciones.map((coleccion) => ({
+      ...coleccion,
+      recursos: coleccion.recursos.map(({ recurso, ...relacion }) => {
+        const { favoritos, ...datosRecurso } = recurso;
+        return {
+          ...relacion,
+          recurso: {
+            ...datosRecurso,
+            esFavorito: favoritos.length > 0,
+          },
+        };
+      }),
+    }));
   }
   async crearColeccion(
     usuario: UsuarioBiblioteca,
@@ -1116,3 +1182,4 @@ export class BibliotecaService {
     });
   }
 }
+ 

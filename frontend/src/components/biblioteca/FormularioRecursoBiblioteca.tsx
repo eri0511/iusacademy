@@ -1274,7 +1274,7 @@ export default function FormularioRecursoBiblioteca({
 }
 
 const formStyles = `
-.bib-resource-form {background:var(--app-surface-raised);border:1px solid var(--app-input-border);border-radius:18px;padding:24px;box-shadow:0 4px 12px #00000006;}
+.bib-resource-form {background:var(--app-surface-raised);border:1px solid var(--app-input-border);border-radius:18px;padding:24px;box-shadow:var(--app-shadow-sm);}
 .bib-form-content {border:0;padding:0;margin:0;min-width:0;display:flex;flex-direction:column;gap:18px;}
 .bib-create-attachments {border:1px solid var(--app-border-strong);border-radius:16px;padding:20px;margin:0;min-width:0;background:var(--app-surface-raised);}
 .bib-create-attachments legend {font-size:15px;font-weight:750;padding:0 8px;}
@@ -1302,7 +1302,7 @@ html[data-theme='oscuro'] .bib-resource-form,html[data-theme='oscuro'] .bib-crea
 .bib-create-attachments {margin:0;}
 .bib-create-attachments>p {margin:0;font-size:11px;}
 .bib-create-attachments input[type=file] {border-style:dashed;min-height:60px;background:var(--app-accent-softer);}
-.bib-create-attachments input::file-selector-button {padding:8px 12px;border:1px solid var(--app-border-strong);border-radius:8px;background:var(--app-surface-raised);color:#c46a2c;font:inherit;margin-right:12px;cursor:pointer;}
+.bib-create-attachments input::file-selector-button {padding:8px 12px;border:1px solid var(--app-border-strong);border-radius:8px;background:var(--app-surface-raised);color:var(--app-accent-dark);font:inherit;margin-right:12px;cursor:pointer;}
 .bib-form-footer {padding:18px 24px;margin:0;background:var(--app-surface-alt);justify-content:flex-end;flex-wrap:wrap;}
 .bib-form-footer-hint {margin-right:auto;font-size:11px;max-width:360px;color:var(--bib-muted);}
 .bib-visually-hidden {position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}

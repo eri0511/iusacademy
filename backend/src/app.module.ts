@@ -51,6 +51,8 @@ import { NotificacionesModule } from './modules/notificaciones/notificaciones.mo
 
 import { AnalisisIaModule } from './modules/analisis-ia/analisis-ia.module';
 
+import { AnalisisIaV2Module } from './modules/analisis-ia-v2/analisis-ia-v2.module';
+
 @Module({
   imports: [
     BibliotecaModule,
@@ -101,6 +103,8 @@ import { AnalisisIaModule } from './modules/analisis-ia/analisis-ia.module';
     NotificacionesModule,
 
     AnalisisIaModule,
+
+    AnalisisIaV2Module,
   ],
 
   controllers: [AppController],

@@ -7,7 +7,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-import { Rol } from '../../../generated/prisma/enums';
+import { Rol, TratamientoUsuario } from '../../../generated/prisma/enums';
 
 export class ActualizarUsuarioDto {
   @IsOptional()
@@ -34,4 +34,8 @@ export class ActualizarUsuarioDto {
   @IsOptional()
   @IsEnum(Rol)
   rol?: Rol;
+
+  @IsOptional()
+  @IsEnum(TratamientoUsuario)
+  tratamiento?: TratamientoUsuario;
 }

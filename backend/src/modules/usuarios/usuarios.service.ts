@@ -30,7 +30,7 @@ export class UsuariosService {
    * desactivados o todos.
    */
   async obtenerTodos() {
-    return this.prisma.usuario.findMany({
+return this.prisma.usuario.findMany({
       orderBy: {
         creadoEn: 'desc',
       },
@@ -47,9 +47,9 @@ export class UsuariosService {
         cuentaActivada: true,
         tokenActivacionExpira: true,
         accesoEnviadoEn: true,
-        passwordCambiadaEn: true,
         creadoEn: true,
         actualizadoEn: true,
+        tratamiento: true,
       },
     });
   }
@@ -98,6 +98,8 @@ export class UsuariosService {
         accesoEnviadoEn: null,
 
         passwordCambiadaEn: null,
+
+        ...(datos.tratamiento && { tratamiento: datos.tratamiento }),
       },
 
       select: {
@@ -114,6 +116,7 @@ export class UsuariosService {
         accesoEnviadoEn: true,
         creadoEn: true,
         actualizadoEn: true,
+        tratamiento: true,
       },
     });
 
@@ -188,6 +191,8 @@ export class UsuariosService {
 
         rol: datos.rol,
 
+        tratamiento: datos.tratamiento,
+
         /*
          * Si cambia el correo, el usuario debe
          * volver a activar su cuenta.
@@ -223,6 +228,7 @@ export class UsuariosService {
         accesoEnviadoEn: true,
         creadoEn: true,
         actualizadoEn: true,
+        tratamiento: true,
       },
     });
 

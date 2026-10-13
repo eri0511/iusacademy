@@ -348,9 +348,7 @@ export default function BibliotecaCategorias() {
             return (
               <Link
                 key={categoria}
-                to={`${base}?categoria=${encodeURIComponent(
-                  categoria,
-                )}`}
+                to={`${base}/categorias/${encodeURIComponent(categoria)}`}
                 className={`bib-category-card tone-${tono}`}
               >
                 <div className="bib-category-card-icon">
@@ -413,7 +411,7 @@ const categoriasStyles = `
     min-width: 0;
 
     display: grid;
-    gap: 18px;
+    gap: 14px;
 
     padding-bottom: 28px;
 
@@ -432,7 +430,7 @@ const categoriasStyles = `
     justify-content: space-between;
     gap: 18px;
 
-    padding: 19px 22px;
+    padding: 17px 22px;
 
     background:
       linear-gradient(
@@ -497,8 +495,8 @@ const categoriasStyles = `
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.9);
 
-    font-size: 12px;
-    font-weight: 900;
+    font-size: 11.5px;
+    font-weight: 850;
 
     white-space: nowrap;
   }
@@ -510,7 +508,7 @@ const categoriasStyles = `
   .bib-categories-search-card {
     width: 100%;
 
-    padding: 10px 18px;
+    padding: 8px 18px;
 
     background:
       var(--app-surface-raised, #ffffff);
@@ -542,7 +540,7 @@ const categoriasStyles = `
 
   .bib-categories-search {
     width: 100%;
-    min-height: 44px;
+    min-height: 42px;
 
     display: flex;
     align-items: center;
@@ -581,8 +579,8 @@ const categoriasStyles = `
   }
 
   .bib-categories-search-clear {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
 
     flex: 0 0 34px;
 
@@ -632,7 +630,7 @@ const categoriasStyles = `
     grid-template-columns:
       repeat(3, minmax(0, 1fr));
 
-    gap: 15px;
+    gap: 13px;
   }
 
   /* =======================================================
@@ -646,18 +644,18 @@ const categoriasStyles = `
     position: relative;
 
     min-width: 0;
-    min-height: 172px;
+    min-height: 140px;
 
     display: grid;
 
     grid-template-columns:
-      64px minmax(0, 1fr) 38px;
+      52px minmax(0, 1fr) 30px;
 
     align-items: center;
 
-    gap: 16px;
+    gap: 12px;
 
-    padding: 22px;
+    padding: 15px 17px;
 
     color:
       var(--app-text, #0f172a);
@@ -675,7 +673,7 @@ const categoriasStyles = `
         transparent
       );
 
-    border-radius: 22px;
+    border-radius: 20px;
 
     box-shadow:
       0 10px 25px rgba(15, 23, 42, 0.025);
@@ -721,29 +719,6 @@ const categoriasStyles = `
     z-index: 2;
   }
 
-  /* círculo decorativo */
-
-  .bib-category-card::after {
-    content: '';
-
-    position: absolute;
-
-    right: -34px;
-    bottom: -46px;
-
-    width: 125px;
-    height: 125px;
-
-    background:
-      rgba(255, 255, 255, 0.23);
-
-    border-radius: 50%;
-
-    pointer-events: none;
-
-    z-index: -1;
-  }
-
   .bib-category-card:hover {
     transform:
       translateY(-4px);
@@ -777,8 +752,8 @@ const categoriasStyles = `
     position: relative;
     z-index: 1;
 
-    width: 64px;
-    height: 64px;
+    width: 52px;
+    height: 52px;
 
     display: grid;
     place-items: center;
@@ -797,7 +772,7 @@ const categoriasStyles = `
         white
       );
 
-    border-radius: 18px;
+    border-radius: 15px;
 
     box-shadow:
       inset 0 1px 0
@@ -836,9 +811,9 @@ const categoriasStyles = `
     align-items: center;
     flex-wrap: wrap;
 
-    gap: 8px;
+    gap: 7px;
 
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .bib-category-card-title h3 {
@@ -847,7 +822,7 @@ const categoriasStyles = `
     color:
       var(--app-text, #0f172a);
 
-    font-size: 17px;
+    font-size: 16.5px;
     font-weight: 900;
     line-height: 1.2;
     letter-spacing: -0.02em;
@@ -898,7 +873,7 @@ const categoriasStyles = `
     color:
       var(--app-text-secondary, #475569);
 
-    font-size: 12.5px;
+    font-size: 12.25px;
     line-height: 1.55;
   }
 
@@ -912,7 +887,7 @@ const categoriasStyles = `
 
     gap: 4px;
 
-    margin-top: 10px;
+    margin-top: 8px;
 
     color:
       var(--category-color);
@@ -940,8 +915,8 @@ const categoriasStyles = `
     position: relative;
     z-index: 1;
 
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
 
     display: grid;
     place-items: center;
@@ -1106,7 +1081,7 @@ const categoriasStyles = `
       1px solid
       var(--app-border, rgba(241, 139, 75, 0.2));
 
-    border-radius: 22px;
+    border-radius: 20px;
   }
 
   .bib-categories-empty-icon {
@@ -1172,7 +1147,7 @@ const categoriasStyles = `
   ======================================================= */
 
   .bib-category-skeleton {
-    min-height: 172px;
+    min-height: 148px;
 
     display: grid;
 
@@ -1181,9 +1156,9 @@ const categoriasStyles = `
 
     align-items: center;
 
-    gap: 16px;
+    gap: 13px;
 
-    padding: 22px;
+    padding: 17px 18px;
 
     background:
       rgba(255, 255, 255, 0.62);
@@ -1191,7 +1166,7 @@ const categoriasStyles = `
     border:
       1px solid rgba(241, 139, 75, 0.12);
 
-    border-radius: 22px;
+    border-radius: 20px;
 
     box-sizing: border-box;
 
@@ -1218,10 +1193,10 @@ const categoriasStyles = `
   }
 
   .bib-category-skeleton-icon {
-    width: 64px;
-    height: 64px;
+    width: 54px;
+    height: 54px;
 
-    border-radius: 18px;
+    border-radius: 16px;
   }
 
   .bib-category-skeleton-content {
@@ -1267,7 +1242,7 @@ const categoriasStyles = `
      RESPONSIVE
   ======================================================= */
 
-  @media (max-width: 1180px) {
+  @media (max-width: 920px) {
     .bib-categories-grid {
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
@@ -1286,6 +1261,12 @@ const categoriasStyles = `
     }
 
     .bib-categories-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 620px) {
+    .bib-categories-grid {
       grid-template-columns: 1fr;
     }
   }
@@ -1303,13 +1284,13 @@ const categoriasStyles = `
 
     .bib-category-card {
       grid-template-columns:
-        54px minmax(0, 1fr);
+        50px minmax(0, 1fr);
 
       gap: 13px;
 
-      min-height: 155px;
+      min-height: 138px;
 
-      padding: 18px;
+      padding: 16px;
     }
 
     .bib-category-card-icon {

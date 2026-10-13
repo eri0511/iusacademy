@@ -8,7 +8,7 @@ import {
   MaxLength,
 } from 'class-validator';
 
-import { Rol } from '../../../generated/prisma/enums';
+import { Rol, TratamientoUsuario } from '../../../generated/prisma/enums';
 
 export class CrearUsuarioDto {
   @IsString()
@@ -36,4 +36,8 @@ export class CrearUsuarioDto {
 
   @IsEnum(Rol)
   rol!: Rol;
+
+  @IsOptional()
+  @IsEnum(TratamientoUsuario)
+  tratamiento?: TratamientoUsuario;
 }

@@ -563,6 +563,11 @@ enum TipoNotificacion {
   FORO_NUEVO_TEMA
 }
 
+enum TratamientoUsuario {
+  DR
+  DRA
+}
+
 model Usuario {
   bibliotecaRecursos          RecursoBiblioteca[]          @relation("BibliotecaAutor")
   bibliotecaVersiones         VersionContenidoBiblioteca[] @relation("BibliotecaVersionAutor")
@@ -580,6 +585,7 @@ model Usuario {
   nombres         String
   apellidoPaterno String
   apellidoMaterno String?
+  tratamiento TratamientoUsuario?
 
   correo       String  @unique
   passwordHash String?

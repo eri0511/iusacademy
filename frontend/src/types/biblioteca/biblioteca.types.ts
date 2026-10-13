@@ -61,6 +61,7 @@ export type Recurso = {
   contenidos: Contenido[];
   esFavorito?: boolean;
   relacionados?: Pick<Recurso, "id" | "titulo" | "categoria" | "tema">[];
+  creadoPor?: PublicadorBiblioteca;
 };
 export type Ficha = Omit<
   Recurso,
@@ -114,6 +115,15 @@ export type Historial = {
   creadoEn: string;
   actor: Persona;
   datos?: unknown;
+};
+
+export type PublicadorBiblioteca = {
+  id: number;
+  nombres: string;
+  apellidoPaterno: string;
+  apellidoMaterno?: string;
+  rol: string;
+  tratamiento?: 'DR' | 'DRA' | null;
 };
 
 export type ResumenBiblioteca = {
